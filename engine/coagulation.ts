@@ -4,7 +4,7 @@ type NumericLabKey = 'pt' | 'aptt' | 'tt' | 'fibrinogen' | 'platelets' | 'dDimer
 
 export const LAB_RANGES: Record<NumericLabKey, LabRange> = {
   pt: { min: 11, max: 13.5, unit: 's', criticalHigh: 30 },
-  aptt: { min: 25, max: 35, unit: 's', criticalHigh: 80 },
+  aptt: { min: 25, max: 40, unit: 's', criticalHigh: 80 },
   tt: { min: 14, max: 19, unit: 's', criticalHigh: 40 },
   fibrinogen: { min: 200, max: 400, unit: 'mg/dL', criticalLow: 100 },
   platelets: { min: 150, max: 400, unit: '×10³/µL', criticalLow: 50 },

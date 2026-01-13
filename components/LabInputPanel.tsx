@@ -344,7 +344,7 @@ export function LabInputPanel({
           </div>
 
           {/* Mixing Test - only show when aPTT is elevated */}
-          {values.aptt > 35 && (
+          {values.aptt > 40 && (
             <div className="mt-4 pt-4 border-t border-slate-100">
               <h3 className="text-xs font-semibold text-slate-600 mb-2">
                 Mixing Test
