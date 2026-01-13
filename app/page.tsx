@@ -24,7 +24,7 @@ export default function Home(): React.ReactElement {
             Calculator și simulator hemostază
           </h1>
           <span className="text-sm text-slate-500">
-            @ Dr. Chiper
+            @ Dr. Chiper • <a href="mailto:drchiperleferman@gmail.com" className="hover:text-blue-600 hover:underline">drchiperleferman@gmail.com</a>
           </span>
         </div>
 
