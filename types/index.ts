@@ -13,6 +13,7 @@ export interface Factor {
 
 export interface LabInput {
   pt: number;
+  inr: number;
   aptt: number;
   tt: number;
   fibrinogen: number;

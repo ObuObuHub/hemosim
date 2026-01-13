@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { LabInput, MedicationContext, Hit4TCriteria } from '@/types';
-import { LAB_RANGES } from '@/engine/coagulation';
+import { LAB_RANGES, calculateINRFromPT, calculatePTFromINR } from '@/engine/coagulation';
 
 interface Preset {
   id: string;
@@ -15,30 +15,30 @@ const TREATMENT_PRESETS: Preset[] = [
   {
     id: 'normal',
     name: 'Normal',
-    lab: { pt: 12, aptt: 30, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 },
+    lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 },
   },
   {
     id: 'warfarin',
     name: 'Warfarină/AVK',
-    lab: { pt: 28, aptt: 38, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 250, bleedingTime: 5 },
+    lab: { pt: 28, inr: 2.3, aptt: 38, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 250, bleedingTime: 5 },
     meds: { warfarin: true },
   },
   {
     id: 'heparin',
     name: 'Heparină UFH',
-    lab: { pt: 14, aptt: 85, tt: 35, fibrinogen: 300, platelets: 220, dDimers: 300, bleedingTime: 6 },
+    lab: { pt: 14, inr: 1.2, aptt: 85, tt: 35, fibrinogen: 300, platelets: 220, dDimers: 300, bleedingTime: 6 },
     meds: { heparin: true },
   },
   {
     id: 'lmwh',
     name: 'LMWH',
-    lab: { pt: 12, aptt: 38, tt: 18, fibrinogen: 300, platelets: 240, dDimers: 280, bleedingTime: 5 },
+    lab: { pt: 12, inr: 1.0, aptt: 38, tt: 18, fibrinogen: 300, platelets: 240, dDimers: 280, bleedingTime: 5 },
     meds: { lmwh: true },
   },
   {
     id: 'doac',
     name: 'DOAC',
-    lab: { pt: 14, aptt: 35, tt: 20, fibrinogen: 300, platelets: 250, dDimers: 250, bleedingTime: 5 },
+    lab: { pt: 14, inr: 1.2, aptt: 35, tt: 20, fibrinogen: 300, platelets: 250, dDimers: 250, bleedingTime: 5 },
     meds: { doac: true },
   },
 ];
@@ -47,57 +47,57 @@ const PATHOLOGY_PRESETS: Preset[] = [
   {
     id: 'hemophilia_a',
     name: 'Hemofilie A',
-    lab: { pt: 12, aptt: 65, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 },
+    lab: { pt: 12, inr: 1.0, aptt: 65, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 },
   },
   {
     id: 'hemophilia_b',
     name: 'Hemofilie B',
-    lab: { pt: 12, aptt: 58, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 },
+    lab: { pt: 12, inr: 1.0, aptt: 58, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 },
   },
   {
     id: 'vwd',
     name: 'Boala von Willebrand',
-    lab: { pt: 12, aptt: 45, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 12 },
+    lab: { pt: 12, inr: 1.0, aptt: 45, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 12 },
   },
   {
     id: 'itp',
     name: 'Purpura Trombocitopenică',
-    lab: { pt: 12, aptt: 30, tt: 16, fibrinogen: 300, platelets: 25, dDimers: 300, bleedingTime: 12 },
+    lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 25, dDimers: 300, bleedingTime: 12 },
   },
   {
     id: 'dic_activation',
     name: 'CID - Faza Activare',
-    lab: { pt: 14, aptt: 33, tt: 18, fibrinogen: 280, platelets: 120, dDimers: 1500, bleedingTime: 6 },
+    lab: { pt: 14, inr: 1.2, aptt: 33, tt: 18, fibrinogen: 280, platelets: 120, dDimers: 1500, bleedingTime: 6 },
   },
   {
     id: 'dic_consumption',
     name: 'CID - Faza Consum',
-    lab: { pt: 18, aptt: 45, tt: 24, fibrinogen: 150, platelets: 70, dDimers: 3000, bleedingTime: 8 },
+    lab: { pt: 18, inr: 1.5, aptt: 45, tt: 24, fibrinogen: 150, platelets: 70, dDimers: 3000, bleedingTime: 8 },
   },
   {
     id: 'dic_bleeding',
     name: 'CID - Faza Hemoragică',
-    lab: { pt: 28, aptt: 65, tt: 35, fibrinogen: 60, platelets: 25, dDimers: 6000, bleedingTime: 15 },
+    lab: { pt: 28, inr: 2.3, aptt: 65, tt: 35, fibrinogen: 60, platelets: 25, dDimers: 6000, bleedingTime: 15 },
   },
   {
     id: 'liver_failure',
     name: 'Insuficiență Hepatică',
-    lab: { pt: 20, aptt: 48, tt: 22, fibrinogen: 120, platelets: 90, dDimers: 800, bleedingTime: 8 },
+    lab: { pt: 20, inr: 1.7, aptt: 48, tt: 22, fibrinogen: 120, platelets: 90, dDimers: 800, bleedingTime: 8 },
   },
   {
     id: 'vitk_def',
     name: 'Deficit Vitamina K',
-    lab: { pt: 24, aptt: 50, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 300, bleedingTime: 5 },
+    lab: { pt: 24, inr: 2.0, aptt: 50, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 300, bleedingTime: 5 },
   },
   {
     id: 'aps',
     name: 'Sindrom Antifosfolipidic',
-    lab: { pt: 13, aptt: 52, tt: 16, fibrinogen: 320, platelets: 180, dDimers: 900, bleedingTime: 5 },
+    lab: { pt: 13, inr: 1.1, aptt: 52, tt: 16, fibrinogen: 320, platelets: 180, dDimers: 900, bleedingTime: 5 },
   },
   {
     id: 'thrombophilia',
     name: 'Trombofilie',
-    lab: { pt: 12, aptt: 30, tt: 16, fibrinogen: 350, platelets: 280, dDimers: 1200, bleedingTime: 5 },
+    lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 350, platelets: 280, dDimers: 1200, bleedingTime: 5 },
   },
 ];
 
@@ -111,10 +111,10 @@ interface LabInputPanelProps {
   onReset: () => void;
 }
 
-type NumericLabKey = 'pt' | 'aptt' | 'tt' | 'fibrinogen' | 'platelets' | 'dDimers' | 'bleedingTime';
+type NumericLabKey = 'pt' | 'inr' | 'aptt' | 'tt' | 'fibrinogen' | 'platelets' | 'dDimers' | 'bleedingTime';
 
+// PT and INR are handled separately in a special row
 const LAB_FIELDS: { key: NumericLabKey; label: string; step: number }[] = [
-  { key: 'pt', label: 'PT', step: 0.1 },
   { key: 'aptt', label: 'aPTT', step: 0.1 },
   { key: 'tt', label: 'TT', step: 0.1 },
   { key: 'fibrinogen', label: 'Fibrinogen', step: 10 },
@@ -180,9 +180,30 @@ export function LabInputPanel({
     onMedicationChange({ ...medications, [key]: !medications[key] });
   };
 
+  // PT change → auto-update INR
+  const handlePTChange = (value: string): void => {
+    setEditingValues(prev => ({ ...prev, pt: value }));
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue)) {
+      const newINR = calculateINRFromPT(numValue);
+      onChange({ ...values, pt: numValue, inr: newINR });
+    }
+  };
+
+  // INR change → auto-update PT
+  const handleINRChange = (value: string): void => {
+    setEditingValues(prev => ({ ...prev, inr: value }));
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue)) {
+      const newPT = calculatePTFromINR(numValue);
+      onChange({ ...values, inr: numValue, pt: newPT });
+    }
+  };
+
   const applyPreset = (preset: Preset): void => {
     const newLab: LabInput = {
       pt: preset.lab.pt ?? 12,
+      inr: preset.lab.inr ?? 1.0,
       aptt: preset.lab.aptt ?? 30,
       tt: preset.lab.tt ?? 16,
       fibrinogen: preset.lab.fibrinogen ?? 300,
@@ -283,6 +304,61 @@ export function LabInputPanel({
           </div>
 
           <div className="flex-1 overflow-auto space-y-3">
+            {/* PT / INR Row - Two columns */}
+            <div className="grid grid-cols-2 gap-2">
+              {/* PT */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-slate-600">PT</label>
+                  <span className="text-[10px] text-slate-400">
+                    {LAB_RANGES.pt.min}–{LAB_RANGES.pt.max} s
+                  </span>
+                </div>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step={0.1}
+                    value={'pt' in editingValues ? editingValues.pt : values.pt}
+                    onChange={(e) => handlePTChange(e.target.value)}
+                    onBlur={() => handleInputBlur('pt')}
+                    className={`w-full px-3 py-2 text-sm border rounded-lg outline-none transition-colors
+                      ${getInputStatus(values.pt, 'pt') === 'normal'
+                        ? 'border-slate-200 focus:border-blue-400 bg-white'
+                        : getInputStatus(values.pt, 'pt') === 'abnormal'
+                          ? 'border-orange-300 bg-orange-50 focus:border-orange-400'
+                          : 'border-red-400 bg-red-50 focus:border-red-500'
+                      }`}
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">s</span>
+                </div>
+              </div>
+              {/* INR */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-slate-600">INR</label>
+                  <span className="text-[10px] text-slate-400">
+                    {LAB_RANGES.inr.min}–{LAB_RANGES.inr.max}
+                  </span>
+                </div>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step={0.01}
+                    value={'inr' in editingValues ? editingValues.inr : values.inr}
+                    onChange={(e) => handleINRChange(e.target.value)}
+                    onBlur={() => handleInputBlur('inr')}
+                    className={`w-full px-3 py-2 text-sm border rounded-lg outline-none transition-colors
+                      ${getInputStatus(values.inr, 'inr') === 'normal'
+                        ? 'border-slate-200 focus:border-blue-400 bg-white'
+                        : getInputStatus(values.inr, 'inr') === 'abnormal'
+                          ? 'border-orange-300 bg-orange-50 focus:border-orange-400'
+                          : 'border-red-400 bg-red-50 focus:border-red-500'
+                      }`}
+                  />
+                </div>
+              </div>
+            </div>
+
             {LAB_FIELDS.map(({ key, label, step }) => {
               const range = LAB_RANGES[key];
               const status = getInputStatus(values[key], key);

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { LabInput, MedicationContext } from '@/types';
-import { LAB_RANGES } from '@/engine/coagulation';
+import { LAB_RANGES, calculateINRFromPT, calculatePTFromINR } from '@/engine/coagulation';
 
 interface Preset {
   id: string;
@@ -12,14 +12,14 @@ interface Preset {
 }
 
 const PRESETS: Preset[] = [
-  { id: 'normal', name: 'Normal', lab: { pt: 12, aptt: 30, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 } },
-  { id: 'warfarin', name: 'Warfarină', lab: { pt: 28, aptt: 38, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 250 }, meds: { warfarin: true } },
-  { id: 'heparin', name: 'Heparină', lab: { pt: 14, aptt: 85, tt: 35, fibrinogen: 300, platelets: 220, dDimers: 300 }, meds: { heparin: true } },
-  { id: 'hemophilia_a', name: 'Hemofilie A', lab: { pt: 12, aptt: 65, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200 } },
-  { id: 'vwd', name: 'vWD', lab: { pt: 12, aptt: 45, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 12 } },
-  { id: 'dic_bleeding', name: 'CID Hemoragic', lab: { pt: 28, aptt: 65, tt: 35, fibrinogen: 60, platelets: 25, dDimers: 6000, bleedingTime: 15 } },
-  { id: 'liver', name: 'Insuf. Hepatică', lab: { pt: 20, aptt: 48, tt: 22, fibrinogen: 120, platelets: 90, dDimers: 800 } },
-  { id: 'itp', name: 'ITP', lab: { pt: 12, aptt: 30, tt: 16, fibrinogen: 300, platelets: 25, dDimers: 300, bleedingTime: 12 } },
+  { id: 'normal', name: 'Normal', lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 } },
+  { id: 'warfarin', name: 'Warfarină', lab: { pt: 28, inr: 2.3, aptt: 38, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 250 }, meds: { warfarin: true } },
+  { id: 'heparin', name: 'Heparină', lab: { pt: 14, inr: 1.2, aptt: 85, tt: 35, fibrinogen: 300, platelets: 220, dDimers: 300 }, meds: { heparin: true } },
+  { id: 'hemophilia_a', name: 'Hemofilie A', lab: { pt: 12, inr: 1.0, aptt: 65, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200 } },
+  { id: 'vwd', name: 'vWD', lab: { pt: 12, inr: 1.0, aptt: 45, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 12 } },
+  { id: 'dic_bleeding', name: 'CID Hemoragic', lab: { pt: 28, inr: 2.3, aptt: 65, tt: 35, fibrinogen: 60, platelets: 25, dDimers: 6000, bleedingTime: 15 } },
+  { id: 'liver', name: 'Insuf. Hepatică', lab: { pt: 20, inr: 1.7, aptt: 48, tt: 22, fibrinogen: 120, platelets: 90, dDimers: 800 } },
+  { id: 'itp', name: 'ITP', lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 25, dDimers: 300, bleedingTime: 12 } },
 ];
 
 interface MobileLabInputProps {
@@ -32,10 +32,10 @@ interface MobileLabInputProps {
   onToggleScenarios: () => void;
 }
 
-type NumericLabKey = 'pt' | 'aptt' | 'tt' | 'fibrinogen' | 'platelets' | 'dDimers' | 'bleedingTime';
+type NumericLabKey = 'pt' | 'inr' | 'aptt' | 'tt' | 'fibrinogen' | 'platelets' | 'dDimers' | 'bleedingTime';
 
+// PT and INR are handled separately in a special row
 const LAB_FIELDS: { key: NumericLabKey; label: string; short: string; step: number }[] = [
-  { key: 'pt', label: 'PT', short: 'PT', step: 0.5 },
   { key: 'aptt', label: 'aPTT', short: 'aPTT', step: 1 },
   { key: 'tt', label: 'TT', short: 'TT', step: 0.5 },
   { key: 'fibrinogen', label: 'Fibrinogen', short: 'Fib', step: 10 },
@@ -96,9 +96,30 @@ export function MobileLabInput({
     onMedicationChange({ ...medications, [key]: !medications[key] });
   };
 
+  // PT change → auto-update INR
+  const handlePTChange = (value: string): void => {
+    setEditingValues(prev => ({ ...prev, pt: value }));
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue)) {
+      const newINR = calculateINRFromPT(numValue);
+      onChange({ ...values, pt: numValue, inr: newINR });
+    }
+  };
+
+  // INR change → auto-update PT
+  const handleINRChange = (value: string): void => {
+    setEditingValues(prev => ({ ...prev, inr: value }));
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue)) {
+      const newPT = calculatePTFromINR(numValue);
+      onChange({ ...values, inr: numValue, pt: newPT });
+    }
+  };
+
   const applyPreset = (preset: Preset): void => {
     const newLab: LabInput = {
       pt: preset.lab.pt ?? 12,
+      inr: preset.lab.inr ?? 1.0,
       aptt: preset.lab.aptt ?? 30,
       tt: preset.lab.tt ?? 16,
       fibrinogen: preset.lab.fibrinogen ?? 300,
@@ -155,6 +176,53 @@ export function MobileLabInput({
           ))}
         </div>
       )}
+
+      {/* PT / INR Row */}
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+        {/* PT */}
+        <div className="flex items-center gap-1.5">
+          <label className="text-[11px] font-medium text-slate-500 w-10 flex-shrink-0">PT</label>
+          <div className="relative flex-1">
+            <input
+              type="number"
+              inputMode="decimal"
+              step={0.5}
+              value={'pt' in editingValues ? editingValues.pt : values.pt}
+              onChange={(e) => handlePTChange(e.target.value)}
+              onBlur={() => handleBlur('pt')}
+              className={`w-full pl-2 pr-7 py-1.5 text-sm border rounded text-right
+                ${getStatus(values.pt, 'pt') === 'normal'
+                  ? 'border-slate-200 bg-white'
+                  : getStatus(values.pt, 'pt') === 'abnormal'
+                    ? 'border-orange-300 bg-orange-50'
+                    : 'border-red-400 bg-red-50'
+                }`}
+            />
+            <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] text-slate-400">s</span>
+          </div>
+        </div>
+        {/* INR */}
+        <div className="flex items-center gap-1.5">
+          <label className="text-[11px] font-medium text-slate-500 w-10 flex-shrink-0">INR</label>
+          <div className="relative flex-1">
+            <input
+              type="number"
+              inputMode="decimal"
+              step={0.01}
+              value={'inr' in editingValues ? editingValues.inr : values.inr}
+              onChange={(e) => handleINRChange(e.target.value)}
+              onBlur={() => handleBlur('inr')}
+              className={`w-full pl-2 pr-3 py-1.5 text-sm border rounded text-right
+                ${getStatus(values.inr, 'inr') === 'normal'
+                  ? 'border-slate-200 bg-white'
+                  : getStatus(values.inr, 'inr') === 'abnormal'
+                    ? 'border-orange-300 bg-orange-50'
+                    : 'border-red-400 bg-red-50'
+                }`}
+            />
+          </div>
+        </div>
+      </div>
 
       {/* Lab values - 2 column grid */}
       <div className="grid grid-cols-2 gap-x-3 gap-y-2">

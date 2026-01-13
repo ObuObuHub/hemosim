@@ -40,6 +40,14 @@ const FACTOR_LABELS: Record<string, string> = {
   PS: 'Proteina S',
 };
 
+// Particle system for flow animation
+interface Particle {
+  fromId: string;
+  toId: string;
+  progress: number; // 0 to 1
+  speed: number;
+}
+
 export function CascadeCanvas({
   factors,
   mode,
@@ -51,6 +59,8 @@ export function CascadeCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number>(0);
+  const particlesRef = useRef<Particle[]>([]);
+  const lastTimeRef = useRef<number>(0);
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
 
   const visibleFactors = mode === 'clinical' ? CLINICAL_MODE_FACTORS : BASIC_MODE_FACTORS;
@@ -92,13 +102,44 @@ export function CascadeCanvas({
     return () => window.removeEventListener('resize', updateSize);
   }, []);
 
+  // Initialize particles for active connections
   useEffect(() => {
-    const draw = (): void => {
+    const newParticles: Particle[] = [];
+    for (const factor of Object.values(factors)) {
+      if (!visibleFactors.includes(factor.id)) continue;
+      if (factor.activity < 0.3) continue; // Don't create particles for inactive factors
+
+      for (const childId of factor.children) {
+        const child = factors[childId];
+        if (!child || !visibleFactors.includes(childId)) continue;
+        if (child.activity < 0.3) continue;
+
+        // Create 1-2 particles per connection based on activity
+        const particleCount = factor.activity > 0.7 && child.activity > 0.7 ? 2 : 1;
+        for (let i = 0; i < particleCount; i++) {
+          newParticles.push({
+            fromId: factor.id,
+            toId: childId,
+            progress: Math.random(), // Start at random position
+            speed: 0.3 + Math.min(factor.activity, child.activity) * 0.4, // 0.3-0.7 speed
+          });
+        }
+      }
+    }
+    particlesRef.current = newParticles;
+  }, [factors, visibleFactors]);
+
+  useEffect(() => {
+    const draw = (timestamp: number): void => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
+
+      // Calculate delta time for smooth animation
+      const deltaTime = lastTimeRef.current ? (timestamp - lastTimeRef.current) / 1000 : 0;
+      lastTimeRef.current = timestamp;
 
       const state = stateRef.current;
       const dpr = window.devicePixelRatio || 1;
@@ -189,6 +230,48 @@ export function CascadeCanvas({
             ctx.fill();
           }
         }
+      }
+
+      // Update and draw particles
+      for (const particle of particlesRef.current) {
+        const fromFactor = state.factors[particle.fromId];
+        const toFactor = state.factors[particle.toId];
+        if (!fromFactor || !toFactor) continue;
+        if (!state.visibleFactors.includes(particle.fromId) || !state.visibleFactors.includes(particle.toId)) continue;
+
+        // Update particle position
+        particle.progress += particle.speed * deltaTime;
+        if (particle.progress >= 1) {
+          particle.progress = 0; // Reset to start
+        }
+
+        // Calculate particle position along the connection
+        const fromX = fromFactor.position.x * scaleX;
+        const fromY = fromFactor.position.y * scaleY;
+        const toX = toFactor.position.x * scaleX;
+        const toY = toFactor.position.y * scaleY;
+
+        // Offset from node centers
+        const angle = Math.atan2(toY - fromY, toX - fromX);
+        const nodeRadius = 22;
+        const startX = fromX + Math.cos(angle) * nodeRadius;
+        const startY = fromY + Math.sin(angle) * nodeRadius;
+        const endX = toX - Math.cos(angle) * nodeRadius;
+        const endY = toY - Math.sin(angle) * nodeRadius;
+
+        // Interpolate position
+        const px = startX + (endX - startX) * particle.progress;
+        const py = startY + (endY - startY) * particle.progress;
+
+        // Draw particle
+        const activity = Math.min(fromFactor.activity, toFactor.activity);
+        const particleRadius = 3;
+        const alpha = 0.4 + activity * 0.5; // 0.4-0.9 opacity based on activity
+
+        ctx.beginPath();
+        ctx.arc(px, py, particleRadius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(59, 130, 246, ${alpha})`; // Blue color
+        ctx.fill();
       }
 
       // Draw nodes
@@ -301,7 +384,7 @@ export function CascadeCanvas({
       animationRef.current = requestAnimationFrame(draw);
     };
 
-    animationRef.current = requestAnimationFrame(draw);
+    animationRef.current = requestAnimationFrame((timestamp) => draw(timestamp));
     return () => cancelAnimationFrame(animationRef.current);
   }, []);
 

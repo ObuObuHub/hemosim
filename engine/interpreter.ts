@@ -126,7 +126,8 @@ export function interpretLabValues(
   }
 
   // Pattern recognition
-  if (ptStatus === 'normal' && apttStatus === 'normal' && pltStatus === 'normal') {
+  // Only classify as normal if ALL standard tests are normal (including bleeding time and D-dimer)
+  if (ptStatus === 'normal' && apttStatus === 'normal' && pltStatus === 'normal' && !btHigh && !dDimerHigh) {
     pattern = 'Profil de coagulare normal';
     affectedPathway = 'none';
   }
