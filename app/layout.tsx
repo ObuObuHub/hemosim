@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Cascada Coagulării – Model Didactic',
+  title: 'Calculator și simulator hemostază @ Dr. Chiper',
   description: 'Simulator interactiv al cascadei de coagulare pentru învățământ medical',
 };
 

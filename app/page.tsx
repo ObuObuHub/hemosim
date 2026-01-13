@@ -21,10 +21,10 @@ export default function Home(): React.ReactElement {
       <header className="flex-shrink-0 h-14 flex items-center justify-between px-6 bg-white border-b border-slate-200">
         <div className="flex items-center gap-4">
           <h1 className="text-lg font-semibold text-slate-800">
-            Coagulation Interpreter
+            Calculator și simulator hemostază
           </h1>
           <span className="text-sm text-slate-500">
-            Calculator și vizualizator clinic
+            @ Dr. Chiper
           </span>
         </div>
 
