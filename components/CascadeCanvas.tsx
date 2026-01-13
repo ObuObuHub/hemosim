@@ -305,17 +305,19 @@ export function CascadeCanvas({
     return () => cancelAnimationFrame(animationRef.current);
   }, []);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+  const findFactorAtPosition = useCallback((clientX: number, clientY: number): string | null => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) return null;
 
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
     const scaleX = rect.width / CANVAS_WIDTH;
     const scaleY = rect.height / CANVAS_HEIGHT;
 
-    let found: string | null = null;
+    // Larger touch target on mobile (35px vs 25px)
+    const touchRadius = 'ontouchstart' in window ? 35 : 25;
+
     for (const factor of Object.values(factors)) {
       if (!visibleFactors.includes(factor.id)) continue;
 
@@ -323,36 +325,79 @@ export function CascadeCanvas({
       const fy = factor.position.y * scaleY;
       const dist = Math.sqrt((x - fx) ** 2 + (y - fy) ** 2);
 
-      if (dist < 25) {
-        found = factor.id;
-        break;
+      if (dist < touchRadius) {
+        return factor.id;
       }
     }
 
+    return null;
+  }, [factors, visibleFactors]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const found = findFactorAtPosition(e.clientX, e.clientY);
     onFactorHover(found);
-  }, [factors, visibleFactors, onFactorHover]);
+  }, [findFactorAtPosition, onFactorHover]);
 
   const handleMouseLeave = useCallback(() => {
     onFactorHover(null);
+  }, [onFactorHover]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      const found = findFactorAtPosition(touch.clientX, touch.clientY);
+      onFactorHover(found);
+    }
+  }, [findFactorAtPosition, onFactorHover]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      const found = findFactorAtPosition(touch.clientX, touch.clientY);
+      onFactorHover(found);
+    }
+  }, [findFactorAtPosition, onFactorHover]);
+
+  const handleTouchEnd = useCallback(() => {
+    // Keep selection visible for a moment on touch devices
+    setTimeout(() => {
+      onFactorHover(null);
+    }, 2000);
   }, [onFactorHover]);
 
   const tooltipPosition = useMemo(() => {
     if (!hoveredFactor || !factors[hoveredFactor]) return { left: 0, top: 0 };
     const scaleX = canvasSize.width / CANVAS_WIDTH;
     const scaleY = canvasSize.height / CANVAS_HEIGHT;
-    return {
-      left: factors[hoveredFactor].position.x * scaleX + 30,
-      top: factors[hoveredFactor].position.y * scaleY - 10,
-    };
+
+    let left = factors[hoveredFactor].position.x * scaleX + 30;
+    let top = factors[hoveredFactor].position.y * scaleY - 10;
+
+    // On mobile, position tooltip below the factor instead of beside it
+    const isMobile = canvasSize.width < 500;
+    if (isMobile) {
+      left = Math.max(10, Math.min(canvasSize.width - 160, factors[hoveredFactor].position.x * scaleX - 70));
+      top = factors[hoveredFactor].position.y * scaleY + 35;
+    }
+
+    // Keep tooltip within bounds
+    if (left + 150 > canvasSize.width) {
+      left = factors[hoveredFactor].position.x * scaleX - 160;
+    }
+
+    return { left, top };
   }, [hoveredFactor, factors, canvasSize]);
 
   return (
-    <div ref={containerRef} className="relative w-full h-full">
+    <div ref={containerRef} className="relative w-full h-full touch-none">
       <canvas
         ref={canvasRef}
         className="w-full h-full cursor-pointer"
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       />
       {hoveredFactor && factors[hoveredFactor] && (() => {
         const activity = factors[hoveredFactor].activity;

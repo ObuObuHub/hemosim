@@ -246,3 +246,62 @@ input[type="number"]::-webkit-outer-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
+
+/* Mobile-specific styles */
+@media (max-width: 767px) {
+  /* Larger touch targets for inputs */
+  input[type="number"],
+  select {
+    min-height: 44px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  /* Larger checkboxes and radios for touch */
+  input[type="checkbox"],
+  input[type="radio"] {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Panel takes full width on mobile */
+  .panel {
+    width: 100%;
+    border-radius: 6px;
+  }
+
+  /* Tooltip adjustments for mobile */
+  .tooltip {
+    max-width: calc(100vw - 32px);
+    font-size: 12px;
+  }
+
+  /* Scrollbar hidden on mobile */
+  ::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .panel {
+    border-radius: 6px;
+  }
+}
+
+/* Touch-friendly button/interactive element minimum size */
+@media (pointer: coarse) {
+  button,
+  .scenario-card,
+  .drug-item,
+  label {
+    min-height: 44px;
+  }
+}
+
+/* Safe area padding for notched phones */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

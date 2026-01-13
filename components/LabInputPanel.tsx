@@ -205,12 +205,12 @@ export function LabInputPanel({
   };
 
   return (
-    <div className="panel p-4 h-full flex flex-col">
+    <div className="panel p-3 md:p-4 h-full w-full flex flex-col">
       {/* Tabs */}
       <div className="flex gap-1 mb-3 p-1 bg-slate-100 rounded-lg">
         <button
           onClick={() => setActiveTab('lab')}
-          className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
+          className={`flex-1 px-2 py-2 md:py-1.5 text-xs font-medium rounded-md transition-colors ${
             activeTab === 'lab'
               ? 'bg-white text-slate-700 shadow-sm'
               : 'text-slate-500 hover:text-slate-700'
@@ -220,7 +220,7 @@ export function LabInputPanel({
         </button>
         <button
           onClick={() => setActiveTab('scenarios')}
-          className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
+          className={`flex-1 px-2 py-2 md:py-1.5 text-xs font-medium rounded-md transition-colors ${
             activeTab === 'scenarios'
               ? 'bg-white text-slate-700 shadow-sm'
               : 'text-slate-500 hover:text-slate-700'
@@ -231,18 +231,18 @@ export function LabInputPanel({
       </div>
 
       {activeTab === 'scenarios' ? (
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto -mx-1 px-1">
           {/* Treatment Section */}
           <div className="mb-4">
             <h3 className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-2">
               Tratament Anticoagulant
             </h3>
-            <div className="space-y-1">
+            <div className="space-y-1.5 md:space-y-1">
               {TREATMENT_PRESETS.map((preset) => (
                 <button
                   key={preset.id}
                   onClick={() => applyPreset(preset)}
-                  className="w-full px-2 py-1.5 text-xs font-medium text-left text-slate-600 bg-white border border-slate-200 rounded hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors"
+                  className="w-full px-3 py-2.5 md:py-1.5 text-xs font-medium text-left text-slate-600 bg-white border border-slate-200 rounded-lg md:rounded hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors active:bg-blue-100"
                 >
                   {preset.name}
                 </button>
@@ -255,12 +255,12 @@ export function LabInputPanel({
             <h3 className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-2">
               Patologii Coagulare
             </h3>
-            <div className="space-y-1">
+            <div className="space-y-1.5 md:space-y-1">
               {PATHOLOGY_PRESETS.map((preset) => (
                 <button
                   key={preset.id}
                   onClick={() => applyPreset(preset)}
-                  className="w-full px-2 py-1.5 text-xs font-medium text-left text-slate-600 bg-white border border-slate-200 rounded hover:bg-orange-50 hover:border-orange-300 hover:text-orange-700 transition-colors"
+                  className="w-full px-3 py-2.5 md:py-1.5 text-xs font-medium text-left text-slate-600 bg-white border border-slate-200 rounded-lg md:rounded hover:bg-orange-50 hover:border-orange-300 hover:text-orange-700 transition-colors active:bg-orange-100"
                 >
                   {preset.name}
                 </button>
@@ -276,13 +276,13 @@ export function LabInputPanel({
             </h2>
             <button
               onClick={onReset}
-              className="text-xs text-slate-500 hover:text-slate-700 underline"
+              className="text-xs text-slate-500 hover:text-slate-700 underline px-2 py-1"
             >
               Reset
             </button>
           </div>
 
-          <div className="flex-1 overflow-auto space-y-3">
+          <div className="flex-1 overflow-auto space-y-3 md:space-y-3 -mx-1 px-1">
             {LAB_FIELDS.map(({ key, label, step }) => {
               const range = LAB_RANGES[key];
               const status = getInputStatus(values[key], key);
@@ -301,10 +301,11 @@ export function LabInputPanel({
                     <input
                       type="number"
                       step={step}
+                      inputMode="decimal"
                       value={getInputValue(key)}
                       onChange={(e) => handleInputChange(key, e.target.value)}
                       onBlur={() => handleInputBlur(key)}
-                      className={`w-full px-3 py-2 text-sm border rounded-lg outline-none transition-colors
+                      className={`w-full px-3 py-3 md:py-2 text-base md:text-sm border rounded-lg outline-none transition-colors
                         ${status === 'normal'
                           ? 'border-slate-200 focus:border-blue-400 bg-white'
                           : status === 'abnormal'
@@ -325,19 +326,19 @@ export function LabInputPanel({
             <h3 className="text-xs font-semibold text-slate-600 mb-3">
               Medicație Curentă
             </h3>
-            <div className="space-y-2">
+            <div className="space-y-2 md:space-y-2">
               {MEDICATION_OPTIONS.map(({ key, label }) => (
                 <label
                   key={key}
-                  className="flex items-center gap-2 cursor-pointer"
+                  className="flex items-center gap-3 cursor-pointer py-1.5 md:py-0"
                 >
                   <input
                     type="checkbox"
                     checked={medications[key]}
                     onChange={() => handleMedChange(key)}
-                    className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-400"
+                    className="w-5 h-5 md:w-4 md:h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-400"
                   />
-                  <span className="text-xs text-slate-600">{label}</span>
+                  <span className="text-sm md:text-xs text-slate-600">{label}</span>
                 </label>
               ))}
             </div>
@@ -352,36 +353,36 @@ export function LabInputPanel({
               <p className="text-[10px] text-slate-400 mb-3">
                 aPTT prelungit detectat. Efectuează mixing test pentru diferențiere.
               </p>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer">
+              <div className="space-y-2 md:space-y-2">
+                <label className="flex items-center gap-3 cursor-pointer py-1.5 md:py-0">
                   <input
                     type="radio"
                     name="mixingTest"
                     checked={values.mixingTest === 'not_performed'}
                     onChange={() => onChange({ ...values, mixingTest: 'not_performed' })}
-                    className="w-4 h-4 border-slate-300 text-blue-500 focus:ring-blue-400"
+                    className="w-5 h-5 md:w-4 md:h-4 border-slate-300 text-blue-500 focus:ring-blue-400"
                   />
-                  <span className="text-xs text-slate-600">Neefectuat</span>
+                  <span className="text-sm md:text-xs text-slate-600">Neefectuat</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex items-center gap-3 cursor-pointer py-1.5 md:py-0">
                   <input
                     type="radio"
                     name="mixingTest"
                     checked={values.mixingTest === 'corrects'}
                     onChange={() => onChange({ ...values, mixingTest: 'corrects' })}
-                    className="w-4 h-4 border-slate-300 text-green-500 focus:ring-green-400"
+                    className="w-5 h-5 md:w-4 md:h-4 border-slate-300 text-green-500 focus:ring-green-400"
                   />
-                  <span className="text-xs text-green-700 font-medium">Corectează → Deficit factor</span>
+                  <span className="text-sm md:text-xs text-green-700 font-medium">Corectează → Deficit factor</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex items-center gap-3 cursor-pointer py-1.5 md:py-0">
                   <input
                     type="radio"
                     name="mixingTest"
                     checked={values.mixingTest === 'does_not_correct'}
                     onChange={() => onChange({ ...values, mixingTest: 'does_not_correct' })}
-                    className="w-4 h-4 border-slate-300 text-red-500 focus:ring-red-400"
+                    className="w-5 h-5 md:w-4 md:h-4 border-slate-300 text-red-500 focus:ring-red-400"
                   />
-                  <span className="text-xs text-red-700 font-medium">NU corectează → Inhibitor</span>
+                  <span className="text-sm md:text-xs text-red-700 font-medium">NU corectează → Inhibitor</span>
                 </label>
               </div>
             </div>
@@ -405,7 +406,7 @@ export function LabInputPanel({
                 <select
                   value={hit4TCriteria.thrombocytopenia}
                   onChange={(e) => onHit4TCriteriaChange({ ...hit4TCriteria, thrombocytopenia: Number(e.target.value) as 0 | 1 | 2 })}
-                  className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-md bg-white"
+                  className="w-full px-3 py-2.5 md:py-1.5 text-sm md:text-xs border border-slate-200 rounded-lg md:rounded-md bg-white"
                 >
                   <option value={2}>Scădere &gt;50% și nadir ≥20 (2 pct)</option>
                   <option value={1}>Scădere 30-50% sau nadir 10-19 (1 pct)</option>
@@ -421,7 +422,7 @@ export function LabInputPanel({
                 <select
                   value={hit4TCriteria.timing}
                   onChange={(e) => onHit4TCriteriaChange({ ...hit4TCriteria, timing: Number(e.target.value) as 0 | 1 | 2 })}
-                  className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-md bg-white"
+                  className="w-full px-3 py-2.5 md:py-1.5 text-sm md:text-xs border border-slate-200 rounded-lg md:rounded-md bg-white"
                 >
                   <option value={2}>Ziua 5-10 sau ≤1 zi (expunere recentă) (2 pct)</option>
                   <option value={1}>Ziua &gt;10 sau timing neclar (1 pct)</option>
@@ -437,7 +438,7 @@ export function LabInputPanel({
                 <select
                   value={hit4TCriteria.thrombosis}
                   onChange={(e) => onHit4TCriteriaChange({ ...hit4TCriteria, thrombosis: Number(e.target.value) as 0 | 1 | 2 })}
-                  className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-md bg-white"
+                  className="w-full px-3 py-2.5 md:py-1.5 text-sm md:text-xs border border-slate-200 rounded-lg md:rounded-md bg-white"
                 >
                   <option value={2}>Tromboză nouă/necroză cutanată/reacție sistemică (2 pct)</option>
                   <option value={1}>Tromboză progresivă/recurentă sau suspectată (1 pct)</option>
@@ -453,7 +454,7 @@ export function LabInputPanel({
                 <select
                   value={hit4TCriteria.otherCauses}
                   onChange={(e) => onHit4TCriteriaChange({ ...hit4TCriteria, otherCauses: Number(e.target.value) as 0 | 1 | 2 })}
-                  className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-md bg-white"
+                  className="w-full px-3 py-2.5 md:py-1.5 text-sm md:text-xs border border-slate-200 rounded-lg md:rounded-md bg-white"
                 >
                   <option value={2}>Nicio altă cauză evidentă (2 pct)</option>
                   <option value={1}>Posibilă altă cauză (1 pct)</option>
@@ -462,14 +463,14 @@ export function LabInputPanel({
               </div>
 
               {/* Score preview */}
-              <div className={`p-2 rounded-md text-center ${
+              <div className={`p-2.5 md:p-2 rounded-lg md:rounded-md text-center ${
                 (hit4TCriteria.thrombocytopenia + hit4TCriteria.timing + hit4TCriteria.thrombosis + hit4TCriteria.otherCauses) >= 6
                   ? 'bg-red-100 border border-red-300'
                   : (hit4TCriteria.thrombocytopenia + hit4TCriteria.timing + hit4TCriteria.thrombosis + hit4TCriteria.otherCauses) >= 4
                     ? 'bg-yellow-100 border border-yellow-300'
                     : 'bg-green-100 border border-green-300'
               }`}>
-                <span className="text-xs font-semibold">
+                <span className="text-sm md:text-xs font-semibold">
                   Scor: {hit4TCriteria.thrombocytopenia + hit4TCriteria.timing + hit4TCriteria.thrombosis + hit4TCriteria.otherCauses}/8
                 </span>
               </div>
