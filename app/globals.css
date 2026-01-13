@@ -1,26 +1,248 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --foreground: #1e293b;
+  --panel-bg: #ffffff;
+  --panel-border: #e2e8f0;
+  --text-muted: #64748b;
+  --text-light: #94a3b8;
+
+  /* Clinical colors - muted, professional */
+  --intrinsic: #3b82f6;
+  --extrinsic: #f97316;
+  --common: #10b981;
+  --platelet: #a855f7;
+  --inhibitor: #6b7280;
+
+  /* Status colors */
+  --status-normal: #22c55e;
+  --status-low: #eab308;
+  --status-high: #f97316;
+  --status-critical: #ef4444;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Scrollbar - subtle */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Panel - clean card style */
+.panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Buttons - professional */
+.btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.btn-primary {
+  background: var(--intrinsic);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #2563eb;
+}
+
+.btn-secondary {
+  background: var(--panel-bg);
+  border-color: var(--panel-border);
+  color: var(--foreground);
+}
+
+.btn-secondary:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.btn-reset {
+  background: transparent;
+  border-color: var(--panel-border);
+  color: var(--text-muted);
+}
+
+.btn-reset:hover {
+  background: #fef2f2;
+  border-color: var(--status-critical);
+  color: var(--status-critical);
+}
+
+/* Tabs - clean underline style */
+.tab {
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tab:hover {
+  color: var(--foreground);
+}
+
+.tab.active {
+  color: var(--intrinsic);
+  border-bottom-color: var(--intrinsic);
+}
+
+/* Lab value status */
+.lab-normal {
+  color: var(--status-normal);
+}
+
+.lab-low {
+  color: var(--status-low);
+}
+
+.lab-high {
+  color: var(--status-high);
+}
+
+.lab-critical {
+  color: var(--status-critical);
+  font-weight: 600;
+}
+
+/* Status dot */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot.normal { background: var(--status-normal); }
+.status-dot.low { background: var(--status-low); }
+.status-dot.high { background: var(--status-high); }
+.status-dot.critical { background: var(--status-critical); }
+
+/* Tooltip - clean card */
+.tooltip {
+  position: absolute;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 13px;
+  max-width: 280px;
+  z-index: 100;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.tooltip h4 {
+  margin: 0 0 6px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.tooltip p {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Scenario card */
+.scenario-card {
+  padding: 12px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.scenario-card:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.scenario-card.active {
+  border-color: var(--intrinsic);
+  background: #eff6ff;
+}
+
+/* Drug item */
+.drug-item {
+  padding: 10px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.drug-item:hover {
+  background: #f1f5f9;
+}
+
+.drug-item.active {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+}
+
+.drug-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Hide number input spinners */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
 }
