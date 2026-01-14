@@ -275,6 +275,8 @@ export function CascadeCanvas({
       }
 
       // Draw nodes
+      const time = timestamp / 1000; // Convert to seconds for animations
+
       for (const factor of Object.values(state.factors)) {
         if (!state.visibleFactors.includes(factor.id)) continue;
 
@@ -284,20 +286,56 @@ export function CascadeCanvas({
         const isHovered = state.hoveredFactor === factor.id;
         const isHighlighted = state.highlightedFactors.includes(factor.id);
         const color = PATHWAY_COLORS[factor.pathway] || '#6b7280';
+        const isAffected = factor.activity < 0.5;
 
-        // Node circle - flat design
+        // AFFECTED FACTORS: Draw pulsing glow effect
+        if (isAffected) {
+          const pulseScale = 1 + Math.sin(time * 3) * 0.15; // Pulse between 1.0 and 1.15
+          const glowRadius = radius * pulseScale + 8;
+          const glowAlpha = 0.3 + Math.sin(time * 3) * 0.1; // Pulse opacity 0.2-0.4
+
+          // Outer glow
+          const gradient = ctx.createRadialGradient(x, y, radius, x, y, glowRadius + 10);
+          if (factor.activity < 0.2) {
+            gradient.addColorStop(0, `rgba(239, 68, 68, ${glowAlpha})`); // Red
+            gradient.addColorStop(1, 'rgba(239, 68, 68, 0)');
+          } else {
+            gradient.addColorStop(0, `rgba(249, 115, 22, ${glowAlpha})`); // Orange
+            gradient.addColorStop(1, 'rgba(249, 115, 22, 0)');
+          }
+
+          ctx.beginPath();
+          ctx.arc(x, y, glowRadius + 10, 0, Math.PI * 2);
+          ctx.fillStyle = gradient;
+          ctx.fill();
+
+          // Inner ring highlight
+          ctx.beginPath();
+          ctx.arc(x, y, radius + 4, 0, Math.PI * 2);
+          ctx.strokeStyle = factor.activity < 0.2 ? '#ef4444' : '#f97316';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+        }
+
+        // Node circle
         ctx.beginPath();
         ctx.arc(x, y, radius, 0, Math.PI * 2);
 
-        if (factor.activity < 0.2) {
-          ctx.fillStyle = '#f1f5f9';
-          ctx.strokeStyle = '#cbd5e1';
-        } else {
-          ctx.fillStyle = isHovered || isHighlighted ? color : '#ffffff';
+        if (isAffected) {
+          // Affected: colored background
+          ctx.fillStyle = factor.activity < 0.2 ? '#fef2f2' : '#fff7ed';
+          ctx.strokeStyle = factor.activity < 0.2 ? '#ef4444' : '#f97316';
+          ctx.lineWidth = 3;
+        } else if (isHovered || isHighlighted) {
+          ctx.fillStyle = color;
           ctx.strokeStyle = color;
+          ctx.lineWidth = 3;
+        } else {
+          ctx.fillStyle = '#ffffff';
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
         }
 
-        ctx.lineWidth = isHovered || isHighlighted ? 3 : 2;
         ctx.fill();
         ctx.stroke();
 
@@ -305,28 +343,32 @@ export function CascadeCanvas({
         ctx.font = '600 12px Inter, system-ui, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = factor.activity < 0.2
-          ? '#94a3b8'
-          : (isHovered || isHighlighted ? '#ffffff' : color);
+        if (isAffected) {
+          ctx.fillStyle = factor.activity < 0.2 ? '#dc2626' : '#ea580c';
+        } else if (isHovered || isHighlighted) {
+          ctx.fillStyle = '#ffffff';
+        } else {
+          ctx.fillStyle = color;
+        }
         ctx.fillText(factor.shortName, x, y);
 
         // Activity indicator with arrows (only if abnormal)
         if (factor.activity < 0.95) {
-          const indicatorY = y + radius + 10;
+          const indicatorY = y + radius + 12;
           let arrowColor = '#eab308';
           let arrowCount = 1;
 
           if (factor.activity < 0.2) {
-            arrowColor = '#ef4444';
+            arrowColor = '#dc2626';
             arrowCount = 2;
           } else if (factor.activity < 0.5) {
-            arrowColor = '#f97316';
+            arrowColor = '#ea580c';
             arrowCount = 1;
           }
 
           // Draw arrow(s) as triangles pointing DOWN
-          const arrowSize = 7;
-          const arrowSpacing = 12;
+          const arrowSize = 8;
+          const arrowSpacing = 14;
           const totalWidth = arrowCount === 2 ? arrowSpacing : 0;
           const startX = x - totalWidth / 2;
 
