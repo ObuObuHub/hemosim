@@ -40,23 +40,46 @@ interface PersistedState {
   hit4TCriteria: Hit4TCriteria;
 }
 
-function loadPersistedState(): PersistedState | null {
-  if (typeof window === 'undefined') return null;
+function getInitialLabInput(): LabInput {
+  if (typeof window === 'undefined') return DEFAULT_LAB;
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved) as Partial<PersistedState>;
-      // Validate and merge with defaults to handle schema changes
-      return {
-        labInput: { ...DEFAULT_LAB, ...parsed.labInput },
-        medications: { ...DEFAULT_MEDS, ...parsed.medications },
-        hit4TCriteria: { ...DEFAULT_HIT4T, ...parsed.hit4TCriteria },
-      };
+      return { ...DEFAULT_LAB, ...parsed.labInput };
     }
   } catch {
     // Invalid JSON or parsing error - use defaults
   }
-  return null;
+  return DEFAULT_LAB;
+}
+
+function getInitialMeds(): MedicationContext {
+  if (typeof window === 'undefined') return DEFAULT_MEDS;
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved) as Partial<PersistedState>;
+      return { ...DEFAULT_MEDS, ...parsed.medications };
+    }
+  } catch {
+    // Invalid JSON or parsing error - use defaults
+  }
+  return DEFAULT_MEDS;
+}
+
+function getInitialHit4T(): Hit4TCriteria {
+  if (typeof window === 'undefined') return DEFAULT_HIT4T;
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved) as Partial<PersistedState>;
+      return { ...DEFAULT_HIT4T, ...parsed.hit4TCriteria };
+    }
+  } catch {
+    // Invalid JSON or parsing error - use defaults
+  }
+  return DEFAULT_HIT4T;
 }
 
 function savePersistedState(state: PersistedState): void {
@@ -69,27 +92,14 @@ function savePersistedState(state: PersistedState): void {
 }
 
 export function useCoagulationState() {
-  const [labInput, setLabInput] = useState<LabInput>(DEFAULT_LAB);
-  const [medications, setMedications] = useState<MedicationContext>(DEFAULT_MEDS);
-  const [hit4TCriteria, setHit4TCriteria] = useState<Hit4TCriteria>(DEFAULT_HIT4T);
-  const [isHydrated, setIsHydrated] = useState(false);
-
-  // Load persisted state on mount (client-side only)
-  useEffect(() => {
-    const persisted = loadPersistedState();
-    if (persisted) {
-      setLabInput(persisted.labInput);
-      setMedications(persisted.medications);
-      setHit4TCriteria(persisted.hit4TCriteria);
-    }
-    setIsHydrated(true);
-  }, []);
+  const [labInput, setLabInput] = useState<LabInput>(getInitialLabInput);
+  const [medications, setMedications] = useState<MedicationContext>(getInitialMeds);
+  const [hit4TCriteria, setHit4TCriteria] = useState<Hit4TCriteria>(getInitialHit4T);
 
   // Save state changes to localStorage
   useEffect(() => {
-    if (!isHydrated) return;
     savePersistedState({ labInput, medications, hit4TCriteria });
-  }, [labInput, medications, hit4TCriteria, isHydrated]);
+  }, [labInput, medications, hit4TCriteria]);
 
   const [mode, setMode] = useState<'basic' | 'clinical'>('clinical');
   const [hoveredFactor, setHoveredFactor] = useState<string | null>(null);

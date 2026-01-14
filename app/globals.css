@@ -305,3 +305,66 @@ input[type="number"] {
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+
+/* Mobile Tab Bar */
+.mobile-tab-bar {
+  display: flex;
+  background: var(--panel-bg);
+  border-top: 1px solid var(--panel-border);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  flex-shrink: 0;
+}
+
+.mobile-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+  gap: 2px;
+  color: var(--text-muted);
+  transition: color 0.15s ease;
+  position: relative;
+  min-height: 56px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-tab:active {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.mobile-tab.active {
+  color: var(--intrinsic);
+}
+
+.mobile-tab svg {
+  width: 22px;
+  height: 22px;
+}
+
+.mobile-tab-label {
+  font-size: 10px;
+  font-weight: 500;
+}
+
+/* Badge for abnormal findings */
+.mobile-tab-badge {
+  position: absolute;
+  top: 6px;
+  right: calc(50% - 16px);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--status-high);
+  animation: badge-pulse 0.3s ease-out;
+}
+
+@keyframes badge-pulse {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); opacity: 1; }
+}
