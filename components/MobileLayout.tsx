@@ -26,12 +26,18 @@ export function MobileLayout({
   reset,
   setHoveredFactor,
 }: MobileLayoutProps): React.ReactElement {
-  const [activeTab, setActiveTab] = useState<TabId>('labs');
+  const [activeTab, setActiveTab] = useState<TabId>('cascade');
   const [showScenarios, setShowScenarios] = useState(false);
+  const [currentScenario, setCurrentScenario] = useState<string | null>(null);
 
   const hasAbnormality = state.interpretation && state.interpretation.affectedPathway !== 'none';
   const hasWarning = state.interpretation && state.interpretation.warnings.length > 0;
   const hasAbnormalFindings = Boolean(hasAbnormality || hasWarning);
+
+  const handleReset = (): void => {
+    reset();
+    setCurrentScenario(null);
+  };
 
   return (
     <div className="md:hidden fixed inset-0 bg-slate-50 flex flex-col">
@@ -63,9 +69,10 @@ export function MobileLayout({
               medications={state.medications}
               onChange={updateLabInput}
               onMedicationChange={updateMedications}
-              onReset={reset}
+              onReset={handleReset}
               showScenarios={showScenarios}
               onToggleScenarios={() => setShowScenarios(!showScenarios)}
+              onScenarioChange={setCurrentScenario}
             />
 
             {/* Pattern summary at bottom of labs */}
@@ -91,15 +98,24 @@ export function MobileLayout({
 
         {/* Cascade Tab */}
         <div className={`absolute inset-0 flex flex-col ${activeTab === 'cascade' ? 'flex' : 'hidden'}`}>
-          {/* Compact pattern indicator */}
-          {hasAbnormality && (
+          {/* Scenario and pattern indicator */}
+          {(currentScenario || hasAbnormality) && (
             <div className={`flex-shrink-0 px-3 py-1.5 flex items-center gap-2 border-b ${
-              hasWarning ? 'bg-red-50 border-red-200' : 'bg-yellow-50 border-yellow-200'
+              hasWarning ? 'bg-red-50 border-red-200' : hasAbnormality ? 'bg-yellow-50 border-yellow-200' : 'bg-blue-50 border-blue-200'
             }`}>
-              <div className={`w-1.5 h-1.5 rounded-full ${hasWarning ? 'bg-red-500' : 'bg-yellow-500'}`} />
-              <span className={`text-[10px] font-medium ${hasWarning ? 'text-red-700' : 'text-yellow-700'}`}>
-                {state.interpretation?.pattern}
-              </span>
+              {currentScenario && (
+                <span className="text-[10px] font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded">
+                  {currentScenario}
+                </span>
+              )}
+              {hasAbnormality && (
+                <>
+                  <div className={`w-1.5 h-1.5 rounded-full ${hasWarning ? 'bg-red-500' : 'bg-yellow-500'}`} />
+                  <span className={`text-[10px] font-medium ${hasWarning ? 'text-red-700' : 'text-yellow-700'}`}>
+                    {state.interpretation?.pattern}
+                  </span>
+                </>
+              )}
             </div>
           )}
 

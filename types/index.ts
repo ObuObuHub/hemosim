@@ -15,6 +15,7 @@ export interface LabInput {
   pt: number;
   inr: number;
   aptt: number;
+  apttMix?: number;  // aPTT după amestec cu plasmă normală (pentru indicele Rosner)
   tt: number;
   fibrinogen: number;
   platelets: number;

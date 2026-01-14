@@ -28,6 +28,48 @@ export function calculatePTFromINR(inr: number): number {
   return Math.round(PT_NORMAL * Math.pow(inr, 1 / ISI) * 10) / 10;
 }
 
+// aPTT normal reference value (seconds) - used for Rosner index
+export const APTT_NORMAL = 30.0;
+
+// Calculate Rosner Index for mixing test interpretation
+// Rosner Index = ((aPTT mix - aPTT normal) / aPTT patient) × 100
+// > 11-15%: suggests inhibitor (doesn't correct)
+// ≤ 11%: suggests factor deficiency (corrects)
+export function calculateRosnerIndex(apttPatient: number, apttMix: number): number {
+  if (apttPatient === 0) return 0;
+  return Math.round(((apttMix - APTT_NORMAL) / apttPatient) * 100 * 10) / 10;
+}
+
+export interface RosnerResult {
+  index: number;
+  interpretation: 'deficiență' | 'inhibitor' | 'nedeterminat';
+  description: string;
+}
+
+export function interpretRosnerIndex(apttPatient: number, apttMix: number): RosnerResult {
+  const index = calculateRosnerIndex(apttPatient, apttMix);
+
+  if (index <= 11) {
+    return {
+      index,
+      interpretation: 'deficiență',
+      description: 'Corectează → sugerează deficiență de factori',
+    };
+  } else if (index > 15) {
+    return {
+      index,
+      interpretation: 'inhibitor',
+      description: 'Nu corectează → sugerează prezența unui inhibitor',
+    };
+  } else {
+    return {
+      index,
+      interpretation: 'nedeterminat',
+      description: 'Zonă gri (11-15%) → necesită investigații suplimentare',
+    };
+  }
+}
+
 export const LAB_FACTOR_MAPPING: Record<string, string[]> = {
   pt: ['F7', 'F10', 'F5', 'F2', 'FBG'],
   aptt: ['F12', 'F11', 'F9', 'F8', 'F10', 'F5', 'F2', 'FBG'],

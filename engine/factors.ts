@@ -58,7 +58,7 @@ export function createInitialFactors(): Record<string, Factor> {
     // Calea Extrinsecă (dreapta)
     TF: {
       id: 'TF',
-      name: 'Tissue Factor',
+      name: 'Factor Tisular',
       shortName: 'TF',
       position: { x: 550, y: 80 },
       activity: 1.0,
@@ -146,7 +146,7 @@ export function createInitialFactors(): Record<string, Factor> {
     // Elemente Celulare (mod clinic)
     vWF: {
       id: 'vWF',
-      name: 'von Willebrand Factor',
+      name: 'Factorul von Willebrand',
       shortName: 'vWF',
       position: { x: 80, y: 320 },
       activity: 1.0,
