@@ -282,100 +282,36 @@ export function MobileLabInput({
         </div>
       </div>
 
-      {/* Testul de Amestec (Indicele Rosner) - show when aPTT elevated */}
+      {/* Testul de Amestec - subtle inline when aPTT elevated */}
       {values.aptt > 40 && (
-        <div className="pt-2 border-t border-slate-100">
-          <div className="text-[10px] font-medium text-slate-500 mb-1.5">
-            Testul de Amestec (Indicele Rosner)
-          </div>
-
-          {/* aPTT Mix input */}
-          <div className="flex items-center gap-2 mb-2">
-            <label className="text-[10px] text-slate-500 w-20">aPTT amestec:</label>
-            <div className="relative flex-1">
-              <input
-                type="number"
-                inputMode="decimal"
-                step={1}
-                placeholder="—"
-                value={values.apttMix ?? ''}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  onChange({
-                    ...values,
-                    apttMix: val ? parseFloat(val) : undefined,
-                    mixingTest: 'not_performed',
-                  });
-                }}
-                className="w-full pl-2 pr-7 py-1.5 text-sm border border-slate-200 rounded text-right"
-              />
-              <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] text-slate-400">s</span>
-            </div>
-          </div>
-
-          {/* Rosner Index Result */}
+        <div className="flex items-center gap-2 text-[9px] text-slate-400 mt-1">
+          <span>Mixaj:</span>
+          <input
+            type="number"
+            inputMode="decimal"
+            step={1}
+            placeholder="aPTT mix"
+            value={values.apttMix ?? ''}
+            onChange={(e) => {
+              const val = e.target.value;
+              onChange({
+                ...values,
+                apttMix: val ? parseFloat(val) : undefined,
+              });
+            }}
+            className="w-16 px-1.5 py-0.5 text-[10px] border border-slate-200 rounded text-right"
+          />
           {values.apttMix !== undefined && values.apttMix > 0 && (
-            <div className={`p-2 rounded-lg text-[10px] ${
+            <span className={`font-medium ${
               (() => {
                 const result = interpretRosnerIndex(values.aptt, values.apttMix);
-                if (result.interpretation === 'deficiență') return 'bg-green-50 border border-green-200';
-                if (result.interpretation === 'inhibitor') return 'bg-red-50 border border-red-200';
-                return 'bg-yellow-50 border border-yellow-200';
+                if (result.interpretation === 'deficiență') return 'text-green-600';
+                if (result.interpretation === 'inhibitor') return 'text-red-600';
+                return 'text-yellow-600';
               })()
             }`}>
-              {(() => {
-                const result = interpretRosnerIndex(values.aptt, values.apttMix);
-                return (
-                  <>
-                    <div className="font-semibold mb-0.5">
-                      Indicele Rosner: {result.index}%
-                    </div>
-                    <div className={`${
-                      result.interpretation === 'deficiență' ? 'text-green-700' :
-                      result.interpretation === 'inhibitor' ? 'text-red-700' : 'text-yellow-700'
-                    }`}>
-                      {result.description}
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-          )}
-
-          {/* Quick buttons if no aPTT mix entered */}
-          {(values.apttMix === undefined || values.apttMix === 0) && (
-            <div className="flex gap-2">
-              <button
-                onClick={() => onChange({ ...values, mixingTest: 'not_performed', apttMix: undefined })}
-                className={`flex-1 py-1.5 text-[10px] font-medium rounded border ${
-                  values.mixingTest === 'not_performed'
-                    ? 'bg-slate-100 border-slate-300 text-slate-700'
-                    : 'bg-white border-slate-200 text-slate-500'
-                }`}
-              >
-                Neefectuat
-              </button>
-              <button
-                onClick={() => onChange({ ...values, mixingTest: 'corrects', apttMix: undefined })}
-                className={`flex-1 py-1.5 text-[10px] font-medium rounded border ${
-                  values.mixingTest === 'corrects'
-                    ? 'bg-green-100 border-green-400 text-green-700'
-                    : 'bg-white border-slate-200 text-slate-500'
-                }`}
-              >
-                Corectează
-              </button>
-              <button
-                onClick={() => onChange({ ...values, mixingTest: 'does_not_correct', apttMix: undefined })}
-                className={`flex-1 py-1.5 text-[10px] font-medium rounded border ${
-                  values.mixingTest === 'does_not_correct'
-                    ? 'bg-red-100 border-red-400 text-red-700'
-                    : 'bg-white border-slate-200 text-slate-500'
-                }`}
-              >
-                Nu corect.
-              </button>
-            </div>
+              Rosner: {interpretRosnerIndex(values.aptt, values.apttMix).index}%
+            </span>
           )}
         </div>
       )}
