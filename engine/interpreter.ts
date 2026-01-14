@@ -147,38 +147,62 @@ export function interpretLabValues(
       });
     } else if (lab.mixingTest === 'corrects') {
       // Mixing test CORRECTS = Factor deficiency (not inhibitor)
-      diagnoses.push({
-        id: 'hemophilia_a',
-        name: 'Hemofilie A',
-        probability: 'high',
-        description: 'Deficit Factor VIII. X-linked recesiv. Mixing test confirmă deficit.',
-        affectedFactors: ['F8'],
-        suggestedTests: ['Dozare Factor VIII'],
-      });
-      diagnoses.push({
-        id: 'hemophilia_b',
-        name: 'Hemofilie B',
-        probability: 'high',
-        description: 'Deficit Factor IX (Christmas disease).',
-        affectedFactors: ['F9'],
-        suggestedTests: ['Dozare Factor IX'],
-      });
-      diagnoses.push({
-        id: 'hemophilia_c',
-        name: 'Hemofilie C (Deficit F.XI)',
-        probability: 'moderate',
-        description: 'Deficit Factor XI. Frecvent la evrei Ashkenazi.',
-        affectedFactors: ['F11'],
-        suggestedTests: ['Dozare Factor XI'],
-      });
-      diagnoses.push({
-        id: 'vwd',
-        name: 'Boala von Willebrand',
-        probability: 'moderate',
-        description: 'Deficit vWF cu afectare secundară F.VIII.',
-        affectedFactors: ['vWF', 'F8'],
-        suggestedTests: ['vWF:Ag', 'vWF:RCo', 'Factor VIII'],
-      });
+      // Use bleeding time to differentiate: vWD typically has prolonged BT
+      const btHigh = getStatus(lab.bleedingTime, 'bleedingTime') === 'high' || getStatus(lab.bleedingTime, 'bleedingTime') === 'critical';
+
+      if (btHigh) {
+        // Prolonged BT + aPTT suggests vWD
+        diagnoses.push({
+          id: 'vwd',
+          name: 'Boala von Willebrand',
+          probability: 'high',
+          description: 'Deficit vWF cu afectare secundară F.VIII. BT prelungit sugestiv.',
+          affectedFactors: ['vWF', 'F8'],
+          suggestedTests: ['vWF:Ag', 'vWF:RCo', 'Factor VIII', 'Multimeri vWF'],
+        });
+        diagnoses.push({
+          id: 'hemophilia_a',
+          name: 'Hemofilie A',
+          probability: 'moderate',
+          description: 'Deficit Factor VIII. X-linked recesiv.',
+          affectedFactors: ['F8'],
+          suggestedTests: ['Dozare Factor VIII'],
+        });
+      } else {
+        // Normal BT + aPTT suggests isolated factor deficiency
+        diagnoses.push({
+          id: 'hemophilia_a',
+          name: 'Hemofilie A',
+          probability: 'high',
+          description: 'Deficit Factor VIII. X-linked recesiv. Cea mai frecventă cauză.',
+          affectedFactors: ['F8'],
+          suggestedTests: ['Dozare Factor VIII'],
+        });
+        diagnoses.push({
+          id: 'hemophilia_b',
+          name: 'Hemofilie B',
+          probability: 'moderate',
+          description: 'Deficit Factor IX (Christmas disease). Mai rar decât Hemofilia A.',
+          affectedFactors: ['F9'],
+          suggestedTests: ['Dozare Factor IX'],
+        });
+        diagnoses.push({
+          id: 'hemophilia_c',
+          name: 'Hemofilie C (Deficit F.XI)',
+          probability: 'low',
+          description: 'Deficit Factor XI. Frecvent la evrei Ashkenazi.',
+          affectedFactors: ['F11'],
+          suggestedTests: ['Dozare Factor XI'],
+        });
+        diagnoses.push({
+          id: 'vwd',
+          name: 'Boala von Willebrand',
+          probability: 'low',
+          description: 'Posibil tip 2N (afectează doar FVIII, nu BT).',
+          affectedFactors: ['vWF', 'F8'],
+          suggestedTests: ['vWF:Ag', 'vWF:RCo', 'Factor VIII'],
+        });
+      }
       diagnoses.push({
         id: 'f12_deficiency',
         name: 'Deficit Factor XII',
@@ -188,8 +212,7 @@ export function interpretLabValues(
         suggestedTests: ['Dozare Factor XII'],
       });
       recommendations.push('Mixing test CORECTEAZĂ → Deficit de factor confirmat');
-      recommendations.push('Dozează factorii individuali: VIII, IX, XI, XII');
-      recommendations.push('Deficit F.XII: NU cauzează sângerare - nu necesită tratament');
+      recommendations.push('Dozează factorii individuali: VIII, IX, XI');
     } else if (lab.mixingTest === 'does_not_correct') {
       // Mixing test DOES NOT CORRECT = Inhibitor present
       diagnoses.push({
@@ -557,49 +580,40 @@ export function updateFactorsFromLab(
     newFactors[id] = { ...newFactors[id], activity: 1.0 };
   }
 
-  // Reduce activity based on affected factors from diagnoses
+  // Collect affected factors from diagnoses (only high probability ones get full reduction)
   const affectedSet = new Set<string>();
   for (const diagnosis of interpretation.diagnoses) {
-    for (const factorId of diagnosis.affectedFactors) {
-      affectedSet.add(factorId);
+    // Only use factors from high/moderate probability diagnoses
+    if (diagnosis.probability === 'high' || diagnosis.probability === 'moderate') {
+      for (const factorId of diagnosis.affectedFactors) {
+        affectedSet.add(factorId);
+      }
     }
   }
 
+  // Calculate severity based on lab deviations
+  const ptRatio = lab.pt / 12;
+  const apttRatio = lab.aptt / 30;
+  const severity = Math.max(ptRatio, apttRatio);
+  const activityLevel = severity > 1.5 ? Math.max(0.1, 1 / severity) : 0.3;
+
+  // Only reduce factors that are ACTUALLY implicated by the diagnosis
   for (const factorId of affectedSet) {
     if (newFactors[factorId]) {
       newFactors[factorId] = {
         ...newFactors[factorId],
-        activity: 0.3,
+        activity: activityLevel,
       };
     }
   }
 
-  // Additional adjustments based on lab values
-  const ptRatio = lab.pt / 12;
-  const apttRatio = lab.aptt / 30;
-
-  if (ptRatio > 1.5) {
-    ['F7', 'F10', 'F5', 'F2', 'FBG'].forEach(id => {
-      if (newFactors[id]) {
-        newFactors[id] = { ...newFactors[id], activity: Math.min(newFactors[id].activity, 1 / ptRatio) };
-      }
-    });
-  }
-
-  if (apttRatio > 1.5) {
-    ['F12', 'F11', 'F9', 'F8'].forEach(id => {
-      if (newFactors[id]) {
-        newFactors[id] = { ...newFactors[id], activity: Math.min(newFactors[id].activity, 1 / apttRatio) };
-      }
-    });
-  }
-
+  // Direct lab value adjustments (these are always relevant)
   if (lab.fibrinogen < 150) {
-    newFactors['FBG'] = { ...newFactors['FBG'], activity: lab.fibrinogen / 300 };
+    newFactors['FBG'] = { ...newFactors['FBG'], activity: Math.max(0.1, lab.fibrinogen / 300) };
   }
 
   if (lab.platelets < 150) {
-    newFactors['PLT'] = { ...newFactors['PLT'], activity: lab.platelets / 250 };
+    newFactors['PLT'] = { ...newFactors['PLT'], activity: Math.max(0.1, lab.platelets / 250) };
   }
 
   return newFactors;

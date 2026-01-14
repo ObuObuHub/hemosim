@@ -15,11 +15,13 @@ const PRESETS: Preset[] = [
   { id: 'normal', name: 'Normal', lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 } },
   { id: 'warfarin', name: 'Warfarină', lab: { pt: 28, inr: 2.3, aptt: 38, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 250 }, meds: { warfarin: true } },
   { id: 'heparin', name: 'Heparină', lab: { pt: 14, inr: 1.2, aptt: 85, tt: 35, fibrinogen: 300, platelets: 220, dDimers: 300 }, meds: { heparin: true } },
-  { id: 'hemophilia_a', name: 'Hemofilie A', lab: { pt: 12, inr: 1.0, aptt: 65, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200 } },
-  { id: 'vwd', name: 'vWD', lab: { pt: 12, inr: 1.0, aptt: 45, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 12 } },
-  { id: 'dic_bleeding', name: 'CID Hemoragic', lab: { pt: 28, inr: 2.3, aptt: 65, tt: 35, fibrinogen: 60, platelets: 25, dDimers: 6000, bleedingTime: 15 } },
+  { id: 'hemophilia_a', name: 'Hemofilie A', lab: { pt: 12, inr: 1.0, aptt: 65, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, mixingTest: 'corrects' } },
+  { id: 'hemophilia_b', name: 'Hemofilie B', lab: { pt: 12, inr: 1.0, aptt: 55, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, mixingTest: 'corrects' } },
+  { id: 'vwd', name: 'vWD', lab: { pt: 12, inr: 1.0, aptt: 45, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 12, mixingTest: 'corrects' } },
+  { id: 'dic_bleeding', name: 'CID', lab: { pt: 28, inr: 2.3, aptt: 65, tt: 35, fibrinogen: 60, platelets: 25, dDimers: 6000, bleedingTime: 15 } },
   { id: 'liver', name: 'Insuf. Hepatică', lab: { pt: 20, inr: 1.7, aptt: 48, tt: 22, fibrinogen: 120, platelets: 90, dDimers: 800 } },
   { id: 'itp', name: 'ITP', lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 25, dDimers: 300, bleedingTime: 12 } },
+  { id: 'aps', name: 'APS (Lupus AC)', lab: { pt: 12, inr: 1.0, aptt: 55, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 400, mixingTest: 'does_not_correct' } },
 ];
 
 interface MobileLabInputProps {
@@ -128,7 +130,7 @@ export function MobileLabInput({
       platelets: preset.lab.platelets ?? 250,
       dDimers: preset.lab.dDimers ?? 200,
       bleedingTime: preset.lab.bleedingTime ?? 5,
-      mixingTest: 'not_performed',
+      mixingTest: preset.lab.mixingTest ?? 'not_performed',
     };
     onChange(newLab);
 
