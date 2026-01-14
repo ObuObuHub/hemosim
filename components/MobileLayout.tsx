@@ -34,9 +34,9 @@ export function MobileLayout({
   const hasAbnormalFindings = Boolean(hasAbnormality || hasWarning);
 
   return (
-    <div className="md:hidden h-screen w-screen bg-slate-50 flex flex-col overflow-hidden">
+    <div className="md:hidden fixed inset-0 bg-slate-50 flex flex-col">
       {/* Header - compact */}
-      <header className="flex-shrink-0 flex items-center justify-between px-3 py-2 bg-white border-b border-slate-200">
+      <header className="flex-shrink-0 h-11 flex items-center justify-between px-3 bg-white border-b border-slate-200">
         <h1 className="text-sm font-semibold text-slate-800">HemoSim</h1>
         <div className="flex items-center gap-2">
           {hasAbnormality && activeTab !== 'results' && (
