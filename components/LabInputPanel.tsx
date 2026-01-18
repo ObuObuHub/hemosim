@@ -19,7 +19,7 @@ const TREATMENT_PRESETS: Preset[] = [
   },
   {
     id: 'warfarin',
-    name: 'Warfarină/AVK',
+    name: 'AVK/Warfarină',
     lab: { pt: 28, inr: 2.3, aptt: 38, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 250, bleedingTime: 5 },
     meds: { warfarin: true },
   },
@@ -145,13 +145,13 @@ const LAB_FIELDS: { key: NumericLabKey; label: string; step: number }[] = [
   { key: 'bleedingTime', label: 'Timp sângerare', step: 0.5 },
 ];
 
-const MEDICATION_OPTIONS: { key: keyof MedicationContext; label: string }[] = [
-  { key: 'warfarin', label: 'Warfarină/AVK' },
-  { key: 'heparin', label: 'Heparină UFH' },
-  { key: 'lmwh', label: 'LMWH' },
-  { key: 'doacXa', label: 'Anti-Xa (Xabani)' },
-  { key: 'doacIIa', label: 'Anti-IIa (Dabigatran)' },
-  { key: 'antiplatelet', label: 'Antiagregant' },
+const MEDICATION_OPTIONS: { key: keyof MedicationContext; label: string; short: string }[] = [
+  { key: 'warfarin', label: 'AVK/Warfarină', short: 'AVK' },
+  { key: 'heparin', label: 'Heparină UFH', short: 'HEP' },
+  { key: 'lmwh', label: 'LMWH', short: 'LMWH' },
+  { key: 'doacXa', label: 'Anti-Xa (Xabani)', short: 'Xa' },
+  { key: 'doacIIa', label: 'Anti-IIa (Dabigatran)', short: 'IIa' },
+  { key: 'antiplatelet', label: 'Antiagregant', short: 'ASA' },
 ];
 
 function getInputStatus(value: number, key: NumericLabKey): 'normal' | 'abnormal' | 'critical' {
@@ -443,30 +443,29 @@ export function LabInputPanel({
             })}
           </div>
 
-          {/* Medications - compact inline chips */}
+          {/* Medications - grid layout */}
           <div className="mt-3 pt-3 border-t border-slate-100">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-[10px] font-medium text-slate-500">Medicație:</span>
-              <div className="flex flex-wrap gap-1">
-                {MEDICATION_OPTIONS.map(({ key, label }) => (
-                  <button
-                    key={key}
-                    onClick={() => handleMedChange(key)}
-                    className={`px-2 py-0.5 text-[10px] font-medium rounded-full border transition-colors ${
-                      medications[key]
-                        ? 'bg-blue-500 text-white border-blue-500'
-                        : 'bg-white text-slate-500 border-slate-300 hover:border-blue-300'
-                    }`}
-                  >
-                    {label.split('/')[0]}
-                  </button>
-                ))}
-              </div>
+            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Medicație activă</span>
+            <div className="grid grid-cols-2 gap-1.5 mt-2">
+              {MEDICATION_OPTIONS.map(({ key, label, short }) => (
+                <button
+                  key={key}
+                  onClick={() => handleMedChange(key)}
+                  title={label}
+                  className={`px-2 py-1.5 text-[11px] font-medium rounded-md border transition-all ${
+                    medications[key]
+                      ? 'bg-blue-500 text-white border-blue-500 shadow-sm'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:bg-blue-50'
+                  }`}
+                >
+                  {short === 'AVK' ? 'AVK/Warfarină' : short === 'HEP' ? 'Heparină' : short === 'Xa' ? 'Anti-Xa' : short === 'IIa' ? 'Anti-IIa' : label}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Mixing Test - compact inline when aPTT elevated */}
-          {values.aptt > 40 && (
+          {/* Mixing Test - compact inline when aPTT isolated (aPTT elevated + PT normal) */}
+          {values.aptt > LAB_RANGES.aptt.max && values.pt <= LAB_RANGES.pt.max && (
             <div className="mt-2 flex items-center gap-2 text-[10px]">
               <span className="text-slate-500">Mixaj:</span>
               <select

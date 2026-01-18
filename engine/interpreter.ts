@@ -23,7 +23,7 @@ const SCENARIO_AFFECTED_FACTORS: Record<string, string[]> = {
   'CID - Faza Consum': ['F2', 'F5', 'F8', 'F10', 'FBG', 'PLT'],
   'CID - Faza Hemoragică': ['F2', 'F5', 'F8', 'F10', 'FBG', 'PLT'],
   // Anticoagulante
-  'Warfarină/AVK': ['F2', 'F7', 'F9', 'F10', 'PC', 'PS'],  // Vitamina K dependenți (inclusiv anticoagulanți)
+  'AVK/Warfarină': ['F2', 'F7', 'F9', 'F10', 'PC', 'PS'],  // Vitamina K dependenți (inclusiv anticoagulanți)
   'Heparină UFH': ['IIa', 'F10a'],  // Potențează AT → inhibă IIa și Xa
   'LMWH': ['F10a'],  // Predominant anti-Xa
   'DOAC anti-Xa': ['F10a'],  // Rivaroxaban, Apixaban, Edoxaban
@@ -240,16 +240,16 @@ export function interpretLabValues(
       });
     } else if (lab.mixingTest === 'corrects') {
       // Mixing test CORRECTS = Factor deficiency (not inhibitor)
-      // Use bleeding time to differentiate: vWD typically has prolonged BT
-      const btHigh = getStatus(lab.bleedingTime, 'bleedingTime') === 'high' || getStatus(lab.bleedingTime, 'bleedingTime') === 'critical';
+      // Use bleeding time to differentiate: vWD typically has prolonged TS
+      const tsHigh = getStatus(lab.bleedingTime, 'bleedingTime') === 'high' || getStatus(lab.bleedingTime, 'bleedingTime') === 'critical';
 
-      if (btHigh) {
-        // Prolonged BT + aPTT suggests vWD
+      if (tsHigh) {
+        // Prolonged TS + aPTT suggests vWD
         diagnoses.push({
           id: 'vwd',
           name: 'Boala von Willebrand',
           probability: 'high',
-          description: 'Deficit vWF cu afectare secundară F.VIII. BT prelungit + aPTT↑ = combinație sugestivă.',
+          description: 'Deficit vWF cu afectare secundară F.VIII. TS prelungit + aPTT↑ = combinație sugestivă.',
           affectedFactors: ['vWF', 'F8'],
           suggestedTests: ['vWF:Ag', 'vWF:RCo', 'vWF:CB', 'Factor VIII', 'Multimeri vWF'],
         });
@@ -292,7 +292,7 @@ export function interpretLabValues(
           id: 'vwd',
           name: 'Boala von Willebrand',
           probability: 'low',
-          description: 'Posibil tip 2N (afectează doar FVIII, nu BT).',
+          description: 'Posibil tip 2N (afectează doar FVIII, nu TS).',
           affectedFactors: ['vWF', 'F8'],
           suggestedTests: ['vWF:Ag', 'vWF:RCo', 'Factor VIII'],
         });
@@ -471,11 +471,6 @@ export function interpretLabValues(
         affectedFactors: ['F2', 'F5', 'F8', 'F10', 'FBG', 'PLT'],
         suggestedTests: ['Frotiu periferic (schizocite)', 'Repetă scor la 24-48h'],
       });
-      if (isthScore.total >= 5) {
-        warnings.push(`URGENȚĂ: CID MANIFEST (Scor ISTH ${isthScore.total}/8) - Corelație clinică urgentă necesară.`);
-      } else {
-        warnings.push(`Suspiciune CID (Scor ISTH ${isthScore.total}/8) - monitorizare strânsă!`);
-      }
       recommendations.push(`Scor ISTH: PLT=${isthScore.platelets} + D-dim=${isthScore.dDimers} + PT=${isthScore.pt} + Fib=${isthScore.fibrinogen} = ${isthScore.total}`);
     } else if (fibLow) {
       // Diferențiere pe baza severității fibrinogenului
@@ -707,7 +702,6 @@ export function interpretLabValues(
         });
       }
       recommendations.push('IMPORTANT: vWD = cea mai frecventă tulburare de sângerare. aPTT NORMAL în >50% din cazuri!');
-      recommendations.push('NOTĂ: BT = test depășit. ISTH/BSH recomandă PFA-100 sau vWF:Ag/RCo.');
     }
   }
   // D-dimer elevation alone - MULTIPLE causes, not just thrombosis!

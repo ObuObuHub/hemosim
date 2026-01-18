@@ -1191,7 +1191,6 @@ export function CascadeCanvas({
 
   const handleTouchMove = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
     if (e.touches.length === 2 && lastPinchDistRef.current !== null) {
-      e.preventDefault();
       // Pinch zoom
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
@@ -1201,25 +1200,28 @@ export function CascadeCanvas({
       setScale(prev => Math.min(Math.max(prev * scaleChange, 0.5), 3));
       lastPinchDistRef.current = newDist;
 
-      // Pan while zooming
-      if (lastTouchRef.current) {
+      // Pan while zooming - capture ref value before setState
+      const lastTouch = lastTouchRef.current;
+      if (lastTouch) {
         const newMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
         const newMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
         setPanOffset(prev => ({
-          x: prev.x + (newMidX - lastTouchRef.current!.x),
-          y: prev.y + (newMidY - lastTouchRef.current!.y),
+          x: prev.x + (newMidX - lastTouch.x),
+          y: prev.y + (newMidY - lastTouch.y),
         }));
         lastTouchRef.current = { x: newMidX, y: newMidY };
       }
-    } else if (e.touches.length === 1 && scale > 1 && lastTouchRef.current) {
-      e.preventDefault();
-      // Single finger pan when zoomed
-      const touch = e.touches[0];
-      setPanOffset(prev => ({
-        x: prev.x + (touch.clientX - lastTouchRef.current!.x),
-        y: prev.y + (touch.clientY - lastTouchRef.current!.y),
-      }));
-      lastTouchRef.current = { x: touch.clientX, y: touch.clientY };
+    } else if (e.touches.length === 1 && scale > 1) {
+      // Single finger pan when zoomed - capture ref value before setState
+      const lastTouch = lastTouchRef.current;
+      if (lastTouch) {
+        const touch = e.touches[0];
+        setPanOffset(prev => ({
+          x: prev.x + (touch.clientX - lastTouch.x),
+          y: prev.y + (touch.clientY - lastTouch.y),
+        }));
+        lastTouchRef.current = { x: touch.clientX, y: touch.clientY };
+      }
     }
   }, [scale]);
 

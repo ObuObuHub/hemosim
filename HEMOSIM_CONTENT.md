@@ -76,7 +76,7 @@
 | ID | Nume | Notă Clinică |
 |----|------|--------------|
 | **vWF** | Factorul von Willebrand | Carrier pentru FVIII. Clivat de ADAMTS13 - deficit ADAMTS13 → **!!PURPURĂ TROMBOTICĂ TROMBOCITOPENICĂ!!** (multimeri ultra-largi). |
-| **PLT** | Trombocite | Click pentru detalii HEMOSTAZA PRIMARĂ: Adeziune, Activare, Agregare. **Notă: BT (timp sângerare) = test depășit; ISTH/BSH recomandă PFA-100.** |
+| **PLT** | Trombocite | Click pentru detalii HEMOSTAZA PRIMARĂ: Adeziune, Activare, Agregare. |
 
 ### Anticoagulanți Naturali
 
@@ -109,15 +109,15 @@
 |----|------------|---------------|-----------|
 | heparin_effect | Efect Heparină | `high` | aPTT prelungit consistent cu terapia heparinică. |
 
-#### Mixing Test CORECTEAZĂ + BT Prelungit
+#### Mixing Test CORECTEAZĂ + TS Prelungit
 | ID | Diagnostic | Probabilitate | Descriere |
 |----|------------|---------------|-----------|
-| vwd | Boala von Willebrand | `high` | Deficit vWF cu afectare secundară F.VIII. BT prelungit + aPTT↑ = combinație sugestivă. |
+| vwd | Boala von Willebrand | `high` | Deficit vWF cu afectare secundară F.VIII. TS prelungit + aPTT↑ = combinație sugestivă. |
 | hemophilia_a | Hemofilie A | `moderate` | Deficit Factor VIII. X-linked recesiv. |
 
 **Recomandare adăugată:** NOTĂ vWD: aPTT prelungit apare DOAR când FVIII <30-40%. Multe cazuri de vWD au aPTT NORMAL!
 
-#### Mixing Test CORECTEAZĂ + BT Normal
+#### Mixing Test CORECTEAZĂ + TS Normal
 | ID | Diagnostic | Probabilitate | Descriere |
 |----|------------|---------------|-----------|
 | hemophilia_a | Hemofilie A | `high` | Deficit Factor VIII. X-linked recesiv. Cea mai frecventă cauză. |
@@ -205,7 +205,7 @@
 
 ---
 
-### Pattern: Trombocitopenie / BT Prelungit
+### Pattern: Trombocitopenie / TS Prelungit
 
 #### Clasificare Severitate Trombocitopenie
 
@@ -232,7 +232,7 @@
 | hypersplenism | Hipersplenism / Sechestrare | `moderate` | Splenomegalie (ciroză, hipertensiune portală). Până la 90% din PLT în splină. |
 | pseudothrombocytopenia | Pseudotrombocitopenie | `low` | Artefact EDTA - agregare in vitro. PLT real normal! |
 
-#### BT Prelungit + PLT Normal
+#### TS Prelungit + PLT Normal
 | ID | Diagnostic | Probabilitate | Descriere |
 |----|------------|---------------|-----------|
 | vwd | Boala von Willebrand | `high` | CEA MAI FRECVENTĂ cauză! 1:100 în populație. **IMPORTANT: aPTT este NORMAL în majoritatea cazurilor (tip 1)!** |
@@ -312,9 +312,8 @@ Screening trombofilie: DOAR după TEV confirmat, la distanță (min. 3 luni), f�
 - Diferențiază hepatic vs Vit.K: dozează Factor V (normal în deficit Vit.K)
 - Afibrinogenemie congenitală: AR, incidență ~1:1.000.000
 
-### Timp de Sângerare (BT) Prelungit
+### Timp de Sângerare (TS) Prelungit
 - **IMPORTANT: vWD = cea mai frecventă tulburare de sângerare. aPTT NORMAL în >50% din cazuri!**
-- **NOTĂ: BT = test depășit. ISTH/BSH recomandă PFA-100 sau vWF:Ag/RCo.**
 - Frotiu periferic OBLIGATORIU: exclude pseudotrombocitopenie și microangiopatie (schizocite)
 
 ### D-dimeri Crescuți
@@ -438,7 +437,7 @@ Screening trombofilie: DOAR după TEV confirmat, la distanță (min. 3 luni), f�
 
 | Scenariu | Factori Afectați | Mecanism |
 |----------|------------------|----------|
-| Warfarină/AVK | F2, F7, F9, F10, PC, PS | Inhibă sinteza factorilor Vit.K dependenți |
+| AVK/Warfarină | F2, F7, F9, F10, PC, PS | Inhibă sinteza factorilor Vit.K dependenți |
 | Heparină UFH | IIa, F10a | Potențează AT → inhibă IIa și Xa |
 | LMWH | F10a | Predominant anti-Xa |
 | DOAC anti-Xa | F10a | Rivaroxaban, Apixaban, Edoxaban |

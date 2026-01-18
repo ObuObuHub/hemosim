@@ -409,7 +409,7 @@ export function createInitialFactors(): Record<string, Factor> {
       children: [],
       pathway: 'platelet',
       isClickable: true,
-      clinicalNote: 'Click pentru detalii HEMOSTAZA PRIMARĂ: Adeziune, Activare, Agregare. Notă: BT (timp sângerare) = test depășit; ISTH/BSH recomandă PFA-100.',
+      clinicalNote: 'Click pentru detalii HEMOSTAZA PRIMARĂ: Adeziune, Activare, Agregare.',
     },
 
     // ═══════════════════════════════════════════════════════════════

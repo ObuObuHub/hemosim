@@ -14,7 +14,7 @@ interface Preset {
 // IMPORTANT: Numele presetelor TREBUIE să se potrivească cu SCENARIO_AFFECTED_FACTORS din interpreter.ts
 const PRESETS: Preset[] = [
   { id: 'normal', name: 'Normal', lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 } },
-  { id: 'warfarin', name: 'Warfarină/AVK', lab: { pt: 28, inr: 2.3, aptt: 38, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 250 }, meds: { warfarin: true } },
+  { id: 'warfarin', name: 'AVK/Warfarină', lab: { pt: 28, inr: 2.3, aptt: 38, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 250 }, meds: { warfarin: true } },
   { id: 'heparin', name: 'Heparină UFH', lab: { pt: 14, inr: 1.2, aptt: 85, tt: 35, fibrinogen: 300, platelets: 220, dDimers: 300 }, meds: { heparin: true } },
   { id: 'hemophilia_a', name: 'Hemofilie A', lab: { pt: 12, inr: 1.0, aptt: 65, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, mixingTest: 'corrects' } },
   { id: 'hemophilia_b', name: 'Hemofilie B', lab: { pt: 12, inr: 1.0, aptt: 55, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, mixingTest: 'corrects' } },
@@ -47,7 +47,7 @@ const LAB_FIELDS: { key: NumericLabKey; label: string; short: string; step: numb
   { key: 'fibrinogen', label: 'Fibrinogen', short: 'Fib', step: 10 },
   { key: 'platelets', label: 'Trombocite', short: 'PLT', step: 5 },
   { key: 'dDimers', label: 'D-Dimeri', short: 'D-dim', step: 50 },
-  { key: 'bleedingTime', label: 'Timp sângerare', short: 'BT', step: 0.5 },
+  { key: 'bleedingTime', label: 'Timp sângerare', short: 'TS', step: 0.5 },
 ];
 
 const MED_OPTIONS: { key: keyof MedicationContext; label: string; short: string }[] = [
@@ -297,8 +297,8 @@ export function MobileLabInput({
         </div>
       </div>
 
-      {/* Testul de Amestec - subtle inline when aPTT elevated */}
-      {values.aptt > 40 && (
+      {/* Testul de Amestec - subtle inline when aPTT isolated (aPTT elevated + PT normal) */}
+      {values.aptt > LAB_RANGES.aptt.max && values.pt <= LAB_RANGES.pt.max && (
         <div className="flex items-center gap-2 text-[9px] text-slate-400 mt-1">
           <span>Mixaj:</span>
           <input
