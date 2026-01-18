@@ -413,20 +413,34 @@ input[type="number"] {
   z-index: 50;
 }
 
-/* Factor Info Panel - Mobile (floating) */
+/* Factor Info Panel - Mobile (bottom sheet style) */
 .factor-info-panel-mobile {
-  position: absolute;
-  bottom: 12px;
-  left: 12px;
-  right: 12px;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
-  border-radius: 12px;
-  padding: 14px 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  padding: 8px 16px 16px 16px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
   z-index: 100;
-  max-height: 50%;
+  max-height: 60vh;
   overflow-y: auto;
+}
+
+/* Drag handle for bottom sheet */
+.factor-info-panel-mobile::before {
+  content: '';
+  display: block;
+  width: 40px;
+  height: 4px;
+  background: #cbd5e1;
+  border-radius: 2px;
+  margin: 0 auto 12px auto;
 }
 
 /* Factor Info Header */
@@ -556,13 +570,14 @@ input[type="number"] {
 /* Mobile adjustments for info panel */
 @media (max-width: 767px) {
   .factor-info-panel-mobile {
-    animation: slide-up 0.2s ease-out;
+    animation: slide-up-sheet 0.25s ease-out;
+    padding-bottom: max(env(safe-area-inset-bottom, 16px), 16px);
   }
 
-  @keyframes slide-up {
+  @keyframes slide-up-sheet {
     from {
       opacity: 0;
-      transform: translateY(20px);
+      transform: translateY(100%);
     }
     to {
       opacity: 1;

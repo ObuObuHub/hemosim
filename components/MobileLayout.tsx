@@ -6,6 +6,7 @@ import { MobileLabInput } from './MobileLabInput';
 import { MobileInterpretation } from './MobileInterpretation';
 import { MobileTabBar } from './MobileTabBar';
 import { CascadeCanvas } from './CascadeCanvas';
+import { SCENARIO_AFFECTED_FACTORS, formatFactorsForDisplay } from '@/engine/interpreter';
 
 type TabId = 'labs' | 'cascade' | 'results';
 
@@ -17,6 +18,7 @@ interface MobileLayoutProps {
   updateIsthManualCriteria: (criteria: ISTHManualCriteria) => void;
   isthManualCriteria: ISTHManualCriteria;
   reset: () => void;
+  setMode: (mode: 'basic' | 'clinical') => void;
   setHoveredFactor: (factorId: string | null) => void;
   setCurrentScenario: (scenario: string | null) => void;
 }
@@ -29,6 +31,7 @@ export function MobileLayout({
   updateIsthManualCriteria,
   isthManualCriteria,
   reset,
+  setMode,
   setHoveredFactor,
   setCurrentScenario,
 }: MobileLayoutProps): React.ReactElement {
@@ -46,6 +49,29 @@ export function MobileLayout({
       <header className="flex-shrink-0 h-11 flex items-center justify-between px-3 bg-white border-b border-slate-200">
         <h1 className="text-sm font-semibold text-slate-800">HemoSim</h1>
         <div className="flex items-center gap-2">
+          {/* Mode Toggle - Pill style */}
+          <div className="flex rounded-full bg-slate-100 p-0.5">
+            <button
+              onClick={() => setMode('basic')}
+              className={`px-2.5 py-1 text-[10px] font-medium rounded-full transition-all ${
+                state.mode === 'basic'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-slate-500'
+              }`}
+            >
+              Basic
+            </button>
+            <button
+              onClick={() => setMode('clinical')}
+              className={`px-2.5 py-1 text-[10px] font-medium rounded-full transition-all ${
+                state.mode === 'clinical'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-slate-500'
+              }`}
+            >
+              Clinical
+            </button>
+          </div>
           {(hasAbnormality || state.currentScenario) && activeTab !== 'results' && (
             <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md ${
               hasWarning ? 'bg-red-50' : 'bg-yellow-50'
@@ -56,7 +82,6 @@ export function MobileLayout({
               </span>
             </div>
           )}
-          <span className="text-xs text-slate-500">Dr. Chiper</span>
         </div>
       </header>
 
@@ -99,13 +124,23 @@ export function MobileLayout({
 
         {/* Cascade Tab */}
         <div className={`absolute inset-0 flex flex-col ${activeTab === 'cascade' ? 'flex' : 'hidden'}`}>
-          {/* Scenario indicator - only show scenario name, no pattern */}
+          {/* Context Bar - shows scenario info with affected factors */}
           {state.currentScenario && (
-            <div className="flex-shrink-0 px-3 py-1.5 flex items-center gap-2 border-b bg-yellow-50 border-yellow-200">
-              <div className={`w-1.5 h-1.5 rounded-full ${hasWarning ? 'bg-red-500' : 'bg-yellow-500'}`} />
-              <span className="text-[10px] font-semibold text-yellow-700">
-                {state.currentScenario}
-              </span>
+            <div className="flex-shrink-0 px-3 py-2 flex flex-col gap-1 border-b bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200">
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${hasWarning ? 'bg-red-500' : 'bg-purple-500'}`} />
+                <span className="text-xs font-semibold text-purple-800">
+                  {state.currentScenario}
+                </span>
+              </div>
+              {SCENARIO_AFFECTED_FACTORS[state.currentScenario]?.length > 0 && (
+                <div className="flex items-center gap-1.5 ml-4">
+                  <span className="text-[10px] text-purple-500">Factori afectați:</span>
+                  <span className="text-[10px] font-medium text-purple-700">
+                    {formatFactorsForDisplay(SCENARIO_AFFECTED_FACTORS[state.currentScenario])}
+                  </span>
+                </div>
+              )}
             </div>
           )}
 

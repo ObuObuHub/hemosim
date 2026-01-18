@@ -17,6 +17,7 @@ export default function Home(): React.ReactElement {
     updateIsthManualCriteria,
     isthManualCriteria,
     reset,
+    setMode,
     setHoveredFactor,
     setCurrentScenario,
     setShowFeedback,
@@ -159,6 +160,7 @@ export default function Home(): React.ReactElement {
         updateIsthManualCriteria={updateIsthManualCriteria}
         isthManualCriteria={isthManualCriteria}
         reset={reset}
+        setMode={setMode}
         setHoveredFactor={setHoveredFactor}
         setCurrentScenario={setCurrentScenario}
       />

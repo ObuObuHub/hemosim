@@ -11,43 +11,93 @@ interface Preset {
   meds?: Partial<MedicationContext>;
 }
 
+// Category definitions for organized scenario picker
+interface PresetCategory {
+  id: string;
+  name: string;
+  presets: Preset[];
+}
+
 // IMPORTANT: Numele presetelor TREBUIE să se potrivească cu SCENARIO_AFFECTED_FACTORS din interpreter.ts
-const PRESETS: Preset[] = [
-  // === TRATAMENT ANTICOAGULANT ===
-  { id: 'normal', name: 'Normal', lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 } },
-  { id: 'warfarin', name: 'AVK/Warfarină', lab: { pt: 28, inr: 2.3, aptt: 38, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 250 }, meds: { warfarin: true } },
-  { id: 'heparin', name: 'Heparină UFH', lab: { pt: 14, inr: 1.2, aptt: 85, tt: 35, fibrinogen: 300, platelets: 220, dDimers: 300 }, meds: { heparin: true } },
-  { id: 'lmwh', name: 'LMWH', lab: { pt: 12, inr: 1.0, aptt: 38, tt: 18, fibrinogen: 300, platelets: 240, dDimers: 280, bleedingTime: 5 }, meds: { lmwh: true } },
-  { id: 'doac_xa', name: 'DOAC anti-Xa', lab: { pt: 12, inr: 1.0, aptt: 33, tt: 17, fibrinogen: 300, platelets: 250, dDimers: 250, bleedingTime: 5 }, meds: { doacXa: true } },
-  { id: 'doac_iia', name: 'DOAC anti-IIa', lab: { pt: 13, inr: 1.1, aptt: 38, tt: 35, fibrinogen: 300, platelets: 250, dDimers: 250, bleedingTime: 5 }, meds: { doacIIa: true } },
-  { id: 'antiplatelet', name: 'Antiagregant', lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 9 }, meds: { antiplatelet: true } },
-  // === CALE INTRINSECĂ ===
-  { id: 'hemophilia_a', name: 'Hemofilie A', lab: { pt: 12, inr: 1.0, aptt: 65, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, mixingTest: 'corrects' } },
-  { id: 'hemophilia_b', name: 'Hemofilie B', lab: { pt: 12, inr: 1.0, aptt: 55, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, mixingTest: 'corrects' } },
-  { id: 'hemophilia_c', name: 'Hemofilie C', lab: { pt: 12, inr: 1.0, aptt: 52, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5, mixingTest: 'corrects' } },
-  { id: 'f12_deficiency', name: 'Deficit factor XII', lab: { pt: 12, inr: 1.0, aptt: 85, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5, mixingTest: 'corrects' } },
-  { id: 'vwd', name: 'Boala von Willebrand', lab: { pt: 12, inr: 1.0, aptt: 45, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 12, mixingTest: 'corrects' } },
-  // === CALE COMUNĂ (deficite rare) ===
-  { id: 'f2_deficiency', name: 'Deficit factor II', lab: { pt: 22, inr: 1.9, aptt: 48, tt: 18, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 } },
-  { id: 'f5_deficiency', name: 'Deficit factor V', lab: { pt: 20, inr: 1.7, aptt: 45, tt: 17, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 } },
-  { id: 'f10_deficiency', name: 'Deficit factor X', lab: { pt: 24, inr: 2.0, aptt: 52, tt: 17, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 6 } },
-  // === FIBRINOGEN ===
-  { id: 'afibrinogenemia', name: 'Afibrinogenemie', lab: { pt: 60, inr: 5.5, aptt: 120, tt: 120, fibrinogen: 20, platelets: 250, dDimers: 100, bleedingTime: 15 } },
-  { id: 'dysfibrinogenemia', name: 'Disfibrinogenemie', lab: { pt: 16, inr: 1.3, aptt: 35, tt: 45, fibrinogen: 150, platelets: 250, dDimers: 300, bleedingTime: 7 } },
-  { id: 'f13_deficiency', name: 'Deficit factor XIII', lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 } },
-  // === TROMBOCITOPENII ===
-  { id: 'itp', name: 'Purpură trombocitopenică', lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 25, dDimers: 300, bleedingTime: 12 } },
-  // === CID - PROGRESIE FAZICĂ ===
-  { id: 'dic_activation', name: 'CID - faza activare', lab: { pt: 18, inr: 1.5, aptt: 33, tt: 18, fibrinogen: 280, platelets: 120, dDimers: 1500, bleedingTime: 6 } },
-  { id: 'dic_consumption', name: 'CID - faza consum', lab: { pt: 22, inr: 1.8, aptt: 45, tt: 24, fibrinogen: 150, platelets: 70, dDimers: 3000, bleedingTime: 8 } },
-  { id: 'dic_bleeding', name: 'CID - faza hemoragică', lab: { pt: 32, inr: 2.7, aptt: 65, tt: 35, fibrinogen: 60, platelets: 25, dDimers: 6000, bleedingTime: 15 } },
-  // === DEFICITE DOBÂNDITE ===
-  { id: 'liver', name: 'Insuficiență hepatică', lab: { pt: 20, inr: 1.7, aptt: 48, tt: 22, fibrinogen: 120, platelets: 90, dDimers: 800 } },
-  { id: 'vitk_def', name: 'Deficit vitamina K', lab: { pt: 24, inr: 2.0, aptt: 50, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 300, bleedingTime: 5 } },
-  // === TROMBOFILII ===
-  { id: 'aps', name: 'Sindrom antifosfolipidic', lab: { pt: 12, inr: 1.0, aptt: 55, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 400, mixingTest: 'does_not_correct' } },
-  { id: 'thrombophilia', name: 'Trombofilie', lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 350, platelets: 280, dDimers: 1200, bleedingTime: 5 } },
+const PRESET_CATEGORIES: PresetCategory[] = [
+  {
+    id: 'anticoagulant',
+    name: 'Tratament Anticoagulant',
+    presets: [
+      { id: 'normal', name: 'Normal', lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 } },
+      { id: 'warfarin', name: 'AVK/Warfarină', lab: { pt: 28, inr: 2.3, aptt: 38, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 250 }, meds: { warfarin: true } },
+      { id: 'heparin', name: 'Heparină UFH', lab: { pt: 14, inr: 1.2, aptt: 85, tt: 35, fibrinogen: 300, platelets: 220, dDimers: 300 }, meds: { heparin: true } },
+      { id: 'lmwh', name: 'LMWH', lab: { pt: 12, inr: 1.0, aptt: 38, tt: 18, fibrinogen: 300, platelets: 240, dDimers: 280, bleedingTime: 5 }, meds: { lmwh: true } },
+      { id: 'doac_xa', name: 'DOAC anti-Xa', lab: { pt: 12, inr: 1.0, aptt: 33, tt: 17, fibrinogen: 300, platelets: 250, dDimers: 250, bleedingTime: 5 }, meds: { doacXa: true } },
+      { id: 'doac_iia', name: 'DOAC anti-IIa', lab: { pt: 13, inr: 1.1, aptt: 38, tt: 35, fibrinogen: 300, platelets: 250, dDimers: 250, bleedingTime: 5 }, meds: { doacIIa: true } },
+      { id: 'antiplatelet', name: 'Antiagregant', lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 9 }, meds: { antiplatelet: true } },
+    ],
+  },
+  {
+    id: 'intrinsic',
+    name: 'Cale Intrinsecă',
+    presets: [
+      { id: 'hemophilia_a', name: 'Hemofilie A', lab: { pt: 12, inr: 1.0, aptt: 65, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, mixingTest: 'corrects' } },
+      { id: 'hemophilia_b', name: 'Hemofilie B', lab: { pt: 12, inr: 1.0, aptt: 55, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, mixingTest: 'corrects' } },
+      { id: 'hemophilia_c', name: 'Hemofilie C', lab: { pt: 12, inr: 1.0, aptt: 52, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5, mixingTest: 'corrects' } },
+      { id: 'f12_deficiency', name: 'Deficit factor XII', lab: { pt: 12, inr: 1.0, aptt: 85, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5, mixingTest: 'corrects' } },
+      { id: 'vwd', name: 'Boala von Willebrand', lab: { pt: 12, inr: 1.0, aptt: 45, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 12, mixingTest: 'corrects' } },
+    ],
+  },
+  {
+    id: 'common',
+    name: 'Cale Comună',
+    presets: [
+      { id: 'f2_deficiency', name: 'Deficit factor II', lab: { pt: 22, inr: 1.9, aptt: 48, tt: 18, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 } },
+      { id: 'f5_deficiency', name: 'Deficit factor V', lab: { pt: 20, inr: 1.7, aptt: 45, tt: 17, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 } },
+      { id: 'f10_deficiency', name: 'Deficit factor X', lab: { pt: 24, inr: 2.0, aptt: 52, tt: 17, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 6 } },
+    ],
+  },
+  {
+    id: 'fibrinogen',
+    name: 'Fibrinogen',
+    presets: [
+      { id: 'afibrinogenemia', name: 'Afibrinogenemie', lab: { pt: 60, inr: 5.5, aptt: 120, tt: 120, fibrinogen: 20, platelets: 250, dDimers: 100, bleedingTime: 15 } },
+      { id: 'dysfibrinogenemia', name: 'Disfibrinogenemie', lab: { pt: 16, inr: 1.3, aptt: 35, tt: 45, fibrinogen: 150, platelets: 250, dDimers: 300, bleedingTime: 7 } },
+      { id: 'f13_deficiency', name: 'Deficit factor XIII', lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 } },
+    ],
+  },
+  {
+    id: 'platelets',
+    name: 'Trombocite',
+    presets: [
+      { id: 'itp', name: 'Purpură trombocitopenică', lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 25, dDimers: 300, bleedingTime: 12 } },
+    ],
+  },
+  {
+    id: 'dic',
+    name: 'CID Progresie',
+    presets: [
+      { id: 'dic_activation', name: 'CID - faza activare', lab: { pt: 18, inr: 1.5, aptt: 33, tt: 18, fibrinogen: 280, platelets: 120, dDimers: 1500, bleedingTime: 6 } },
+      { id: 'dic_consumption', name: 'CID - faza consum', lab: { pt: 22, inr: 1.8, aptt: 45, tt: 24, fibrinogen: 150, platelets: 70, dDimers: 3000, bleedingTime: 8 } },
+      { id: 'dic_bleeding', name: 'CID - faza hemoragică', lab: { pt: 32, inr: 2.7, aptt: 65, tt: 35, fibrinogen: 60, platelets: 25, dDimers: 6000, bleedingTime: 15 } },
+    ],
+  },
+  {
+    id: 'acquired',
+    name: 'Deficite Dobândite',
+    presets: [
+      { id: 'liver', name: 'Insuficiență hepatică', lab: { pt: 20, inr: 1.7, aptt: 48, tt: 22, fibrinogen: 120, platelets: 90, dDimers: 800 } },
+      { id: 'vitk_def', name: 'Deficit vitamina K', lab: { pt: 24, inr: 2.0, aptt: 50, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 300, bleedingTime: 5 } },
+    ],
+  },
+  {
+    id: 'thrombophilia',
+    name: 'Trombofilii',
+    presets: [
+      { id: 'aps', name: 'Sindrom antifosfolipidic', lab: { pt: 12, inr: 1.0, aptt: 55, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 400, mixingTest: 'does_not_correct' } },
+      { id: 'thrombophilia', name: 'Trombofilie', lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 350, platelets: 280, dDimers: 1200, bleedingTime: 5 } },
+    ],
+  },
 ];
+
+// Flat list for backwards compatibility
+const PRESETS: Preset[] = PRESET_CATEGORIES.flatMap(cat => cat.presets);
 
 interface MobileLabInputProps {
   values: LabInput;
@@ -101,6 +151,8 @@ export function MobileLabInput({
   onScenarioChange,
 }: MobileLabInputProps): React.ReactElement {
   const [editingValues, setEditingValues] = useState<Partial<Record<NumericLabKey, string>>>({});
+  const [searchQuery, setSearchQuery] = useState('');
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['anticoagulant']));
 
   const handleChange = (key: NumericLabKey, val: string): void => {
     setEditingValues(prev => ({ ...prev, [key]: val }));
@@ -202,18 +254,102 @@ export function MobileLabInput({
         </div>
       </div>
 
-      {/* Scenarios dropdown */}
+      {/* Categorized Scenarios Picker */}
       {showScenarios && (
-        <div className="grid grid-cols-2 gap-1.5 p-2 bg-slate-50 rounded-lg">
-          {PRESETS.map(preset => (
-            <button
-              key={preset.id}
-              onClick={() => applyPreset(preset)}
-              className="px-2 py-2 text-[11px] font-medium text-slate-600 bg-white border border-slate-200 rounded active:bg-blue-50 active:border-blue-300"
-            >
-              {preset.name}
-            </button>
-          ))}
+        <div className="bg-slate-50 rounded-lg p-2 space-y-2 max-h-[50vh] overflow-y-auto">
+          {/* Search bar */}
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Caută scenariu..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-3 py-2 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+            />
+            <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+
+          {/* Categories */}
+          {PRESET_CATEGORIES.map(category => {
+            const filteredPresets = searchQuery
+              ? category.presets.filter(p =>
+                  p.name.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+              : category.presets;
+
+            // Skip empty categories when searching
+            if (searchQuery && filteredPresets.length === 0) return null;
+
+            // Auto-expand categories with matches when searching
+            const isExpanded = searchQuery
+              ? filteredPresets.length > 0
+              : expandedCategories.has(category.id);
+
+            const toggleCategory = (): void => {
+              if (searchQuery) return; // Don't toggle when searching
+              setExpandedCategories(prev => {
+                const next = new Set(prev);
+                if (next.has(category.id)) {
+                  next.delete(category.id);
+                } else {
+                  next.add(category.id);
+                }
+                return next;
+              });
+            };
+
+            return (
+              <div key={category.id} className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+                {/* Category Header */}
+                <button
+                  onClick={toggleCategory}
+                  className="w-full px-3 py-2 flex items-center justify-between text-left bg-slate-50 hover:bg-slate-100 transition-colors"
+                >
+                  <span className="text-xs font-semibold text-slate-700">
+                    {category.name}
+                    <span className="ml-1.5 text-[10px] font-normal text-slate-400">
+                      ({filteredPresets.length})
+                    </span>
+                  </span>
+                  <svg
+                    className={`w-4 h-4 text-slate-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {/* Category Presets */}
+                {isExpanded && (
+                  <div className="grid grid-cols-2 gap-1.5 p-2">
+                    {filteredPresets.map(preset => (
+                      <button
+                        key={preset.id}
+                        onClick={() => applyPreset(preset)}
+                        className="px-2 py-2 text-[11px] font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-lg active:bg-blue-50 active:border-blue-300 transition-colors text-left"
+                      >
+                        {preset.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -221,7 +357,7 @@ export function MobileLabInput({
       <div className="grid grid-cols-2 gap-x-3 gap-y-2">
         {/* PT */}
         <div className="flex items-center gap-1.5">
-          <label className="text-[11px] font-medium text-slate-500 w-10 flex-shrink-0">PT</label>
+          <label className="text-xs font-medium text-slate-500 w-10 flex-shrink-0">PT</label>
           <div className="relative flex-1">
             <input
               type="number"
@@ -230,9 +366,9 @@ export function MobileLabInput({
               value={'pt' in editingValues ? editingValues.pt : values.pt}
               onChange={(e) => handlePTChange(e.target.value)}
               onBlur={() => handleBlur('pt')}
-              className={`w-full pl-2 pr-7 py-1.5 text-sm border rounded text-right
+              className={`w-full pl-2 pr-7 py-2 text-sm border rounded-lg text-right transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-400/50
                 ${getStatus(values.pt, 'pt') === 'normal'
-                  ? 'border-slate-200 bg-white'
+                  ? 'border-slate-300 bg-white'
                   : getStatus(values.pt, 'pt') === 'abnormal'
                     ? 'border-orange-300 bg-orange-50'
                     : 'border-red-400 bg-red-50'
@@ -243,7 +379,7 @@ export function MobileLabInput({
         </div>
         {/* INR */}
         <div className="flex items-center gap-1.5">
-          <label className="text-[11px] font-medium text-slate-500 w-10 flex-shrink-0">INR</label>
+          <label className="text-xs font-medium text-slate-500 w-10 flex-shrink-0">INR</label>
           <div className="relative flex-1">
             <input
               type="number"
@@ -252,9 +388,9 @@ export function MobileLabInput({
               value={'inr' in editingValues ? editingValues.inr : values.inr}
               onChange={(e) => handleINRChange(e.target.value)}
               onBlur={() => handleBlur('inr')}
-              className={`w-full pl-2 pr-3 py-1.5 text-sm border rounded text-right
+              className={`w-full pl-2 pr-3 py-2 text-sm border rounded-lg text-right transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-400/50
                 ${getStatus(values.inr, 'inr') === 'normal'
-                  ? 'border-slate-200 bg-white'
+                  ? 'border-slate-300 bg-white'
                   : getStatus(values.inr, 'inr') === 'abnormal'
                     ? 'border-orange-300 bg-orange-50'
                     : 'border-red-400 bg-red-50'
@@ -272,7 +408,7 @@ export function MobileLabInput({
 
           return (
             <div key={key} className="flex items-center gap-1.5">
-              <label className="text-[11px] font-medium text-slate-500 w-10 flex-shrink-0">
+              <label className="text-xs font-medium text-slate-500 w-10 flex-shrink-0">
                 {short}
               </label>
               <div className="relative flex-1">
@@ -283,9 +419,9 @@ export function MobileLabInput({
                   value={getValue(key)}
                   onChange={(e) => handleChange(key, e.target.value)}
                   onBlur={() => handleBlur(key)}
-                  className={`w-full pl-2 pr-7 py-1.5 text-sm border rounded text-right
+                  className={`w-full pl-2 pr-7 py-2 text-sm border rounded-lg text-right transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-400/50
                     ${status === 'normal'
-                      ? 'border-slate-200 bg-white'
+                      ? 'border-slate-300 bg-white'
                       : status === 'abnormal'
                         ? 'border-orange-300 bg-orange-50'
                         : 'border-red-400 bg-red-50'
@@ -320,7 +456,7 @@ export function MobileLabInput({
 
       {/* Testul de Amestec - subtle inline when aPTT isolated (aPTT elevated + PT normal) */}
       {values.aptt > LAB_RANGES.aptt.max && values.pt <= LAB_RANGES.pt.max && (
-        <div className="flex items-center gap-2 text-[9px] text-slate-400 mt-1">
+        <div className="flex items-center gap-2 text-[10px] text-slate-500 mt-1">
           <span>Mixaj:</span>
           <input
             type="number"
@@ -336,7 +472,7 @@ export function MobileLabInput({
               });
               onScenarioChange(null);
             }}
-            className="w-16 px-1.5 py-0.5 text-[10px] border border-slate-200 rounded text-right"
+            className="w-16 px-1.5 py-1 text-xs border border-slate-300 rounded-lg text-right focus:outline-none focus:ring-2 focus:ring-blue-400/50"
           />
           {values.apttMix !== undefined && values.apttMix > 0 && (
             <span className={`font-medium ${
