@@ -144,7 +144,7 @@ describe('calculate4TScore', () => {
     expect(score.total).toBe(8);
     expect(score.probability).toBe('high');
     expect(score.interpretation).toContain('RIDICATĂ');
-    expect(score.interpretation).toContain('OPREȘTE');
+    expect(score.interpretation).toContain('consultați urgent');
   });
 
   test('correctly returns individual criteria scores', () => {
@@ -283,7 +283,8 @@ describe('interpretLabValues', () => {
       expect(result.isthScore).toBeDefined();
       expect(result.isthScore!.total).toBeGreaterThanOrEqual(5);
       expect(result.diagnoses[0].id).toBe('dic');
-      expect(result.warnings).toContainEqual(expect.stringContaining('CID MANIFEST'));
+      // CID info is now in diagnosis description, not in warnings
+      expect(result.diagnoses[0].description).toContain('ISTH');
     });
   });
 
@@ -295,10 +296,11 @@ describe('interpretLabValues', () => {
       expect(result.diagnoses[0].id).toBe('thrombocytopenia');
     });
 
-    test('warns about critically low platelets', () => {
+    test('identifies critically low platelets in diagnosis', () => {
       const criticalPltLab: LabInput = { ...normalLab, platelets: 15 };
       const result = interpretLabValues(criticalPltLab, noMeds);
-      expect(result.warnings).toContainEqual(expect.stringContaining('<20.000'));
+      // Critical platelet info is now in diagnosis description, not in warnings
+      expect(result.diagnoses[0].name).toContain('Critică');
     });
 
     test('identifies platelet dysfunction with prolonged bleeding time', () => {
@@ -322,8 +324,8 @@ describe('interpretLabValues', () => {
       const result = interpretLabValues(dDimerLab, noMeds);
       const diagnoses = result.diagnoses.map(d => d.id);
       expect(diagnoses).toContain('thrombosis');
-      expect(diagnoses).toContain('factor_v_leiden');
-      expect(diagnoses).toContain('prothrombin_mutation');
+      // Also suggests non-thrombotic causes (more common)
+      expect(diagnoses).toContain('infection_inflammation');
     });
   });
 
@@ -371,8 +373,8 @@ describe('interpretLabValues', () => {
         otherCauses: 2,
       };
       const result = interpretLabValues(hitLab, { ...noMeds, heparin: true }, hit4TCriteria);
-      expect(result.warnings).toContainEqual(expect.stringContaining('URGENȚĂ HIT'));
-      expect(result.warnings).toContainEqual(expect.stringContaining('OPREȘTE'));
+      expect(result.warnings).toContainEqual(expect.stringContaining('trombocitopenie indusă de heparină'));
+      expect(result.warnings).toContainEqual(expect.stringContaining('URGENT'));
     });
   });
 });

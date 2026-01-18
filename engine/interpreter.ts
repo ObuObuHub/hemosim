@@ -160,7 +160,7 @@ export function calculate4TScore(criteria: Hit4TCriteria): Hit4TScore {
     interpretation = 'Probabilitate intermediară (~14%) - testează anticorpi anti-PF4/heparină';
   } else {
     probability = 'high';
-    interpretation = 'Probabilitate RIDICATĂ (~64%) - OPREȘTE heparina!';
+    interpretation = 'Probabilitate RIDICATĂ (~64%) - consultați urgent specialistul';
   }
 
   return {

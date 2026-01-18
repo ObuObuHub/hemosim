@@ -249,11 +249,11 @@ Apare automat când:
 | **Tromboză** | Absent | Suspectată | Confirmată/Necroză |
 | **Alte cauze** | Evidente | Posibile | Nicio altă cauză |
 
-| Scor | Probabilitate HIT | Acțiune |
-|------|-------------------|---------|
-| 0-3 | Scăzută (<5%) | HIT improbabil |
-| 4-5 | Intermediară (~14%) | Testează anti-PF4 |
-| 6-8 | **Ridicată (~64%)** | **OPREȘTE HEPARINA!** |
+| Scor | Probabilitate | Interpretare |
+|------|---------------|--------------|
+| 0-3 | Scăzută (<5%) | Trombocitopenie indusă de heparină puțin probabilă |
+| 4-5 | Intermediară (~14%) | Testează anticorpi anti-PF4/heparină |
+| 6-8 | **Ridicată (~64%)** | **Consultați urgent specialistul** |
 
 ---
 

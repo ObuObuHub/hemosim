@@ -365,7 +365,7 @@ Screening trombofilie: DOAR după tromboembolismul confirmat, la distanță (min
 **Interpretare:**
 - **0-3 puncte:** Probabilitate scăzută (<5%) - trombocitopenia indusă de heparină puțin probabilă
 - **4-5 puncte:** Probabilitate intermediară (~14%) - testează anticorpi anti-PF4/heparină
-- **6-8 puncte:** Probabilitate RIDICATĂ (~64%) - OPREȘTE heparina!
+- **6-8 puncte:** Probabilitate RIDICATĂ (~64%) - consultați urgent specialistul
 
 ### Index Rosner (Mixing Test)
 
@@ -465,7 +465,7 @@ Screening trombofilie: DOAR după tromboembolismul confirmat, la distanță (min
 
 ### Notă despre Factor XII
 - Deficitul de F.XII este **frecvent ca anomalie de laborator**
-- **NU cauzează sângerare** - nu necesită tratament
+- **NU cauzează sângerare** - anomalie de laborator fără semnificație clinică
 - Este o descoperire incidentală, nu o boală hemoragică
 
 ---
