@@ -19,7 +19,8 @@ const noMeds: MedicationContext = {
   warfarin: false,
   heparin: false,
   lmwh: false,
-  doac: false,
+  doacXa: false,
+  doacIIa: false,
   antiplatelet: false,
 };
 
@@ -242,9 +243,14 @@ describe('interpretLabValues', () => {
       expect(result.warnings).toContainEqual(expect.stringContaining('PT >25'));
     });
 
-    test('identifies DOAC effect when DOAC is used', () => {
-      const result = interpretLabValues(extrinsicLab, { ...noMeds, doac: true });
+    test('identifies DOAC Xa effect when doacXa is used', () => {
+      const result = interpretLabValues(extrinsicLab, { ...noMeds, doacXa: true });
       expect(result.diagnoses[0].id).toBe('doac_xa_effect');
+    });
+
+    test('identifies DOAC IIa effect when doacIIa is used', () => {
+      const result = interpretLabValues(extrinsicLab, { ...noMeds, doacIIa: true });
+      expect(result.diagnoses[0].id).toBe('doac_iia_effect');
     });
   });
 
@@ -336,7 +342,7 @@ describe('interpretLabValues', () => {
 
     test('identifies dabigatran effect on TT', () => {
       const ttLab: LabInput = { ...normalLab, tt: 30 };
-      const result = interpretLabValues(ttLab, { ...noMeds, doac: true });
+      const result = interpretLabValues(ttLab, { ...noMeds, doacIIa: true });
       expect(result.diagnoses[0].id).toBe('dabigatran_effect');
     });
   });

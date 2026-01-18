@@ -5,18 +5,6 @@ import { Factor } from '@/types';
 import { BASIC_MODE_FACTORS, CLINICAL_MODE_FACTORS, SIMPLIFIED_POSITIONS, CANVAS_WIDTH, CANVAS_HEIGHT } from '@/engine/factors';
 import { PrimaryHemostasisModal } from './PrimaryHemostasisModal';
 
-// Helper: Parsează clinicalNote și evidențiază text între !! cu roșu
-function renderClinicalNote(note: string): React.ReactNode {
-  const parts = note.split(/(!![^!]+!!)/g);
-  return parts.map((part, index) => {
-    if (part.startsWith('!!') && part.endsWith('!!')) {
-      const text = part.slice(2, -2);
-      return <span key={index} style={{ color: '#dc2626', fontWeight: 600 }}>{text}</span>;
-    }
-    return part;
-  });
-}
-
 interface CascadeCanvasProps {
   factors: Record<string, Factor>;
   mode: 'basic' | 'clinical';
@@ -77,7 +65,7 @@ const FACTOR_LABELS: Record<string, string> = {
   F9a: 'Factor IXa',
   F8a: 'Factor VIIIa',
   // Extrinsic
-  TF: 'Factor Tisular',
+  TF: 'Tissue Factor',
   F7: 'Factor VII',
   F7a: 'Factor VIIa',
   // Common - zimogeni
@@ -310,50 +298,10 @@ export function CascadeCanvas({
   const [selectedFactor, setSelectedFactor] = useState<string | null>(null);
   const [showPrimaryHemostasis, setShowPrimaryHemostasis] = useState(false);
 
-  // Pinch-to-zoom state for mobile
-  const [scale, setScale] = useState(1);
-  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
-  const lastTouchRef = useRef<{ x: number; y: number } | null>(null);
-  const lastPinchDistRef = useRef<number | null>(null);
-
   // Factor activ = selectat (click) sau hover
   const activeFactor = selectedFactor || hoveredFactor;
 
-  const baseVisibleFactors = mode === 'clinical' ? CLINICAL_MODE_FACTORS : BASIC_MODE_FACTORS;
-
-  // ISOLATION MODE: When an inhibitor or potentiator is selected, show only related factors
-  const isolationFactors = useMemo<Set<string> | null>(() => {
-    if (!selectedFactor) return null;
-
-    const factor = factors[selectedFactor];
-    if (!factor) return null;
-
-    // Check if this is an inhibitor (has inhibits array) or potentiator (has feedbackTargets)
-    const isInhibitor = factor.inhibits && factor.inhibits.length > 0;
-    const isPotentiator = factor.feedbackTargets && factor.feedbackTargets.length > 0;
-
-    if (!isInhibitor && !isPotentiator) return null; // Not a regulator, no isolation
-
-    const visible = new Set<string>([selectedFactor]);
-
-    // Add targets
-    if (factor.inhibits) {
-      factor.inhibits.forEach(id => visible.add(id));
-    }
-    if (factor.feedbackTargets) {
-      factor.feedbackTargets.forEach(id => visible.add(id));
-    }
-
-    return visible;
-  }, [selectedFactor, factors]);
-
-  // Final visible factors: either isolated set or full set
-  const visibleFactors = useMemo<string[]>(() => {
-    if (isolationFactors) {
-      return baseVisibleFactors.filter(id => isolationFactors.has(id));
-    }
-    return baseVisibleFactors;
-  }, [baseVisibleFactors, isolationFactors]);
+  const visibleFactors = mode === 'clinical' ? CLINICAL_MODE_FACTORS : BASIC_MODE_FACTORS;
 
   // Highlight factors based on hovered lab value
   const highlightedFactors = useMemo<string[]>(
@@ -375,8 +323,6 @@ export function CascadeCanvas({
     blockedFactors,
     showFeedback,
     showInhibition,
-    isolationFactors,
-    selectedFactor,
   });
 
   useEffect(() => {
@@ -391,10 +337,8 @@ export function CascadeCanvas({
       blockedFactors,
       showFeedback,
       showInhibition,
-      isolationFactors,
-      selectedFactor,
     };
-  }, [factors, visibleFactors, activeFactor, highlightedFactors, dDimers, dicPhase, mode, blockedFactors, showFeedback, showInhibition, isolationFactors, selectedFactor]);
+  }, [factors, visibleFactors, activeFactor, highlightedFactors, dDimers, dicPhase, mode, blockedFactors, showFeedback, showInhibition]);
 
   useEffect(() => {
     const updateSize = (): void => {
@@ -414,21 +358,21 @@ export function CascadeCanvas({
     const newParticles: Particle[] = [];
     for (const factor of Object.values(factors)) {
       if (!visibleFactors.includes(factor.id)) continue;
-      if (factor.activity < 0.15) continue; // Don't create particles for severely slowed factors
+      if (factor.activity < 0.3) continue; // Don't create particles for inactive factors
 
       for (const childId of factor.children) {
         const child = factors[childId];
         if (!child || !visibleFactors.includes(childId)) continue;
-        if (child.activity < 0.15) continue;
+        if (child.activity < 0.3) continue;
 
         // Create 1-2 particles per connection based on activity
-        const particleCount = factor.activity > 0.7 && child.activity > 0.7 ? 3 : 2;
+        const particleCount = factor.activity > 0.7 && child.activity > 0.7 ? 2 : 1;
         for (let i = 0; i < particleCount; i++) {
           newParticles.push({
             fromId: factor.id,
             toId: childId,
             progress: Math.random(), // Start at random position
-            speed: 0.15 + Math.min(factor.activity, child.activity) * 0.2, // 0.15-0.35 speed (slower)
+            speed: 0.3 + Math.min(factor.activity, child.activity) * 0.4, // 0.3-0.7 speed
           });
         }
       }
@@ -473,9 +417,9 @@ export function CascadeCanvas({
       ctx.fillStyle = '#f8fafc';
       ctx.fillRect(0, 0, rect.width, rect.height);
 
-      // Draw colored zone backgrounds for schematic mode (NOT in isolation mode)
-      if (state.mode === 'basic' && !state.isolationFactors) {
-        const cornerRadius = 16;
+      // Draw colored zone backgrounds for schematic mode
+      if (state.mode === 'basic') {
+        const cornerRadius = 20;
 
         // Helper function to draw rounded rectangles
         const drawRoundedRect = (x: number, y: number, w: number, h: number, r: number): void => {
@@ -492,46 +436,45 @@ export function CascadeCanvas({
           ctx.closePath();
         };
 
-        // Extrinsic zone (pink/magenta) - top-left
-        ctx.fillStyle = 'rgba(236, 72, 153, 0.12)';
-        ctx.strokeStyle = 'rgba(236, 72, 153, 0.4)';
+        // Intrinsic zone (blue) - top-left
+        ctx.fillStyle = 'rgba(37, 99, 235, 0.08)';
+        ctx.strokeStyle = 'rgba(37, 99, 235, 0.3)';
         ctx.lineWidth = 2;
-        drawRoundedRect(30 * scaleX, 50 * scaleY, 250 * scaleX, 170 * scaleY, cornerRadius);
+        drawRoundedRect(30 * scaleX, 50 * scaleY, 400 * scaleX, 330 * scaleY, cornerRadius);
         ctx.fill();
         ctx.stroke();
 
-        // Intrinsic zone (blue/purple) - top-right
-        ctx.fillStyle = 'rgba(139, 92, 246, 0.12)';
-        ctx.strokeStyle = 'rgba(139, 92, 246, 0.4)';
-        drawRoundedRect(510 * scaleX, 30 * scaleY, 280 * scaleX, 310 * scaleY, cornerRadius);
+        // Extrinsic zone (orange) - top-right
+        ctx.fillStyle = 'rgba(249, 115, 22, 0.08)';
+        ctx.strokeStyle = 'rgba(249, 115, 22, 0.3)';
+        drawRoundedRect(560 * scaleX, 50 * scaleY, 250 * scaleX, 200 * scaleY, cornerRadius);
         ctx.fill();
         ctx.stroke();
 
-        // Common zone (orange/yellow) - center-bottom
-        ctx.fillStyle = 'rgba(245, 158, 11, 0.15)';
-        ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
-        drawRoundedRect(230 * scaleX, 370 * scaleY, 290 * scaleX, 230 * scaleY, cornerRadius);
+        // Common zone (green) - bottom
+        ctx.fillStyle = 'rgba(22, 163, 74, 0.08)';
+        ctx.strokeStyle = 'rgba(22, 163, 74, 0.3)';
+        drawRoundedRect(180 * scaleX, 350 * scaleY, 420 * scaleX, 420 * scaleY, cornerRadius);
         ctx.fill();
         ctx.stroke();
 
         // Zone labels
         ctx.font = '600 11px Inter, system-ui, sans-serif';
-
-        ctx.fillStyle = '#db2777';
+        ctx.fillStyle = '#2563eb';
         ctx.textAlign = 'left';
-        ctx.fillText('Calea extrinsecă', 45 * scaleX, 70 * scaleY);
+        ctx.fillText('Calea intrinsecă', 45 * scaleX, 75 * scaleY);
 
-        ctx.fillStyle = '#7c3aed';
+        ctx.fillStyle = '#f97316';
         ctx.textAlign = 'right';
-        ctx.fillText('Calea intrinsecă', 775 * scaleX, 55 * scaleY);
+        ctx.fillText('Calea extrinsecă', 795 * scaleX, 75 * scaleY);
 
-        ctx.fillStyle = '#d97706';
+        ctx.fillStyle = '#16a34a';
         ctx.textAlign = 'left';
-        ctx.fillText('Calea comună', 245 * scaleX, 390 * scaleY);
+        ctx.fillText('Calea comună', 195 * scaleX, 375 * scaleY);
       }
 
-      // Draw pathway labels with colors (only in clinical/extended mode, NOT in isolation mode)
-      if (state.mode === 'clinical' && !state.isolationFactors) {
+      // Draw pathway labels with colors (only in clinical/extended mode)
+      if (state.mode === 'clinical') {
         ctx.font = '600 10px Inter, system-ui, sans-serif';
         ctx.textAlign = 'left';
         ctx.fillStyle = PATHWAY_COLORS.intrinsic;
@@ -556,8 +499,6 @@ export function CascadeCanvas({
       }
 
       // Draw connections first (behind nodes)
-      // SKIP activation edges in isolation mode - only show regulator edges
-      if (!state.isolationFactors) {
       for (const factor of Object.values(state.factors)) {
         if (!state.visibleFactors.includes(factor.id)) continue;
 
@@ -589,29 +530,16 @@ export function CascadeCanvas({
           ctx.moveTo(arrowStartX, arrowStartY);
           ctx.lineTo(arrowEndX, arrowEndY);
 
-          if (activity < 0.05) {
-            // BLOCKED: extremely faint
-            ctx.strokeStyle = 'rgba(148, 163, 184, 0.15)';
-            ctx.setLineDash([8, 6]);
-            ctx.lineWidth = 0.5;
-          } else if (activity < 0.15) {
-            // SEVERELY SLOWED
-            ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+          if (activity < 0.2) {
+            ctx.strokeStyle = '#e2e8f0';
             ctx.setLineDash([6, 4]);
-            ctx.lineWidth = 0.75;
-          } else if (activity < 0.30) {
-            // SIGNIFICANTLY SLOWED
-            ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
-            ctx.setLineDash([4, 3]);
             ctx.lineWidth = 1;
-          } else if (activity < 0.50) {
-            // MILDLY SLOWED
-            ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
+          } else if (activity < 0.5) {
+            ctx.strokeStyle = '#cbd5e1';
             ctx.setLineDash([]);
-            ctx.lineWidth = 1.25;
+            ctx.lineWidth = 1;
           } else {
-            // NORMAL
-            ctx.strokeStyle = 'rgba(148, 163, 184, 0.55)';
+            ctx.strokeStyle = '#94a3b8';
             ctx.setLineDash([]);
             ctx.lineWidth = 1.5;
           }
@@ -619,8 +547,8 @@ export function CascadeCanvas({
           ctx.stroke();
           ctx.setLineDash([]);
 
-          // Draw arrow head (show for activity >= 5%)
-          if (activity >= 0.05) {
+          // Draw arrow head
+          if (activity >= 0.2) {
             const arrowSize = 4;
             ctx.beginPath();
             ctx.moveTo(arrowEndX, arrowEndY);
@@ -633,19 +561,16 @@ export function CascadeCanvas({
               arrowEndY - arrowSize * Math.sin(angle + Math.PI / 6)
             );
             ctx.closePath();
-            // Match arrow head opacity to line opacity
-            const headOpacity = activity < 0.15 ? 0.25 : activity < 0.30 ? 0.35 : activity < 0.50 ? 0.45 : 0.55;
-            ctx.fillStyle = `rgba(148, 163, 184, ${headOpacity})`;
+            ctx.fillStyle = activity < 0.5 ? '#cbd5e1' : '#94a3b8';
             ctx.fill();
           }
         }
       }
-      } // End of !isolationFactors block for activation edges
 
       // Draw FEEDBACK arrows (thrombin positive feedback)
-      // Vizibile când showFeedback=true SAU când hover pe source/target SAU în isolation mode
+      // Vizibile când showFeedback=true SAU când hover pe source/target
       // F2 (thrombin) activates F5, F8, F11 for amplification
-      if (state.showFeedback || state.activeFactor || state.isolationFactors) {
+      if (state.showFeedback || state.activeFactor) {
         for (const factor of Object.values(state.factors)) {
           if (!state.visibleFactors.includes(factor.id)) continue;
           if (!factor.feedbackTargets) continue;
@@ -654,10 +579,9 @@ export function CascadeCanvas({
             const target = state.factors[targetId];
             if (!target || !state.visibleFactors.includes(targetId)) continue;
 
-            // Vizibil dacă toggle ON, hover pe source/target, sau isolation mode activ
+            // Vizibil dacă toggle ON sau dacă hover pe source/target
             const isRelevantHover = state.activeFactor === factor.id || state.activeFactor === targetId;
-            const isIsolationEdge = state.isolationFactors && state.selectedFactor === factor.id;
-            if (!state.showFeedback && !isRelevantHover && !isIsolationEdge) continue;
+            if (!state.showFeedback && !isRelevantHover) continue;
 
           const fromPos = getPos(factor);
           const toPos = getPos(target);
@@ -713,9 +637,9 @@ export function CascadeCanvas({
       }
 
       // Draw INHIBITION arrows (anticoagulants)
-      // Vizibile când showInhibition=true SAU când hover pe source/target SAU în isolation mode
+      // Vizibile când showInhibition=true SAU când hover pe source/target
       // AT inhibits F2, F10; PC/PS inhibit F5, F8
-      if (state.mode === 'clinical' && (state.showInhibition || state.activeFactor || state.isolationFactors)) {
+      if (state.mode === 'clinical' && (state.showInhibition || state.activeFactor)) {
         for (const factor of Object.values(state.factors)) {
           if (!state.visibleFactors.includes(factor.id)) continue;
           if (!factor.inhibits) continue;
@@ -724,10 +648,9 @@ export function CascadeCanvas({
             const target = state.factors[targetId];
             if (!target || !state.visibleFactors.includes(targetId)) continue;
 
-            // Vizibil dacă toggle ON, hover pe source/target, sau isolation mode activ
+            // Vizibil dacă toggle ON sau dacă hover pe source/target
             const isRelevantHover = state.activeFactor === factor.id || state.activeFactor === targetId;
-            const isIsolationEdge = state.isolationFactors && state.selectedFactor === factor.id;
-            if (!state.showInhibition && !isRelevantHover && !isIsolationEdge) continue;
+            if (!state.showInhibition && !isRelevantHover) continue;
 
             const fromPos = getPos(factor);
             const toPos = getPos(target);
@@ -771,8 +694,7 @@ export function CascadeCanvas({
 
       }
 
-      // Update and draw particles (skip in isolation mode)
-      if (!state.isolationFactors) {
+      // Update and draw particles
       for (const particle of particlesRef.current) {
         const fromFactor = state.factors[particle.fromId];
         const toFactor = state.factors[particle.toId];
@@ -807,7 +729,7 @@ export function CascadeCanvas({
 
         // Draw particle
         const activity = Math.min(fromFactor.activity, toFactor.activity);
-        const particleRadius = 1.2;
+        const particleRadius = 2;
         const alpha = 0.4 + activity * 0.5; // 0.4-0.9 opacity based on activity
 
         ctx.beginPath();
@@ -815,7 +737,6 @@ export function CascadeCanvas({
         ctx.fillStyle = `rgba(59, 130, 246, ${alpha})`; // Blue color
         ctx.fill();
       }
-      } // End of !isolationFactors block for particles
 
       // Draw enzyme-cofactor complex brackets BEFORE nodes (so nodes render on top)
       if (state.mode === 'clinical') {
@@ -871,13 +792,13 @@ export function CascadeCanvas({
           ctx.font = '600 9px Inter, system-ui, sans-serif';
           if (factor.complexName === 'TF-VIIa') {
             ctx.fillStyle = MEMBRANE_COLORS.tfCell;
-            ctx.fillText('INIȚIERE', centerX, maxY + 26);
+            ctx.fillText('① INIȚIERE', centerX, maxY + 26);
           } else if (factor.complexName === 'TENAZĂ') {
             ctx.fillStyle = MEMBRANE_COLORS.platelet;
-            ctx.fillText('AMPLIFICARE', centerX, maxY + 26);
+            ctx.fillText('③ PROPAGARE', centerX, maxY + 26);
           } else if (factor.complexName === 'PROTROMBINAZĂ') {
-            ctx.fillStyle = MEMBRANE_COLORS.platelet;
-            ctx.fillText('PROPAGARE', centerX, maxY + 26);
+            ctx.fillStyle = FEEDBACK_COLOR;
+            ctx.fillText('② AMPLIFICARE', centerX, maxY + 26);
           }
 
           // Draw "+" between enzyme and cofactor
@@ -901,20 +822,9 @@ export function CascadeCanvas({
         const x = pos.x * scaleX;
         const y = pos.y * scaleY;
 
-        // Radius variabil bazat pe activitate cu pulsație pentru factori afectați
-        let radius: number;
-        if (factor.activity >= 0.99) {
-          // Normal - fără pulsație
-          radius = BASE_RADIUS;
-        } else if (factor.activity < 0.05) {
-          // Blocat - mic, fără pulsație
-          radius = MIN_RADIUS;
-        } else {
-          // Afectat (5-99%) - pulsează între normal și redus
-          const reducedRadius = MIN_RADIUS + (BASE_RADIUS - MIN_RADIUS) * factor.activity;
-          const pulse = (Math.sin(timestamp / 400) + 1) / 2; // 0 la 1, ciclu ~2.5s
-          radius = reducedRadius + (BASE_RADIUS - reducedRadius) * pulse;
-        }
+        // Radius variabil bazat pe activitate
+        const effectiveActivity = Math.max(0.1, factor.activity);
+        const radius = MIN_RADIUS + (BASE_RADIUS - MIN_RADIUS) * effectiveActivity;
 
         const isHovered = state.activeFactor === factor.id;
         const isHighlighted = state.highlightedFactors.includes(factor.id);
@@ -925,8 +835,8 @@ export function CascadeCanvas({
         // Check if factor is manually blocked (click to block feature)
         const isBlocked = state.blockedFactors?.has(factor.id) ?? false;
 
-        // Factor este considerat blocat/consumat dacă activitate < 5% sau blocat manual
-        const isBlocked_or_consumed = factor.activity < 0.05 || isBlocked;
+        // Factor este considerat blocat/consumat dacă activitate < 15% sau blocat manual
+        const isBlocked_or_consumed = factor.activity < 0.15 || isBlocked;
 
         // Node circle (membrane surface for PLT, wavy for vWF)
         const isPlatelet = factor.pathway === 'platelet';
@@ -1162,88 +1072,26 @@ export function CascadeCanvas({
   }, [onFactorHover, selectedFactor]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (e.touches.length === 2) {
-      // Pinch start - calculate initial distance
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      lastPinchDistRef.current = Math.sqrt(dx * dx + dy * dy);
-      // Calculate midpoint for pan
-      lastTouchRef.current = {
-        x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-        y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
-      };
-    } else if (e.touches.length === 1) {
+    if (e.touches.length === 1) {
       const touch = e.touches[0];
-      // If zoomed in, start panning
-      if (scale > 1) {
-        lastTouchRef.current = { x: touch.clientX, y: touch.clientY };
+      const found = findFactorAtPosition(touch.clientX, touch.clientY);
+      if (found) {
+        // Pe touch, click selectează/deselectează
+        setSelectedFactor(prev => prev === found ? null : found);
       } else {
-        // Normal behavior - select factor
-        const found = findFactorAtPosition(touch.clientX, touch.clientY);
-        if (found) {
-          setSelectedFactor(prev => prev === found ? null : found);
-        } else {
-          setSelectedFactor(null);
-        }
+        setSelectedFactor(null);
       }
     }
-  }, [findFactorAtPosition, scale]);
+  }, [findFactorAtPosition]);
 
-  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (e.touches.length === 2 && lastPinchDistRef.current !== null) {
-      e.preventDefault();
-      // Pinch zoom
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      const newDist = Math.sqrt(dx * dx + dy * dy);
-      const scaleChange = newDist / lastPinchDistRef.current;
-
-      setScale(prev => Math.min(Math.max(prev * scaleChange, 0.5), 3));
-      lastPinchDistRef.current = newDist;
-
-      // Pan while zooming
-      if (lastTouchRef.current) {
-        const newMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-        const newMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-        setPanOffset(prev => ({
-          x: prev.x + (newMidX - lastTouchRef.current!.x),
-          y: prev.y + (newMidY - lastTouchRef.current!.y),
-        }));
-        lastTouchRef.current = { x: newMidX, y: newMidY };
-      }
-    } else if (e.touches.length === 1 && scale > 1 && lastTouchRef.current) {
-      e.preventDefault();
-      // Single finger pan when zoomed
-      const touch = e.touches[0];
-      setPanOffset(prev => ({
-        x: prev.x + (touch.clientX - lastTouchRef.current!.x),
-        y: prev.y + (touch.clientY - lastTouchRef.current!.y),
-      }));
-      lastTouchRef.current = { x: touch.clientX, y: touch.clientY };
-    }
-  }, [scale]);
-
-  const handleTouchEnd = useCallback(() => {
-    lastPinchDistRef.current = null;
-    lastTouchRef.current = null;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleTouchMove = useCallback((_e: React.TouchEvent<HTMLCanvasElement>) => {
+    // Nu facem nimic la touch move - selecția rămâne activă
   }, []);
 
-  // Double-tap to reset zoom
-  const lastTapTimeRef = useRef<number>(0);
-  const handleDoubleTap = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
-    const now = Date.now();
-    if (now - lastTapTimeRef.current < 300) {
-      // Double tap - reset zoom or zoom to 2x
-      if (scale > 1.1) {
-        setScale(1);
-        setPanOffset({ x: 0, y: 0 });
-      } else {
-        setScale(2);
-      }
-      e.preventDefault();
-    }
-    lastTapTimeRef.current = now;
-  }, [scale]);
+  const handleTouchEnd = useCallback(() => {
+    // Selecția rămâne activă până la următorul tap
+  }, []);
 
   // Detectează desktop (width > 768px)
   const isDesktop = canvasSize.width > 500;
@@ -1286,7 +1134,7 @@ export function CascadeCanvas({
             <p className="vit-k-badge">Vitamină K dependent</p>
           )}
           {factor.clinicalNote && (
-            <p className="clinical-note">{renderClinicalNote(factor.clinicalNote)}</p>
+            <p className="clinical-note">{factor.clinicalNote}</p>
           )}
           {factor.children && factor.children.length > 0 && (
             <p className="relations">
@@ -1317,33 +1165,17 @@ export function CascadeCanvas({
   };
 
   return (
-    <div ref={containerRef} className="cascade-container" style={{ overflow: 'hidden' }}>
-      <div
-        style={{
-          transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${scale})`,
-          transformOrigin: 'center center',
-          width: '100%',
-          height: '100%',
-          touchAction: scale > 1 ? 'none' : 'auto',
-        }}
-      >
-        <canvas
-          ref={canvasRef}
-          className="cascade-canvas"
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
-          onClick={handleClick}
-          onTouchStart={(e) => { handleTouchStart(e); handleDoubleTap(e); }}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        />
-      </div>
-      {/* Zoom indicator for mobile */}
-      {scale !== 1 && (
-        <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
-          {Math.round(scale * 100)}%
-        </div>
-      )}
+    <div ref={containerRef} className="cascade-container">
+      <canvas
+        ref={canvasRef}
+        className="cascade-canvas"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        onClick={handleClick}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      />
       {/* Info Panel - pe desktop în dreapta, pe mobile floating */}
       {activeFactor && factors[activeFactor] && (
         isDesktop ? (

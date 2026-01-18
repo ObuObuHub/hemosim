@@ -1,6 +1,54 @@
-import { Factor, LabInput, LabRange } from '@/types';
+import { Factor, LabRange } from '@/types';
 
 type NumericLabKey = 'pt' | 'inr' | 'aptt' | 'tt' | 'fibrinogen' | 'platelets' | 'dDimers' | 'bleedingTime';
+
+// ============================================
+// Concentrații Fiziologice de Referință (nM)
+// Surse: Hockin 2002, Mann 2003, Butenas 1999
+// ============================================
+export const PHYSIOLOGICAL_CONCENTRATIONS_NM: Record<string, number> = {
+  // Calea intrinsecă
+  F12: 375,
+  F11: 30,
+  F9: 90,
+  F8: 0.7,
+
+  // Calea extrinsecă
+  F7: 10,
+  TF: 0,  // Variabil (trigger)
+
+  // Calea comună
+  F10: 170,
+  F5: 20,
+  F2: 1400,   // Protrombină
+  FBG: 9000,  // Fibrinogen
+
+  // Formele activate (de obicei 0 la baseline)
+  F12a: 0,
+  F11a: 0,
+  F9a: 0,
+  F8a: 0,
+  F7a: 0,
+  F10a: 0,  // Xa
+  F5a: 0,   // Va
+  IIa: 0,   // Trombină
+
+  // Stabilizare cheag
+  F13: 70,
+  F13a: 0,
+
+  // Anticoagulanți naturali
+  AT: 3400,
+  PC: 65,
+  PS: 300,
+  TFPI: 2.5,
+
+  // vWF (pentru hemostază primară)
+  vWF: 10,  // µg/mL aprox
+
+  // Trombocite (nu în nM, dar pentru referință)
+  PLT: 250,  // ×10³/µL
+};
 
 // PT normal reference value (seconds) - used for INR calculation
 export const PT_NORMAL = 12.0;
@@ -9,10 +57,10 @@ export const ISI = 1.0;
 
 export const LAB_RANGES: Record<NumericLabKey, LabRange> = {
   pt: { min: 11, max: 13.5, unit: 's', criticalHigh: 30 },
-  inr: { min: 0.9, max: 1.1, unit: '', criticalHigh: 4.0 },
+  inr: { min: 0.9, max: 1.2, unit: '', criticalHigh: 6.0 },
   aptt: { min: 25, max: 40, unit: 's', criticalHigh: 80 },
   tt: { min: 14, max: 19, unit: 's', criticalHigh: 40 },
-  fibrinogen: { min: 200, max: 400, unit: 'mg/dL', criticalLow: 100 },
+  fibrinogen: { min: 200, max: 400, unit: 'mg/dL', criticalLow: 100, criticalHigh: 700 },
   platelets: { min: 150, max: 400, unit: '×10³/µL', criticalLow: 50 },
   dDimers: { min: 0, max: 500, unit: 'ng/mL', criticalHigh: 2000 },
   bleedingTime: { min: 2, max: 7, unit: 'min', criticalHigh: 15 },
@@ -84,8 +132,8 @@ export function getLabValueStatus(
   value: number,
   range: LabRange
 ): 'normal' | 'low' | 'high' | 'critical' {
-  if (range.criticalLow !== undefined && value < range.criticalLow) return 'critical';
-  if (range.criticalHigh !== undefined && value > range.criticalHigh) return 'critical';
+  if (range.criticalLow !== undefined && value <= range.criticalLow) return 'critical';
+  if (range.criticalHigh !== undefined && value >= range.criticalHigh) return 'critical';
   if (value < range.min) return 'low';
   if (value > range.max) return 'high';
   return 'normal';

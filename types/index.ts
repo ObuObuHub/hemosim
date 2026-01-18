@@ -8,7 +8,26 @@ export interface Factor {
   vitKDependent: boolean;
   parents: string[];
   children: string[];
-  pathway: 'intrinsic' | 'extrinsic' | 'common' | 'platelet' | 'fibrinolysis';
+  pathway: 'intrinsic' | 'extrinsic' | 'common' | 'platelet' | 'fibrinolysis' | 'anticoagulant' | 'clot';
+  // Relații de inhibiție (pentru anticoagulanți naturali)
+  inhibits?: string[];
+  // Feedback pozitiv (pentru amplificarea trombinei)
+  feedbackTargets?: string[];
+  // Descriere clinică
+  clinicalNote?: string;
+  // Node care deschide o pagină de detalii (ex: PLT → hemostază primară)
+  isClickable?: boolean;
+  // Pentru forme activate (XIIa, Xa, etc.)
+  isActivatedForm?: boolean;
+  // Link către zimogen (pentru forme activate)
+  zymogenId?: string;
+  // Pentru complexe enzimă-cofactor
+  isEnzyme?: boolean;
+  isCofactor?: boolean;
+  complexPartner?: string;
+  complexName?: string;
+  // Tipul de membrană pentru complexe (model celular)
+  complexMembrane?: 'tfCell' | 'platelet';
 }
 
 export interface LabInput {
@@ -50,6 +69,13 @@ export interface ISTHScore {
   interpretation: string;
 }
 
+export interface ISTHManualCriteria {
+  plateletCount: 0 | 1 | 2;
+  dDimerLevel: 0 | 2 | 3;
+  ptProlongation: 0 | 1 | 2;
+  fibrinogenLevel: 0 | 1;
+}
+
 export interface Hit4TCriteria {
   thrombocytopenia: 0 | 1 | 2;  // Platelet fall magnitude
   timing: 0 | 1 | 2;            // Timing of platelet fall
@@ -81,7 +107,8 @@ export interface MedicationContext {
   warfarin: boolean;
   heparin: boolean;
   lmwh: boolean;
-  doac: boolean;
+  doacXa: boolean;      // Apixaban, Rivaroxaban, Edoxaban
+  doacIIa: boolean;     // Dabigatran
   antiplatelet: boolean;
 }
 
@@ -93,4 +120,51 @@ export interface AppState {
   factors: Record<string, Factor>;
   mode: 'basic' | 'clinical';
   hoveredFactor: string | null;
+  currentScenario: string | null;
+  factorConcentrations: InverseMappingResult | null;
+  // Toggle-uri pentru vizualizare relații
+  showFeedback: boolean;
+  showInhibition: boolean;
+}
+
+// ============================================
+// Inverse Mapping Types (Lab → Factor Concentrations)
+// ============================================
+
+/** Concentrația fiziologică a unui factor cu nivel de încredere */
+export interface FactorConcentration {
+  factorId: string;
+  concentrationNm: number;      // Concentrație absolută în nM
+  activityPercent: number;      // Relativ la normal (100% = normal)
+  confidence: 'high' | 'moderate' | 'low';
+}
+
+/** Lab pattern detectat */
+export type LabPattern =
+  | 'normal'
+  | 'aptt_isolated'      // aPTT prelungit, PT normal
+  | 'pt_isolated'        // PT prelungit, aPTT normal
+  | 'both_prolonged'     // PT și aPTT prelungite
+  | 'tt_prolonged'       // TT prelungit
+  | 'fibrinogen_low'     // Fibrinogen scăzut
+  | 'platelets_low'      // Trombocitopenie
+  | 'bleeding_time_long' // Timp sângerare prelungit
+  | 'mixed';             // Pattern complex/nespecific
+
+/** Rezultatul mapping-ului invers lab→factori */
+export interface InverseMappingResult {
+  concentrations: Record<string, FactorConcentration>;
+  pattern: LabPattern;
+  affectedPathway: 'intrinsic' | 'extrinsic' | 'common' | 'platelet' | 'mixed' | 'none';
+  affectedFactors: string[];
+  inhibitorSuspected: boolean;
+  confidence: 'high' | 'moderate' | 'low';
+  clinicalNotes: string[];
+}
+
+/** Context clinic pentru inferență îmbunătățită */
+export interface ClinicalContext {
+  knownDiagnosis?: string;
+  familyHistory?: boolean;
+  bleedingHistory?: 'none' | 'mild' | 'severe';
 }

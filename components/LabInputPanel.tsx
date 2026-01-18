@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { LabInput, MedicationContext, Hit4TCriteria } from '@/types';
+import { LabInput, MedicationContext } from '@/types';
 import { LAB_RANGES, calculateINRFromPT, calculatePTFromINR } from '@/engine/coagulation';
 
 interface Preset {
@@ -36,10 +36,22 @@ const TREATMENT_PRESETS: Preset[] = [
     meds: { lmwh: true },
   },
   {
-    id: 'doac',
-    name: 'DOAC',
-    lab: { pt: 14, inr: 1.2, aptt: 35, tt: 20, fibrinogen: 300, platelets: 250, dDimers: 250, bleedingTime: 5 },
-    meds: { doac: true },
+    id: 'doac_xa',
+    name: 'DOAC anti-Xa',
+    lab: { pt: 12, inr: 1.0, aptt: 33, tt: 17, fibrinogen: 300, platelets: 250, dDimers: 250, bleedingTime: 5 },
+    meds: { doacXa: true },
+  },
+  {
+    id: 'doac_iia',
+    name: 'DOAC anti-IIa',
+    lab: { pt: 13, inr: 1.1, aptt: 38, tt: 35, fibrinogen: 300, platelets: 250, dDimers: 250, bleedingTime: 5 },
+    meds: { doacIIa: true },
+  },
+  {
+    id: 'antiplatelet',
+    name: 'Antiagregant',
+    lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 9 },
+    meds: { antiplatelet: true },
   },
 ];
 
@@ -55,6 +67,16 @@ const PATHOLOGY_PRESETS: Preset[] = [
     lab: { pt: 12, inr: 1.0, aptt: 58, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 },
   },
   {
+    id: 'hemophilia_c',
+    name: 'Hemofilie C',
+    lab: { pt: 12, inr: 1.0, aptt: 52, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 },
+  },
+  {
+    id: 'f12_deficiency',
+    name: 'Deficit Factor XII',
+    lab: { pt: 12, inr: 1.0, aptt: 85, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 },
+  },
+  {
     id: 'vwd',
     name: 'Boala von Willebrand',
     lab: { pt: 12, inr: 1.0, aptt: 45, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 12 },
@@ -67,17 +89,17 @@ const PATHOLOGY_PRESETS: Preset[] = [
   {
     id: 'dic_activation',
     name: 'CID - Faza Activare',
-    lab: { pt: 14, inr: 1.2, aptt: 33, tt: 18, fibrinogen: 280, platelets: 120, dDimers: 1500, bleedingTime: 6 },
+    lab: { pt: 18, inr: 1.5, aptt: 33, tt: 18, fibrinogen: 280, platelets: 120, dDimers: 1500, bleedingTime: 6 },
   },
   {
     id: 'dic_consumption',
     name: 'CID - Faza Consum',
-    lab: { pt: 18, inr: 1.5, aptt: 45, tt: 24, fibrinogen: 150, platelets: 70, dDimers: 3000, bleedingTime: 8 },
+    lab: { pt: 22, inr: 1.8, aptt: 45, tt: 24, fibrinogen: 150, platelets: 70, dDimers: 3000, bleedingTime: 8 },
   },
   {
     id: 'dic_bleeding',
     name: 'CID - Faza Hemoragică',
-    lab: { pt: 28, inr: 2.3, aptt: 65, tt: 35, fibrinogen: 60, platelets: 25, dDimers: 6000, bleedingTime: 15 },
+    lab: { pt: 32, inr: 2.7, aptt: 65, tt: 35, fibrinogen: 60, platelets: 25, dDimers: 6000, bleedingTime: 15 },
   },
   {
     id: 'liver_failure',
@@ -104,11 +126,11 @@ const PATHOLOGY_PRESETS: Preset[] = [
 interface LabInputPanelProps {
   values: LabInput;
   medications: MedicationContext;
-  hit4TCriteria: Hit4TCriteria;
   onChange: (values: LabInput) => void;
   onMedicationChange: (meds: MedicationContext) => void;
-  onHit4TCriteriaChange: (criteria: Hit4TCriteria) => void;
   onReset: () => void;
+  onScenarioChange: (scenario: string | null) => void;
+  onLabHover?: (labKey: string | null) => void;
 }
 
 type NumericLabKey = 'pt' | 'inr' | 'aptt' | 'tt' | 'fibrinogen' | 'platelets' | 'dDimers' | 'bleedingTime';
@@ -127,7 +149,8 @@ const MEDICATION_OPTIONS: { key: keyof MedicationContext; label: string }[] = [
   { key: 'warfarin', label: 'Warfarină/AVK' },
   { key: 'heparin', label: 'Heparină UFH' },
   { key: 'lmwh', label: 'LMWH' },
-  { key: 'doac', label: 'DOAC' },
+  { key: 'doacXa', label: 'Anti-Xa (Xabani)' },
+  { key: 'doacIIa', label: 'Anti-IIa (Dabigatran)' },
   { key: 'antiplatelet', label: 'Antiagregant' },
 ];
 
@@ -144,11 +167,11 @@ function getInputStatus(value: number, key: NumericLabKey): 'normal' | 'abnormal
 export function LabInputPanel({
   values,
   medications,
-  hit4TCriteria,
   onChange,
   onMedicationChange,
-  onHit4TCriteriaChange,
   onReset,
+  onScenarioChange,
+  onLabHover,
 }: LabInputPanelProps): React.ReactElement {
   const [editingValues, setEditingValues] = useState<Partial<Record<NumericLabKey, string>>>({});
   const [activeTab, setActiveTab] = useState<'lab' | 'scenarios'>('lab');
@@ -158,6 +181,8 @@ export function LabInputPanel({
     const numValue = parseFloat(value);
     if (!isNaN(numValue)) {
       onChange({ ...values, [key]: numValue });
+      // Clear scenario when manually changing lab values
+      onScenarioChange(null);
     }
   };
 
@@ -187,6 +212,8 @@ export function LabInputPanel({
     if (!isNaN(numValue)) {
       const newINR = calculateINRFromPT(numValue);
       onChange({ ...values, pt: numValue, inr: newINR });
+      // Clear scenario when manually changing lab values
+      onScenarioChange(null);
     }
   };
 
@@ -197,6 +224,8 @@ export function LabInputPanel({
     if (!isNaN(numValue)) {
       const newPT = calculatePTFromINR(numValue);
       onChange({ ...values, inr: numValue, pt: newPT });
+      // Clear scenario when manually changing lab values
+      onScenarioChange(null);
     }
   };
 
@@ -211,17 +240,21 @@ export function LabInputPanel({
       dDimers: preset.lab.dDimers ?? 200,
       bleedingTime: preset.lab.bleedingTime ?? 5,
       mixingTest: preset.lab.mixingTest ?? 'not_performed',
+      apttMix: undefined,
     };
     onChange(newLab);
+    setEditingValues({});
 
     const newMeds: MedicationContext = {
       warfarin: preset.meds?.warfarin ?? false,
       heparin: preset.meds?.heparin ?? false,
       lmwh: preset.meds?.lmwh ?? false,
-      doac: preset.meds?.doac ?? false,
+      doacXa: preset.meds?.doacXa ?? false,
+      doacIIa: preset.meds?.doacIIa ?? false,
       antiplatelet: preset.meds?.antiplatelet ?? false,
     };
     onMedicationChange(newMeds);
+    onScenarioChange(preset.name);
     setActiveTab('lab');
   };
 
@@ -307,7 +340,11 @@ export function LabInputPanel({
             {/* PT / INR Row - Two columns */}
             <div className="grid grid-cols-2 gap-2">
               {/* PT */}
-              <div className="space-y-1">
+              <div
+                className="space-y-1"
+                onMouseEnter={() => onLabHover?.('pt')}
+                onMouseLeave={() => onLabHover?.(null)}
+              >
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-medium text-slate-600">PT</label>
                   <span className="text-[10px] text-slate-400">
@@ -333,7 +370,11 @@ export function LabInputPanel({
                 </div>
               </div>
               {/* INR */}
-              <div className="space-y-1">
+              <div
+                className="space-y-1"
+                onMouseEnter={() => onLabHover?.('inr')}
+                onMouseLeave={() => onLabHover?.(null)}
+              >
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-medium text-slate-600">INR</label>
                   <span className="text-[10px] text-slate-400">
@@ -364,7 +405,12 @@ export function LabInputPanel({
               const status = getInputStatus(values[key], key);
 
               return (
-                <div key={key} className="space-y-1">
+                <div
+                  key={key}
+                  className="space-y-1"
+                  onMouseEnter={() => onLabHover?.(key)}
+                  onMouseLeave={() => onLabHover?.(null)}
+                >
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-medium text-slate-600">
                       {label}
@@ -397,160 +443,51 @@ export function LabInputPanel({
             })}
           </div>
 
-          <div className="mt-4 pt-4 border-t border-slate-100">
-            <h3 className="text-xs font-semibold text-slate-600 mb-3">
-              Medicație Curentă
-            </h3>
-            <div className="space-y-2">
-              {MEDICATION_OPTIONS.map(({ key, label }) => (
-                <label
-                  key={key}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={medications[key]}
-                    onChange={() => handleMedChange(key)}
-                    className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-400"
-                  />
-                  <span className="text-xs text-slate-600">{label}</span>
-                </label>
-              ))}
+          {/* Medications - compact inline chips */}
+          <div className="mt-3 pt-3 border-t border-slate-100">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[10px] font-medium text-slate-500">Medicație:</span>
+              <div className="flex flex-wrap gap-1">
+                {MEDICATION_OPTIONS.map(({ key, label }) => (
+                  <button
+                    key={key}
+                    onClick={() => handleMedChange(key)}
+                    className={`px-2 py-0.5 text-[10px] font-medium rounded-full border transition-colors ${
+                      medications[key]
+                        ? 'bg-blue-500 text-white border-blue-500'
+                        : 'bg-white text-slate-500 border-slate-300 hover:border-blue-300'
+                    }`}
+                  >
+                    {label.split('/')[0]}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Mixing Test - only show when aPTT is elevated */}
+          {/* Mixing Test - compact inline when aPTT elevated */}
           {values.aptt > 40 && (
-            <div className="mt-4 pt-4 border-t border-slate-100">
-              <h3 className="text-xs font-semibold text-slate-600 mb-2">
-                Mixing Test
-              </h3>
-              <p className="text-[10px] text-slate-400 mb-3">
-                aPTT prelungit detectat. Efectuează mixing test pentru diferențiere.
-              </p>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="mixingTest"
-                    checked={values.mixingTest === 'not_performed'}
-                    onChange={() => onChange({ ...values, mixingTest: 'not_performed' })}
-                    className="w-4 h-4 border-slate-300 text-blue-500 focus:ring-blue-400"
-                  />
-                  <span className="text-xs text-slate-600">Neefectuat</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="mixingTest"
-                    checked={values.mixingTest === 'corrects'}
-                    onChange={() => onChange({ ...values, mixingTest: 'corrects' })}
-                    className="w-4 h-4 border-slate-300 text-green-500 focus:ring-green-400"
-                  />
-                  <span className="text-xs text-green-700 font-medium">Corectează → Deficit factor</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="mixingTest"
-                    checked={values.mixingTest === 'does_not_correct'}
-                    onChange={() => onChange({ ...values, mixingTest: 'does_not_correct' })}
-                    className="w-4 h-4 border-slate-300 text-red-500 focus:ring-red-400"
-                  />
-                  <span className="text-xs text-red-700 font-medium">NU corectează → Inhibitor</span>
-                </label>
-              </div>
+            <div className="mt-2 flex items-center gap-2 text-[10px]">
+              <span className="text-slate-500">Mixaj:</span>
+              <select
+                value={values.mixingTest}
+                onChange={(e) => {
+                  onChange({ ...values, mixingTest: e.target.value as LabInput['mixingTest'] });
+                  onScenarioChange(null);
+                }}
+                className={`px-2 py-0.5 text-[10px] border rounded ${
+                  values.mixingTest === 'corrects' ? 'border-green-300 bg-green-50 text-green-700' :
+                  values.mixingTest === 'does_not_correct' ? 'border-red-300 bg-red-50 text-red-700' :
+                  'border-slate-200 bg-white text-slate-600'
+                }`}
+              >
+                <option value="not_performed">Neefectuat</option>
+                <option value="corrects">Corectează (deficit)</option>
+                <option value="does_not_correct">NU corectează (inhibitor)</option>
+              </select>
             </div>
           )}
 
-          {/* 4T Score for HIT - show when heparin/LMWH and platelets low */}
-          {(medications.heparin || medications.lmwh) && values.platelets < 150 && (
-            <div className="mt-4 pt-4 border-t border-slate-100">
-              <h3 className="text-xs font-semibold text-slate-600 mb-2">
-                Scor 4T pentru HIT
-              </h3>
-              <p className="text-[10px] text-slate-400 mb-3">
-                Trombocitopenie sub heparină - evaluează riscul HIT
-              </p>
-
-              {/* Thrombocytopenia */}
-              <div className="mb-3">
-                <label className="text-[10px] font-medium text-slate-500 block mb-1">
-                  1. Trombocitopenie
-                </label>
-                <select
-                  value={hit4TCriteria.thrombocytopenia}
-                  onChange={(e) => onHit4TCriteriaChange({ ...hit4TCriteria, thrombocytopenia: Number(e.target.value) as 0 | 1 | 2 })}
-                  className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-md bg-white"
-                >
-                  <option value={2}>Scădere &gt;50% și nadir ≥20 (2 pct)</option>
-                  <option value={1}>Scădere 30-50% sau nadir 10-19 (1 pct)</option>
-                  <option value={0}>Scădere &lt;30% sau nadir &lt;10 (0 pct)</option>
-                </select>
-              </div>
-
-              {/* Timing */}
-              <div className="mb-3">
-                <label className="text-[10px] font-medium text-slate-500 block mb-1">
-                  2. Timing scădere trombocite
-                </label>
-                <select
-                  value={hit4TCriteria.timing}
-                  onChange={(e) => onHit4TCriteriaChange({ ...hit4TCriteria, timing: Number(e.target.value) as 0 | 1 | 2 })}
-                  className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-md bg-white"
-                >
-                  <option value={2}>Ziua 5-10 sau ≤1 zi (expunere recentă) (2 pct)</option>
-                  <option value={1}>Ziua &gt;10 sau timing neclar (1 pct)</option>
-                  <option value={0}>Ziua ≤4 fără expunere recentă (0 pct)</option>
-                </select>
-              </div>
-
-              {/* Thrombosis */}
-              <div className="mb-3">
-                <label className="text-[10px] font-medium text-slate-500 block mb-1">
-                  3. Tromboză sau alte sechele
-                </label>
-                <select
-                  value={hit4TCriteria.thrombosis}
-                  onChange={(e) => onHit4TCriteriaChange({ ...hit4TCriteria, thrombosis: Number(e.target.value) as 0 | 1 | 2 })}
-                  className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-md bg-white"
-                >
-                  <option value={2}>Tromboză nouă/necroză cutanată/reacție sistemică (2 pct)</option>
-                  <option value={1}>Tromboză progresivă/recurentă sau suspectată (1 pct)</option>
-                  <option value={0}>Fără tromboză (0 pct)</option>
-                </select>
-              </div>
-
-              {/* Other causes */}
-              <div className="mb-3">
-                <label className="text-[10px] font-medium text-slate-500 block mb-1">
-                  4. Alte cauze de trombocitopenie
-                </label>
-                <select
-                  value={hit4TCriteria.otherCauses}
-                  onChange={(e) => onHit4TCriteriaChange({ ...hit4TCriteria, otherCauses: Number(e.target.value) as 0 | 1 | 2 })}
-                  className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-md bg-white"
-                >
-                  <option value={2}>Nicio altă cauză evidentă (2 pct)</option>
-                  <option value={1}>Posibilă altă cauză (1 pct)</option>
-                  <option value={0}>Cauză alternativă certă (0 pct)</option>
-                </select>
-              </div>
-
-              {/* Score preview */}
-              <div className={`p-2 rounded-md text-center ${
-                (hit4TCriteria.thrombocytopenia + hit4TCriteria.timing + hit4TCriteria.thrombosis + hit4TCriteria.otherCauses) >= 6
-                  ? 'bg-red-100 border border-red-300'
-                  : (hit4TCriteria.thrombocytopenia + hit4TCriteria.timing + hit4TCriteria.thrombosis + hit4TCriteria.otherCauses) >= 4
-                    ? 'bg-yellow-100 border border-yellow-300'
-                    : 'bg-green-100 border border-green-300'
-              }`}>
-                <span className="text-xs font-semibold">
-                  Scor: {hit4TCriteria.thrombocytopenia + hit4TCriteria.timing + hit4TCriteria.thrombosis + hit4TCriteria.otherCauses}/8
-                </span>
-              </div>
-            </div>
-          )}
         </>
       )}
     </div>

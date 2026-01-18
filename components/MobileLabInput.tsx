@@ -11,17 +11,20 @@ interface Preset {
   meds?: Partial<MedicationContext>;
 }
 
+// IMPORTANT: Numele presetelor TREBUIE să se potrivească cu SCENARIO_AFFECTED_FACTORS din interpreter.ts
 const PRESETS: Preset[] = [
   { id: 'normal', name: 'Normal', lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 } },
-  { id: 'warfarin', name: 'Warfarină', lab: { pt: 28, inr: 2.3, aptt: 38, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 250 }, meds: { warfarin: true } },
-  { id: 'heparin', name: 'Heparină', lab: { pt: 14, inr: 1.2, aptt: 85, tt: 35, fibrinogen: 300, platelets: 220, dDimers: 300 }, meds: { heparin: true } },
+  { id: 'warfarin', name: 'Warfarină/AVK', lab: { pt: 28, inr: 2.3, aptt: 38, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 250 }, meds: { warfarin: true } },
+  { id: 'heparin', name: 'Heparină UFH', lab: { pt: 14, inr: 1.2, aptt: 85, tt: 35, fibrinogen: 300, platelets: 220, dDimers: 300 }, meds: { heparin: true } },
   { id: 'hemophilia_a', name: 'Hemofilie A', lab: { pt: 12, inr: 1.0, aptt: 65, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, mixingTest: 'corrects' } },
   { id: 'hemophilia_b', name: 'Hemofilie B', lab: { pt: 12, inr: 1.0, aptt: 55, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, mixingTest: 'corrects' } },
-  { id: 'vwd', name: 'vWD', lab: { pt: 12, inr: 1.0, aptt: 45, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 12, mixingTest: 'corrects' } },
-  { id: 'dic_bleeding', name: 'CID', lab: { pt: 28, inr: 2.3, aptt: 65, tt: 35, fibrinogen: 60, platelets: 25, dDimers: 6000, bleedingTime: 15 } },
-  { id: 'liver', name: 'Insuf. Hepatică', lab: { pt: 20, inr: 1.7, aptt: 48, tt: 22, fibrinogen: 120, platelets: 90, dDimers: 800 } },
-  { id: 'itp', name: 'ITP', lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 25, dDimers: 300, bleedingTime: 12 } },
-  { id: 'aps', name: 'APS (Lupus AC)', lab: { pt: 12, inr: 1.0, aptt: 55, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 400, mixingTest: 'does_not_correct' } },
+  { id: 'hemophilia_c', name: 'Hemofilie C', lab: { pt: 12, inr: 1.0, aptt: 52, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5, mixingTest: 'corrects' } },
+  { id: 'f12_deficiency', name: 'Deficit Factor XII', lab: { pt: 12, inr: 1.0, aptt: 85, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5, mixingTest: 'corrects' } },
+  { id: 'vwd', name: 'Boala von Willebrand', lab: { pt: 12, inr: 1.0, aptt: 45, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 12, mixingTest: 'corrects' } },
+  { id: 'dic_bleeding', name: 'CID - Faza Hemoragică', lab: { pt: 32, inr: 2.7, aptt: 65, tt: 35, fibrinogen: 60, platelets: 25, dDimers: 6000, bleedingTime: 15 } },
+  { id: 'liver', name: 'Insuficiență Hepatică', lab: { pt: 20, inr: 1.7, aptt: 48, tt: 22, fibrinogen: 120, platelets: 90, dDimers: 800 } },
+  { id: 'itp', name: 'Purpura Trombocitopenică', lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 25, dDimers: 300, bleedingTime: 12 } },
+  { id: 'aps', name: 'Sindrom Antifosfolipidic', lab: { pt: 12, inr: 1.0, aptt: 55, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 400, mixingTest: 'does_not_correct' } },
 ];
 
 interface MobileLabInputProps {
@@ -51,7 +54,8 @@ const MED_OPTIONS: { key: keyof MedicationContext; label: string; short: string 
   { key: 'warfarin', label: 'Warfarină', short: 'AVK' },
   { key: 'heparin', label: 'Heparină', short: 'HEP' },
   { key: 'lmwh', label: 'LMWH', short: 'LMWH' },
-  { key: 'doac', label: 'DOAC', short: 'DOAC' },
+  { key: 'doacXa', label: 'Anti-Xa', short: 'Xa' },
+  { key: 'doacIIa', label: 'Anti-IIa', short: 'IIa' },
   { key: 'antiplatelet', label: 'Antiagregant', short: 'ASA' },
 ];
 
@@ -81,6 +85,8 @@ export function MobileLabInput({
     const num = parseFloat(val);
     if (!isNaN(num)) {
       onChange({ ...values, [key]: num });
+      // Clear scenario when manually changing lab values
+      onScenarioChange(null);
     }
   };
 
@@ -107,6 +113,8 @@ export function MobileLabInput({
     if (!isNaN(numValue)) {
       const newINR = calculateINRFromPT(numValue);
       onChange({ ...values, pt: numValue, inr: newINR });
+      // Clear scenario when manually changing lab values
+      onScenarioChange(null);
     }
   };
 
@@ -117,6 +125,8 @@ export function MobileLabInput({
     if (!isNaN(numValue)) {
       const newPT = calculatePTFromINR(numValue);
       onChange({ ...values, inr: numValue, pt: newPT });
+      // Clear scenario when manually changing lab values
+      onScenarioChange(null);
     }
   };
 
@@ -131,14 +141,17 @@ export function MobileLabInput({
       dDimers: preset.lab.dDimers ?? 200,
       bleedingTime: preset.lab.bleedingTime ?? 5,
       mixingTest: preset.lab.mixingTest ?? 'not_performed',
+      apttMix: undefined, // Reset mixing test value
     };
     onChange(newLab);
+    setEditingValues({}); // Clear any editing state
 
     const newMeds: MedicationContext = {
       warfarin: preset.meds?.warfarin ?? false,
       heparin: preset.meds?.heparin ?? false,
       lmwh: preset.meds?.lmwh ?? false,
-      doac: preset.meds?.doac ?? false,
+      doacXa: preset.meds?.doacXa ?? false,
+      doacIIa: preset.meds?.doacIIa ?? false,
       antiplatelet: preset.meds?.antiplatelet ?? false,
     };
     onMedicationChange(newMeds);
@@ -300,6 +313,7 @@ export function MobileLabInput({
                 ...values,
                 apttMix: val ? parseFloat(val) : undefined,
               });
+              onScenarioChange(null);
             }}
             className="w-16 px-1.5 py-0.5 text-[10px] border border-slate-200 rounded text-right"
           />

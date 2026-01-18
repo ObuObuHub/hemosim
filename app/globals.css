@@ -195,6 +195,16 @@ body {
   line-height: 1.4;
 }
 
+.tooltip .clinical-note {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--panel-border);
+  font-size: 11px;
+  font-style: italic;
+  color: var(--text-muted);
+  opacity: 0.85;
+}
+
 /* Scenario card */
 .scenario-card {
   padding: 12px;
@@ -369,4 +379,194 @@ input[type="number"] {
   0% { transform: scale(0); opacity: 0; }
   50% { transform: scale(1.3); }
   100% { transform: scale(1); opacity: 1; }
+}
+
+/* Cascade Canvas Container */
+.cascade-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.cascade-canvas {
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+/* Factor Info Panel - Desktop (right side, absolute) */
+.factor-info-panel-desktop {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 240px;
+  max-height: calc(100% - 24px);
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+}
+
+/* Factor Info Panel - Mobile (floating) */
+.factor-info-panel-mobile {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  max-height: 50%;
+  overflow-y: auto;
+}
+
+/* Factor Info Header */
+.factor-info-header {
+  border-left: 3px solid var(--intrinsic);
+  padding-left: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.factor-info-header h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.pathway-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  width: fit-content;
+}
+
+/* Factor Info Body */
+.factor-info-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.factor-info-body p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.factor-info-body .status-normal {
+  color: var(--status-normal);
+}
+
+.factor-info-body .status-mild {
+  color: var(--status-low);
+}
+
+.factor-info-body .status-warning {
+  color: var(--status-high);
+}
+
+.factor-info-body .status-critical {
+  color: var(--status-critical);
+  font-weight: 600;
+}
+
+.factor-info-body .vit-k-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: #dcfce7;
+  color: #16a34a;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  width: fit-content;
+}
+
+.factor-info-body .vit-k-badge::before {
+  content: 'K';
+  font-weight: 700;
+  background: #16a34a;
+  color: #fff;
+  border-radius: 50%;
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+}
+
+.factor-info-body .clinical-note {
+  padding: 8px 10px;
+  background: #f8fafc;
+  border-left: 2px solid var(--panel-border);
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+.factor-info-body .relations {
+  font-size: 12px;
+}
+
+.factor-info-body .relations.inhibits {
+  color: #dc2626;
+}
+
+.factor-info-body .relations.feedback {
+  color: #f59e0b;
+}
+
+/* Close Info Button */
+.close-info-btn {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.close-info-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+/* Mobile adjustments for info panel */
+@media (max-width: 767px) {
+  .factor-info-panel-mobile {
+    animation: slide-up 0.2s ease-out;
+  }
+
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }

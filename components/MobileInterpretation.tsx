@@ -1,15 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { ClinicalInterpretation, Diagnosis, Hit4TCriteria, MedicationContext, LabInput } from '@/types';
-import { calculate4TScore } from '@/engine/interpreter';
+import { ClinicalInterpretation, Diagnosis, Hit4TCriteria, ISTHManualCriteria, MedicationContext, LabInput } from '@/types';
+import { calculate4TScore, calculateManualISTHScore, shouldShowISTHCalculator, shouldShowHIT4TCalculator } from '@/engine/interpreter';
 
 interface MobileInterpretationProps {
   interpretation: ClinicalInterpretation | null;
   hit4TCriteria: Hit4TCriteria;
+  isthManualCriteria: ISTHManualCriteria;
   medications: MedicationContext;
   labInput: LabInput;
   onHit4TCriteriaChange: (criteria: Hit4TCriteria) => void;
+  onIsthManualCriteriaChange: (criteria: ISTHManualCriteria) => void;
 }
 
 function CollapsibleSection({
@@ -65,21 +67,34 @@ function ProbabilityBadge({ probability }: { probability: Diagnosis['probability
   );
 }
 
+function MobileScoreBadge({ score, color }: { score: number; color: string }): React.ReactElement {
+  return (
+    <div className={`flex items-center justify-center w-7 h-7 rounded-full ${color} font-bold text-xs shrink-0`}>
+      {score}
+    </div>
+  );
+}
+
 export function MobileInterpretation({
   interpretation,
   hit4TCriteria,
+  isthManualCriteria,
   medications,
   labInput,
   onHit4TCriteriaChange,
+  onIsthManualCriteriaChange,
 }: MobileInterpretationProps): React.ReactElement {
-  const show4TScore = (medications.heparin || medications.lmwh) && labInput.platelets < 150;
-  const hit4TScore = show4TScore ? calculate4TScore(hit4TCriteria) : null;
+  const showISTHCalculator = shouldShowISTHCalculator(labInput, medications);
+  const showHIT4TCalculator = shouldShowHIT4TCalculator(medications, labInput);
+
+  const manualISTHScore = showISTHCalculator ? calculateManualISTHScore(isthManualCriteria) : null;
+  const hit4TScore = showHIT4TCalculator ? calculate4TScore(hit4TCriteria) : null;
 
   if (!interpretation) {
     return (
       <div className="text-center py-6">
         <p className="text-xs text-slate-400">
-          Introduceți valorile de laborator pentru interpretare
+          Introduceti valorile de laborator pentru interpretare
         </p>
       </div>
     );
@@ -101,132 +116,236 @@ export function MobileInterpretation({
         </div>
       )}
 
-      {/* ISTH Score - if present */}
-      {interpretation.isthScore && (
-        <div className="mb-3 p-2 bg-orange-50 border border-orange-200 rounded">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[10px] font-semibold text-orange-800">Scor ISTH CID</span>
-            <span className={`text-sm font-bold ${
-              interpretation.isthScore.total >= 5 ? 'text-red-600' : 'text-orange-600'
+      {/* Modern ISTH Calculator for CID */}
+      {showISTHCalculator && manualISTHScore && (
+        <div className="mb-3 rounded-xl overflow-hidden shadow-sm border border-orange-200">
+          {/* Header with gradient */}
+          <div className="bg-gradient-to-r from-orange-500 to-amber-500 px-3 py-2 flex items-center justify-between">
+            <span className="text-white font-semibold text-xs">Scor ISTH - CID</span>
+            <div className={`px-2 py-0.5 rounded-full font-bold text-sm ${
+              manualISTHScore.total >= 5
+                ? 'bg-red-600 text-white'
+                : 'bg-white/90 text-orange-600'
             }`}>
-              {interpretation.isthScore.total}/8
-            </span>
+              {manualISTHScore.total}/8
+            </div>
           </div>
-          <div className="grid grid-cols-4 gap-1 mb-1.5">
-            {[
-              { label: 'PLT', value: interpretation.isthScore.platelets },
-              { label: 'D-dim', value: interpretation.isthScore.dDimers },
-              { label: 'PT', value: interpretation.isthScore.pt },
-              { label: 'Fib', value: interpretation.isthScore.fibrinogen },
-            ].map(item => (
-              <div key={item.label} className="text-center p-1 bg-white rounded">
-                <div className="text-[8px] text-slate-500">{item.label}</div>
-                <div className="text-xs font-semibold text-slate-700">{item.value}</div>
+
+          {/* Criteria rows */}
+          <div className="bg-white divide-y divide-orange-100">
+            {/* PLT */}
+            <div className="flex items-center gap-2 px-3 py-2">
+              <MobileScoreBadge
+                score={isthManualCriteria.plateletCount}
+                color={isthManualCriteria.plateletCount === 0 ? 'bg-green-100 text-green-700' : isthManualCriteria.plateletCount === 1 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}
+              />
+              <div className="flex-1 min-w-0">
+                <div className="text-[9px] font-medium text-slate-400 uppercase">Trombocite</div>
+                <select
+                  value={isthManualCriteria.plateletCount}
+                  onChange={(e) => onIsthManualCriteriaChange({ ...isthManualCriteria, plateletCount: Number(e.target.value) as 0 | 1 | 2 })}
+                  className="w-full px-0 py-0.5 text-[11px] border-0 border-b border-orange-200 bg-transparent focus:ring-0 cursor-pointer"
+                >
+                  <option value={0}>&gt;100.000/µL</option>
+                  <option value={1}>50-100.000/µL</option>
+                  <option value={2}>&lt;50.000/µL</option>
+                </select>
               </div>
-            ))}
+            </div>
+
+            {/* D-dimers */}
+            <div className="flex items-center gap-2 px-3 py-2">
+              <MobileScoreBadge
+                score={isthManualCriteria.dDimerLevel}
+                color={isthManualCriteria.dDimerLevel === 0 ? 'bg-green-100 text-green-700' : isthManualCriteria.dDimerLevel === 2 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}
+              />
+              <div className="flex-1 min-w-0">
+                <div className="text-[9px] font-medium text-slate-400 uppercase">D-Dimeri</div>
+                <select
+                  value={isthManualCriteria.dDimerLevel}
+                  onChange={(e) => onIsthManualCriteriaChange({ ...isthManualCriteria, dDimerLevel: Number(e.target.value) as 0 | 2 | 3 })}
+                  className="w-full px-0 py-0.5 text-[11px] border-0 border-b border-orange-200 bg-transparent focus:ring-0 cursor-pointer"
+                >
+                  <option value={0}>Normal</option>
+                  <option value={2}>Crestere moderata</option>
+                  <option value={3}>Crestere severa</option>
+                </select>
+              </div>
+            </div>
+
+            {/* PT */}
+            <div className="flex items-center gap-2 px-3 py-2">
+              <MobileScoreBadge
+                score={isthManualCriteria.ptProlongation}
+                color={isthManualCriteria.ptProlongation === 0 ? 'bg-green-100 text-green-700' : isthManualCriteria.ptProlongation === 1 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}
+              />
+              <div className="flex-1 min-w-0">
+                <div className="text-[9px] font-medium text-slate-400 uppercase">PT (prelungire)</div>
+                <select
+                  value={isthManualCriteria.ptProlongation}
+                  onChange={(e) => onIsthManualCriteriaChange({ ...isthManualCriteria, ptProlongation: Number(e.target.value) as 0 | 1 | 2 })}
+                  className="w-full px-0 py-0.5 text-[11px] border-0 border-b border-orange-200 bg-transparent focus:ring-0 cursor-pointer"
+                >
+                  <option value={0}>&lt;3 secunde</option>
+                  <option value={1}>3-6 secunde</option>
+                  <option value={2}>&gt;6 secunde</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Fibrinogen */}
+            <div className="flex items-center gap-2 px-3 py-2">
+              <MobileScoreBadge
+                score={isthManualCriteria.fibrinogenLevel}
+                color={isthManualCriteria.fibrinogenLevel === 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}
+              />
+              <div className="flex-1 min-w-0">
+                <div className="text-[9px] font-medium text-slate-400 uppercase">Fibrinogen</div>
+                <select
+                  value={isthManualCriteria.fibrinogenLevel}
+                  onChange={(e) => onIsthManualCriteriaChange({ ...isthManualCriteria, fibrinogenLevel: Number(e.target.value) as 0 | 1 })}
+                  className="w-full px-0 py-0.5 text-[11px] border-0 border-b border-orange-200 bg-transparent focus:ring-0 cursor-pointer"
+                >
+                  <option value={0}>&gt;100 mg/dL</option>
+                  <option value={1}>≤100 mg/dL</option>
+                </select>
+              </div>
+            </div>
           </div>
-          <div className={`text-[10px] font-medium text-center py-1 rounded ${
-            interpretation.isthScore.total >= 5 ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
+
+          {/* Footer interpretation */}
+          <div className={`px-3 py-2 text-center text-[11px] font-semibold ${
+            manualISTHScore.total >= 5
+              ? 'bg-red-600 text-white'
+              : 'bg-amber-100 text-amber-800'
           }`}>
-            {interpretation.isthScore.interpretation}
+            {manualISTHScore.interpretation}
           </div>
         </div>
       )}
 
-      {/* 4T Score for HIT */}
-      {show4TScore && (
-        <CollapsibleSection
-          title="Scor 4T pentru HIT"
-          defaultOpen={true}
-          badge={
-            hit4TScore && (
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                hit4TScore.probability === 'high'
-                  ? 'bg-red-100 text-red-700'
-                  : hit4TScore.probability === 'intermediate'
-                    ? 'bg-yellow-100 text-yellow-700'
-                    : 'bg-green-100 text-green-700'
-              }`}>
-                {hit4TScore.total}/8
-              </span>
-            )
-          }
-        >
-          <div className="space-y-2">
+      {/* Modern 4T Score for HIT */}
+      {showHIT4TCalculator && hit4TScore && (
+        <div className="mb-3 rounded-xl overflow-hidden shadow-sm border border-slate-200">
+          {/* Header with gradient */}
+          <div className={`px-3 py-2 flex items-center justify-between ${
+            hit4TScore.probability === 'high'
+              ? 'bg-gradient-to-r from-red-500 to-rose-500'
+              : hit4TScore.probability === 'intermediate'
+                ? 'bg-gradient-to-r from-yellow-500 to-amber-500'
+                : 'bg-gradient-to-r from-green-500 to-emerald-500'
+          }`}>
+            <span className="text-white font-semibold text-xs">Scor 4T - HIT</span>
+            <div className={`px-2 py-0.5 rounded-full font-bold text-sm ${
+              hit4TScore.probability === 'high'
+                ? 'bg-white text-red-600'
+                : hit4TScore.probability === 'intermediate'
+                  ? 'bg-white text-yellow-600'
+                  : 'bg-white text-green-600'
+            }`}>
+              {hit4TScore.total}/8
+            </div>
+          </div>
+
+          {/* Criteria rows */}
+          <div className="bg-white divide-y divide-slate-100">
             {/* Thrombocytopenia */}
-            <div>
-              <label className="text-[10px] text-slate-500 block mb-1">1. Trombocitopenie</label>
-              <select
-                value={hit4TCriteria.thrombocytopenia}
-                onChange={(e) => onHit4TCriteriaChange({ ...hit4TCriteria, thrombocytopenia: Number(e.target.value) as 0 | 1 | 2 })}
-                className="w-full px-2 py-1.5 text-[11px] border border-slate-200 rounded bg-white"
-              >
-                <option value={2}>Scădere &gt;50%, nadir ≥20 (2)</option>
-                <option value={1}>Scădere 30-50% sau nadir 10-19 (1)</option>
-                <option value={0}>Scădere &lt;30% sau nadir &lt;10 (0)</option>
-              </select>
+            <div className="flex items-center gap-2 px-3 py-2">
+              <MobileScoreBadge
+                score={hit4TCriteria.thrombocytopenia}
+                color={hit4TCriteria.thrombocytopenia === 2 ? 'bg-green-100 text-green-700' : hit4TCriteria.thrombocytopenia === 1 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}
+              />
+              <div className="flex-1 min-w-0">
+                <div className="text-[9px] font-medium text-slate-400 uppercase">Trombocitopenie</div>
+                <select
+                  value={hit4TCriteria.thrombocytopenia}
+                  onChange={(e) => onHit4TCriteriaChange({ ...hit4TCriteria, thrombocytopenia: Number(e.target.value) as 0 | 1 | 2 })}
+                  className="w-full px-0 py-0.5 text-[11px] border-0 border-b border-slate-200 bg-transparent focus:ring-0 cursor-pointer"
+                >
+                  <option value={2}>Scadere &gt;50%, nadir ≥20k</option>
+                  <option value={1}>Scadere 30-50%, nadir 10-19k</option>
+                  <option value={0}>Scadere &lt;30%, nadir &lt;10k</option>
+                </select>
+              </div>
             </div>
 
             {/* Timing */}
-            <div>
-              <label className="text-[10px] text-slate-500 block mb-1">2. Timing</label>
-              <select
-                value={hit4TCriteria.timing}
-                onChange={(e) => onHit4TCriteriaChange({ ...hit4TCriteria, timing: Number(e.target.value) as 0 | 1 | 2 })}
-                className="w-full px-2 py-1.5 text-[11px] border border-slate-200 rounded bg-white"
-              >
-                <option value={2}>Ziua 5-10 sau ≤1zi reexpunere (2)</option>
-                <option value={1}>Ziua &gt;10 sau timing neclar (1)</option>
-                <option value={0}>Ziua ≤4 fără expunere (0)</option>
-              </select>
+            <div className="flex items-center gap-2 px-3 py-2">
+              <MobileScoreBadge
+                score={hit4TCriteria.timing}
+                color={hit4TCriteria.timing === 2 ? 'bg-green-100 text-green-700' : hit4TCriteria.timing === 1 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}
+              />
+              <div className="flex-1 min-w-0">
+                <div className="text-[9px] font-medium text-slate-400 uppercase">Timing</div>
+                <select
+                  value={hit4TCriteria.timing}
+                  onChange={(e) => onHit4TCriteriaChange({ ...hit4TCriteria, timing: Number(e.target.value) as 0 | 1 | 2 })}
+                  className="w-full px-0 py-0.5 text-[11px] border-0 border-b border-slate-200 bg-transparent focus:ring-0 cursor-pointer"
+                >
+                  <option value={2}>Ziua 5-10 / ≤1zi reexpunere</option>
+                  <option value={1}>&gt;ziua 10 / timing neclar</option>
+                  <option value={0}>≤ziua 4 fara expunere</option>
+                </select>
+              </div>
             </div>
 
             {/* Thrombosis */}
-            <div>
-              <label className="text-[10px] text-slate-500 block mb-1">3. Tromboză</label>
-              <select
-                value={hit4TCriteria.thrombosis}
-                onChange={(e) => onHit4TCriteriaChange({ ...hit4TCriteria, thrombosis: Number(e.target.value) as 0 | 1 | 2 })}
-                className="w-full px-2 py-1.5 text-[11px] border border-slate-200 rounded bg-white"
-              >
-                <option value={2}>Nouă/necroză/reacție sistemică (2)</option>
-                <option value={1}>Progresivă/recurentă/suspectată (1)</option>
-                <option value={0}>Fără tromboză (0)</option>
-              </select>
+            <div className="flex items-center gap-2 px-3 py-2">
+              <MobileScoreBadge
+                score={hit4TCriteria.thrombosis}
+                color={hit4TCriteria.thrombosis === 2 ? 'bg-green-100 text-green-700' : hit4TCriteria.thrombosis === 1 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}
+              />
+              <div className="flex-1 min-w-0">
+                <div className="text-[9px] font-medium text-slate-400 uppercase">Tromboza</div>
+                <select
+                  value={hit4TCriteria.thrombosis}
+                  onChange={(e) => onHit4TCriteriaChange({ ...hit4TCriteria, thrombosis: Number(e.target.value) as 0 | 1 | 2 })}
+                  className="w-full px-0 py-0.5 text-[11px] border-0 border-b border-slate-200 bg-transparent focus:ring-0 cursor-pointer"
+                >
+                  <option value={2}>Noua confirmata</option>
+                  <option value={1}>Progresiva/suspectata</option>
+                  <option value={0}>Niciuna</option>
+                </select>
+              </div>
             </div>
 
             {/* Other causes */}
-            <div>
-              <label className="text-[10px] text-slate-500 block mb-1">4. Alte cauze</label>
-              <select
-                value={hit4TCriteria.otherCauses}
-                onChange={(e) => onHit4TCriteriaChange({ ...hit4TCriteria, otherCauses: Number(e.target.value) as 0 | 1 | 2 })}
-                className="w-full px-2 py-1.5 text-[11px] border border-slate-200 rounded bg-white"
-              >
-                <option value={2}>Nicio altă cauză (2)</option>
-                <option value={1}>Posibilă altă cauză (1)</option>
-                <option value={0}>Cauză alternativă certă (0)</option>
-              </select>
-            </div>
-
-            {hit4TScore && (
-              <div className={`p-2 rounded text-center ${
-                hit4TScore.probability === 'high'
-                  ? 'bg-red-100 text-red-700'
-                  : hit4TScore.probability === 'intermediate'
-                    ? 'bg-yellow-100 text-yellow-700'
-                    : 'bg-green-100 text-green-700'
-              }`}>
-                <span className="text-[11px] font-medium">{hit4TScore.interpretation}</span>
+            <div className="flex items-center gap-2 px-3 py-2">
+              <MobileScoreBadge
+                score={hit4TCriteria.otherCauses}
+                color={hit4TCriteria.otherCauses === 2 ? 'bg-green-100 text-green-700' : hit4TCriteria.otherCauses === 1 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}
+              />
+              <div className="flex-1 min-w-0">
+                <div className="text-[9px] font-medium text-slate-400 uppercase">Alte cauze</div>
+                <select
+                  value={hit4TCriteria.otherCauses}
+                  onChange={(e) => onHit4TCriteriaChange({ ...hit4TCriteria, otherCauses: Number(e.target.value) as 0 | 1 | 2 })}
+                  className="w-full px-0 py-0.5 text-[11px] border-0 border-b border-slate-200 bg-transparent focus:ring-0 cursor-pointer"
+                >
+                  <option value={2}>Nu exista alte cauze</option>
+                  <option value={1}>Posibile alte cauze</option>
+                  <option value={0}>Cauza certa alternativa</option>
+                </select>
               </div>
-            )}
+            </div>
           </div>
-        </CollapsibleSection>
+
+          {/* Footer interpretation */}
+          <div className={`px-3 py-2 text-center text-[11px] font-semibold ${
+            hit4TScore.probability === 'high'
+              ? 'bg-red-600 text-white'
+              : hit4TScore.probability === 'intermediate'
+                ? 'bg-yellow-500 text-white'
+                : 'bg-green-600 text-white'
+          }`}>
+            {hit4TScore.interpretation}
+          </div>
+        </div>
       )}
 
       {/* Diagnoses */}
       <CollapsibleSection
-        title="Diagnostic Diferențial"
+        title="Diagnostic Diferential"
         defaultOpen={true}
         badge={
           interpretation.diagnoses.length > 0 && (
@@ -262,7 +381,7 @@ export function MobileInterpretation({
 
       {/* Recommendations */}
       {interpretation.recommendations.length > 0 && (
-        <CollapsibleSection title="Recomandări" defaultOpen={false}>
+        <CollapsibleSection title="Recomandari" defaultOpen={false}>
           <ul className="space-y-1">
             {interpretation.recommendations.map((rec, i) => (
               <li key={i} className="text-[11px] text-slate-600 flex items-start gap-1.5">

@@ -1,5 +1,35 @@
-import { LabInput, MedicationContext, ClinicalInterpretation, Diagnosis, Factor, ISTHScore, Hit4TCriteria, Hit4TScore } from '@/types';
+import { LabInput, MedicationContext, ClinicalInterpretation, Diagnosis, Factor, ISTHScore, ISTHManualCriteria, Hit4TCriteria, Hit4TScore } from '@/types';
 import { LAB_RANGES } from './coagulation';
+import { calculateFactorConcentrations } from './inverse-mapping';
+
+// Mapare scenariu → factori afectați (pentru educație)
+// Când un scenariu este selectat, acești factori sunt evidențiați în loc de diagnosticul diferențial
+const SCENARIO_AFFECTED_FACTORS: Record<string, string[]> = {
+  // Coagulopatii congenitale
+  'Hemofilie A': ['F8'],
+  'Hemofilie B': ['F9'],
+  'Hemofilie C': ['F11'],  // Deficit Factor XI - sângerare variabilă
+  'Deficit Factor XII': ['F12'],  // aPTT prelungit izolat, FĂRĂ risc de sângerare
+  'Boala von Willebrand': ['vWF', 'F8'],
+  'Purpura Trombocitopenică': ['PLT'],
+  // Deficite dobândite
+  'Deficit Vitamina K': ['F2', 'F7', 'F9', 'F10', 'PC', 'PS'],  // Vit K dependenți (PC, PS = anticoagulanți)
+  'Insuficiență Hepatică': ['F2', 'F5', 'F7', 'F9', 'F10', 'F11', 'F12', 'F13', 'FBG', 'AT', 'PC'],  // Toți factorii produși în ficat (FĂRĂ F8!)
+  // Trombofilie (nu deficit, ci hipercoagulabilitate)
+  'Sindrom Antifosfolipidic': [],
+  'Trombofilie': [],
+  // CID - progresie fazică
+  'CID - Faza Activare': ['FBG', 'PLT'],  // Consum incipient
+  'CID - Faza Consum': ['F2', 'F5', 'F8', 'F10', 'FBG', 'PLT'],
+  'CID - Faza Hemoragică': ['F2', 'F5', 'F8', 'F10', 'FBG', 'PLT'],
+  // Anticoagulante
+  'Warfarină/AVK': ['F2', 'F7', 'F9', 'F10', 'PC', 'PS'],  // Vitamina K dependenți (inclusiv anticoagulanți)
+  'Heparină UFH': ['IIa', 'F10a'],  // Potențează AT → inhibă IIa și Xa
+  'LMWH': ['F10a'],  // Predominant anti-Xa
+  'DOAC anti-Xa': ['F10a'],  // Rivaroxaban, Apixaban, Edoxaban
+  'DOAC anti-IIa': ['IIa'],  // Dabigatran
+  'Antiagregant': ['PLT'],  // Aspirină, Clopidogrel - inhibă funcția trombocitară
+};
 
 type LabStatus = 'normal' | 'high' | 'low' | 'critical';
 
@@ -56,6 +86,64 @@ export function calculateISTHScore(lab: LabInput): ISTHScore {
     fibrinogen: fibScore,
     interpretation,
   };
+}
+
+/** Calculates ISTH DIC score from manual criteria input */
+export function calculateManualISTHScore(criteria: ISTHManualCriteria): ISTHScore {
+  const total = criteria.plateletCount + criteria.dDimerLevel + criteria.ptProlongation + criteria.fibrinogenLevel;
+
+  let interpretation = '';
+  if (total >= 5) {
+    interpretation = 'CID MANIFEST (overt DIC)';
+  } else if (total >= 3) {
+    interpretation = 'Posibil CID non-manifest - repetă la 24-48h';
+  } else {
+    interpretation = 'CID puțin probabil';
+  }
+
+  return {
+    total,
+    platelets: criteria.plateletCount,
+    dDimers: criteria.dDimerLevel,
+    pt: criteria.ptProlongation,
+    fibrinogen: criteria.fibrinogenLevel,
+    interpretation,
+  };
+}
+
+/** Determines if the ISTH calculator should be shown based on lab pattern */
+export function shouldShowISTHCalculator(lab: LabInput, meds: MedicationContext): boolean {
+  const ptStatus = getStatus(lab.pt, 'pt');
+  const apttStatus = getStatus(lab.aptt, 'aptt');
+  const fibStatus = getStatus(lab.fibrinogen, 'fibrinogen');
+  const pltStatus = getStatus(lab.platelets, 'platelets');
+  const dDimerStatus = getStatus(lab.dDimers, 'dDimers');
+
+  const ptHigh = ptStatus === 'high' || ptStatus === 'critical';
+  const apttHigh = apttStatus === 'high' || apttStatus === 'critical';
+  const fibLow = fibStatus === 'low' || fibStatus === 'critical';
+  const pltLow = pltStatus === 'low' || pltStatus === 'critical';
+  const dDimerHigh = dDimerStatus === 'high' || dDimerStatus === 'critical';
+
+  // Exclude warfarin/anticoagulants which cause similar PT patterns
+  if (meds.warfarin || meds.doacXa || meds.doacIIa) return false;
+
+  const hasCoagAbnormality = ptHigh || apttHigh;
+  const hasConsumption = pltLow || fibLow;
+
+  // CID suspicion patterns:
+  // 1. PT/aPTT↑ + PLT↓ + Fibrinogen↓ (triada clasica - chiar fara D-dimeri)
+  // 2. PT/aPTT↑ + (PLT↓ SAU Fibrinogen↓) + D-dimeri↑
+  const classicTriad = hasCoagAbnormality && pltLow && fibLow;
+  const withDDimers = hasCoagAbnormality && hasConsumption && dDimerHigh;
+
+  return classicTriad || withDDimers;
+}
+
+/** Determines if the 4T HIT calculator should be shown */
+export function shouldShowHIT4TCalculator(meds: MedicationContext, lab: LabInput): boolean {
+  // Show when heparin/LMWH active and platelets < 150
+  return (meds.heparin || meds.lmwh) && lab.platelets < 150;
 }
 
 export function calculate4TScore(criteria: Hit4TCriteria): Hit4TScore {
@@ -119,10 +207,15 @@ export function interpretLabValues(
   if ((meds.heparin || meds.lmwh) && pltLow && hit4TCriteria) {
     hit4TScore = calculate4TScore(hit4TCriteria);
     if (hit4TScore.probability === 'high') {
-      warnings.push(`URGENȚĂ HIT: Scor 4T = ${hit4TScore.total}/8 - OPREȘTE HEPARINA IMEDIAT!`);
+      warnings.push(`ATENȚIE: Scor 4T = ${hit4TScore.total}/8 - Probabilitate ridicată HIT. Contactați clinicianul curant URGENT.`);
     } else if (hit4TScore.probability === 'intermediate') {
       warnings.push(`Suspiciune HIT: Scor 4T = ${hit4TScore.total}/8 - Testează anti-PF4/heparină`);
     }
+  }
+
+  // INR >= 6 = Plasmă incoagulabilă - urgență hemoragică
+  if (lab.inr >= 6) {
+    warnings.push(`URGENȚĂ: INR ${lab.inr} - PLASMĂ INCOAGULABILĂ! Risc hemoragic major.`);
   }
 
   // Pattern recognition
@@ -156,9 +249,9 @@ export function interpretLabValues(
           id: 'vwd',
           name: 'Boala von Willebrand',
           probability: 'high',
-          description: 'Deficit vWF cu afectare secundară F.VIII. BT prelungit sugestiv.',
+          description: 'Deficit vWF cu afectare secundară F.VIII. BT prelungit + aPTT↑ = combinație sugestivă.',
           affectedFactors: ['vWF', 'F8'],
-          suggestedTests: ['vWF:Ag', 'vWF:RCo', 'Factor VIII', 'Multimeri vWF'],
+          suggestedTests: ['vWF:Ag', 'vWF:RCo', 'vWF:CB', 'Factor VIII', 'Multimeri vWF'],
         });
         diagnoses.push({
           id: 'hemophilia_a',
@@ -168,6 +261,7 @@ export function interpretLabValues(
           affectedFactors: ['F8'],
           suggestedTests: ['Dozare Factor VIII'],
         });
+        recommendations.push('NOTĂ vWD: aPTT prelungit apare DOAR când FVIII <30-40%. Multe cazuri de vWD au aPTT NORMAL!');
       } else {
         // Normal BT + aPTT suggests isolated factor deficiency
         diagnoses.push({
@@ -190,7 +284,7 @@ export function interpretLabValues(
           id: 'hemophilia_c',
           name: 'Hemofilie C (Deficit F.XI)',
           probability: 'low',
-          description: 'Deficit Factor XI. Frecvent la evrei Ashkenazi.',
+          description: 'Deficit Factor XI. Sângerare variabilă.',
           affectedFactors: ['F11'],
           suggestedTests: ['Dozare Factor XI'],
         });
@@ -211,7 +305,7 @@ export function interpretLabValues(
         affectedFactors: ['F12'],
         suggestedTests: ['Dozare Factor XII'],
       });
-      recommendations.push('Mixing test CORECTEAZĂ → Deficit de factor confirmat');
+      recommendations.push('Test de mixaj CORECTEAZĂ → Deficit de factor confirmat');
       recommendations.push('Dozează factorii individuali: VIII, IX, XI');
     } else if (lab.mixingTest === 'does_not_correct') {
       // Mixing test DOES NOT CORRECT = Inhibitor present
@@ -239,8 +333,8 @@ export function interpretLabValues(
         affectedFactors: [],
         suggestedTests: ['Dozare factori individuali', 'Titru inhibitor'],
       });
-      warnings.push('MIXING TEST NU CORECTEAZĂ → Inhibitor prezent!');
-      recommendations.push('Mixing test NU CORECTEAZĂ → Inhibitor confirmat');
+      warnings.push('TEST DE MIXAJ NU CORECTEAZĂ → Inhibitor prezent!');
+      recommendations.push('Test de mixaj NU CORECTEAZĂ → Inhibitor confirmat');
       recommendations.push('ATENȚIE: APS = risc TROMBOTIC, nu hemoragic!');
       recommendations.push('Dacă sângerare: consideră hemofilie dobândită (anti-FVIII)');
     } else {
@@ -251,7 +345,7 @@ export function interpretLabValues(
         probability: 'high',
         description: 'Deficit Factor VIII. X-linked recesiv.',
         affectedFactors: ['F8'],
-        suggestedTests: ['Dozare Factor VIII', 'Mixing test'],
+        suggestedTests: ['Dozare Factor VIII', 'Test de mixaj'],
       });
       diagnoses.push({
         id: 'hemophilia_b',
@@ -265,7 +359,7 @@ export function interpretLabValues(
         id: 'hemophilia_c',
         name: 'Hemofilie C (Deficit F.XI)',
         probability: 'moderate',
-        description: 'Deficit Factor XI. Frecvent la evrei Ashkenazi. Sângerare variabilă.',
+        description: 'Deficit Factor XI. Sângerare variabilă.',
         affectedFactors: ['F11'],
         suggestedTests: ['Dozare Factor XI'],
       });
@@ -273,7 +367,7 @@ export function interpretLabValues(
         id: 'vwd',
         name: 'Boala von Willebrand',
         probability: 'moderate',
-        description: 'Deficit vWF cu afectare secundară F.VIII.',
+        description: 'Deficit vWF cu afectare secundară F.VIII. aPTT poate fi ușor prelungit sau normal.',
         affectedFactors: ['vWF', 'F8'],
         suggestedTests: ['vWF:Ag', 'vWF:RCo', 'Factor VIII'],
       });
@@ -291,11 +385,11 @@ export function interpretLabValues(
         probability: 'low',
         description: 'TROMBOFILIE! Paradox: aPTT↑ in vitro dar risc TROMBOTIC in vivo.',
         affectedFactors: ['F12'],
-        suggestedTests: ['Mixing test (nu corectează)', 'dRVVT', 'Anti-cardiolipin IgG/IgM', 'Anti-β2GP1'],
+        suggestedTests: ['Test de mixaj (nu corectează)', 'dRVVT', 'Anti-cardiolipin IgG/IgM', 'Anti-β2GP1'],
       });
-      recommendations.push('⚡ Efectuează MIXING TEST pentru diferențiere deficit vs inhibitor');
+      recommendations.push('Efectuează test de mixaj pentru diferențiere deficit vs inhibitor');
       recommendations.push('ATENȚIE: aPTT prelungit NU exclude trombofilie (anticoagulant lupic)');
-      recommendations.push('Deficit F.XII: NU cauzează sângerare - nu necesită tratament profilactic');
+      recommendations.push('Deficit F.XII: NU cauzează sângerare clinică - anomalie de laborator fără semnificație hemoragică.');
     }
   }
   // Isolated PT prolongation
@@ -315,16 +409,26 @@ export function interpretLabValues(
       if (lab.pt > 25) {
         warnings.push('PT >25s - risc hemoragic crescut sub AVK');
       }
-    } else if (meds.doac) {
+    } else if (meds.doacXa) {
       diagnoses.push({
         id: 'doac_xa_effect',
         name: 'Efect DOAC (inhibitor Xa)',
         probability: 'high',
-        description: 'Rivaroxaban/Apixaban/Edoxaban prelungesc PT. Efect variabil pe aPTT.',
-        affectedFactors: ['F10'],
-        suggestedTests: ['Anti-Xa specific (pentru cuantificare)', 'Verificare timp de la ultima doză'],
+        description: 'Rivaroxaban/Apixaban/Edoxaban inhibă F.Xa. PT-ul nu este un indicator de încredere.',
+        affectedFactors: ['F10a'],
+        suggestedTests: ['Verificare timp de la ultima doză', 'Istoric dozare'],
       });
-      recommendations.push('PT nu reflectă fidel nivelul DOAC - folosește anti-Xa chromogenic');
+      recommendations.push('PT-ul nu este un indicator de încredere pentru anti-Xa DOAC');
+    } else if (meds.doacIIa) {
+      diagnoses.push({
+        id: 'doac_iia_effect',
+        name: 'Efect Dabigatran (inhibitor IIa)',
+        probability: 'high',
+        description: 'Dabigatran poate prelungi ușor PT, dar TT este mult mai sensibil.',
+        affectedFactors: ['IIa'],
+        suggestedTests: ['dTT (diluted TT)', 'Ecarin time', 'Verificare timp de la ultima doză'],
+      });
+      recommendations.push('Pentru Dabigatran, TT este mai sensibil decât PT - verifică TT');
     } else {
       diagnoses.push({
         id: 'f7_deficiency',
@@ -368,20 +472,71 @@ export function interpretLabValues(
         suggestedTests: ['Frotiu periferic (schizocite)', 'Repetă scor la 24-48h'],
       });
       if (isthScore.total >= 5) {
-        warnings.push(`URGENȚĂ: CID MANIFEST (Scor ISTH ${isthScore.total}/8) - tratează cauza subiacentă!`);
+        warnings.push(`URGENȚĂ: CID MANIFEST (Scor ISTH ${isthScore.total}/8) - Corelație clinică urgentă necesară.`);
       } else {
         warnings.push(`Suspiciune CID (Scor ISTH ${isthScore.total}/8) - monitorizare strânsă!`);
       }
       recommendations.push(`Scor ISTH: PLT=${isthScore.platelets} + D-dim=${isthScore.dDimers} + PT=${isthScore.pt} + Fib=${isthScore.fibrinogen} = ${isthScore.total}`);
     } else if (fibLow) {
-      diagnoses.push({
-        id: 'afibrinogenemia',
-        name: 'Hipo/Afibrinogenemie',
-        probability: 'high',
-        description: 'Fibrinogen foarte scăzut - afectează calea comună finală.',
-        affectedFactors: ['FBG'],
-        suggestedTests: ['Fibrinogen funcțional', 'TT'],
-      });
+      // Diferențiere pe baza severității fibrinogenului
+      if (lab.fibrinogen < 50) {
+        // Afibrinogenemie (< 50 mg/dL sau nedetectabil)
+        diagnoses.push({
+          id: 'afibrinogenemia',
+          name: 'Afibrinogenemie',
+          probability: 'high',
+          description: 'Fibrinogen < 50 mg/dL - deficit sever, posibil congenital (AR).',
+          affectedFactors: ['FBG'],
+          suggestedTests: ['Fibrinogen antigenic', 'Screening familial', 'Analiză genetică FGA/FGB/FGG'],
+        });
+        diagnoses.push({
+          id: 'hypofib_congenital',
+          name: 'Hipofibrinogenemie Congenitală',
+          probability: 'moderate',
+          description: 'Deficit parțial ereditar de fibrinogen.',
+          affectedFactors: ['FBG'],
+          suggestedTests: ['Istoric familial', 'Fibrinogen antigenic vs funcțional'],
+        });
+        warnings.push('AFIBRINOGENEMIE: Risc hemoragic sever! Evaluare urgentă necesară.');
+        recommendations.push('Afibrinogenemie congenitală: AR, incidență ~1:1.000.000');
+      } else if (lab.fibrinogen < 100) {
+        // Hipofibrinogenemie severă (50-100 mg/dL)
+        diagnoses.push({
+          id: 'severe_hypofib',
+          name: 'Hipofibrinogenemie Severă',
+          probability: 'high',
+          description: 'Fibrinogen 50-100 mg/dL - deficit semnificativ clinic.',
+          affectedFactors: ['FBG'],
+          suggestedTests: ['Fibrinogen funcțional vs antigenic', 'TT', 'Timp reptilază'],
+        });
+        diagnoses.push({
+          id: 'consumption',
+          name: 'Coagulopatie de Consum',
+          probability: 'moderate',
+          description: 'Consum de fibrinogen în DIC, hemoragie masivă, sau hiperfibrinoliză.',
+          affectedFactors: ['FBG'],
+          suggestedTests: ['D-dimeri', 'PDF', 'Scor ISTH pentru DIC'],
+        });
+        warnings.push('Fibrinogen < 100 mg/dL: Risc hemoragic crescut la proceduri!');
+      } else {
+        // Hipofibrinogenemie moderată (100-200 mg/dL)
+        diagnoses.push({
+          id: 'moderate_hypofib',
+          name: 'Hipofibrinogenemie Moderată',
+          probability: 'high',
+          description: 'Fibrinogen 100-200 mg/dL - monitorizare necesară.',
+          affectedFactors: ['FBG'],
+          suggestedTests: ['Fibrinogen funcțional', 'TT'],
+        });
+        diagnoses.push({
+          id: 'liver_synthesis',
+          name: 'Deficit de Sinteză Hepatică',
+          probability: 'moderate',
+          description: 'Ficatul sintetizează fibrinogenul - evaluare funcție hepatică.',
+          affectedFactors: ['FBG'],
+          suggestedTests: ['Teste hepatice', 'Albumină', 'INR'],
+        });
+      }
     } else {
       diagnoses.push({
         id: 'liver_failure',
@@ -412,109 +567,222 @@ export function interpretLabValues(
   }
   // Platelet issues
   else if (pltLow || btHigh) {
-    pattern = btHigh ? 'Timp de sângerare prelungit' : 'Trombocitopenie';
     affectedPathway = 'platelet';
 
     if (pltLow) {
+      // Clasificare severitate trombocitopenie
+      let severity: string;
+      let severityDesc: string;
+      let riskLevel: string;
+
+      if (lab.platelets < 20) {
+        severity = 'Critică';
+        severityDesc = `<20.000/µL - CRITICĂ`;
+        riskLevel = 'Risc hemoragie spontană (SNC, GI)!';
+        pattern = 'Trombocitopenie CRITICĂ (<20.000)';
+      } else if (lab.platelets < 50) {
+        severity = 'Severă';
+        severityDesc = `<50.000/µL - SEVERĂ`;
+        riskLevel = 'Risc hemoragic la proceduri și traumatisme minore.';
+        pattern = 'Trombocitopenie severă (<50.000)';
+      } else if (lab.platelets < 100) {
+        severity = 'Moderată';
+        severityDesc = `50-100.000/µL - MODERATĂ`;
+        riskLevel = 'Risc la proceduri invazive. Monitorizare necesară.';
+        pattern = 'Trombocitopenie moderată (50-100.000)';
+      } else {
+        severity = 'Ușoară';
+        severityDesc = `100-150.000/µL - UȘOARĂ`;
+        riskLevel = 'De obicei asimptomatică. Investigație etiologică recomandată.';
+        pattern = 'Trombocitopenie ușoară (100-150.000)';
+      }
+
       diagnoses.push({
         id: 'thrombocytopenia',
-        name: 'Trombocitopenie',
+        name: `Trombocitopenie ${severity}`,
         probability: 'high',
-        description: 'Cauze: producție↓, distrugere↑, sechestrare.',
+        description: `${severityDesc}. ${riskLevel}`,
         affectedFactors: ['PLT'],
-        suggestedTests: ['Frotiu periferic', 'Reticulocite', 'LDH', 'Coombs'],
+        suggestedTests: ['Frotiu periferic', 'Reticulocite', 'LDH', 'Haptoglobină'],
       });
+
+      // Diagnostice diferențiale în funcție de severitate
       if (lab.platelets < 50) {
-        warnings.push('Trombocite <50.000 - risc hemoragic la proceduri');
+        // Trombocitopenie severă/critică - cauze majore
+        diagnoses.push({
+          id: 'itp',
+          name: 'Purpură Trombocitopenică Imună (ITP)',
+          probability: 'high',
+          description: 'Distrugere autoimună. Frotiu: trombocite mari, fără schizocite.',
+          affectedFactors: ['PLT'],
+          suggestedTests: ['Anticorpi antiplachetari', 'Excludere cauze secundare'],
+        });
+        diagnoses.push({
+          id: 'ttp_hus',
+          name: 'TTP / SHU (Microangiopatie)',
+          probability: 'moderate',
+          description: 'URGENȚĂ! Pentada: trombocitopenie, anemie hemolitică, febră, afectare renală, neurologică.',
+          affectedFactors: ['PLT'],
+          suggestedTests: ['Frotiu (schizocite)', 'LDH↑', 'Bilirubină↑', 'ADAMTS13', 'Creatinină'],
+        });
+        diagnoses.push({
+          id: 'bone_marrow_failure',
+          name: 'Insuficiență Medulară',
+          probability: 'moderate',
+          description: 'Producție scăzută: aplazie, infiltrare (leucemie, metastaze), mielodisplazie.',
+          affectedFactors: ['PLT'],
+          suggestedTests: ['Hemogramă completă', 'Frotiu', 'Puncție medulară'],
+        });
+        warnings.push(`TROMBOCITOPENIE ${severity.toUpperCase()}: ${riskLevel}`);
+      } else {
+        // Trombocitopenie ușoară/moderată - cauze frecvente
+        diagnoses.push({
+          id: 'drug_induced',
+          name: 'Trombocitopenie Indusă Medicamentos',
+          probability: 'moderate',
+          description: 'Cauze frecvente: heparină (HIT), chinină, antibiotice, anticonvulsivante.',
+          affectedFactors: ['PLT'],
+          suggestedTests: ['Istoric medicamentos', 'Cronologie (oprire medicament)'],
+        });
+        diagnoses.push({
+          id: 'hypersplenism',
+          name: 'Hipersplenism / Sechestrare',
+          probability: 'moderate',
+          description: 'Splenomegalie (ciroză, hipertensiune portală). Până la 90% din PLT în splină.',
+          affectedFactors: ['PLT'],
+          suggestedTests: ['Ecografie abdominală', 'Teste hepatice'],
+        });
+        diagnoses.push({
+          id: 'pseudothrombocytopenia',
+          name: 'Pseudotrombocitopenie',
+          probability: 'low',
+          description: 'Artefact EDTA - agregare in vitro. PLT real normal!',
+          affectedFactors: ['PLT'],
+          suggestedTests: ['Recoltare pe citrat', 'Frotiu periferic (agregate)'],
+        });
       }
+
       if (lab.platelets < 20) {
-        warnings.push('Trombocite <20.000 - risc hemoragie spontană');
+        warnings.push('URGENȚĂ: Trombocite <20.000 - risc hemoragie spontană SNC!');
+      } else if (lab.platelets < 50) {
+        warnings.push('Trombocite <50.000 - Risc hemoragic crescut la proceduri invazive.');
       }
+
+      recommendations.push('Frotiu periferic OBLIGATORIU: exclude pseudotrombocitopenie și microangiopatie (schizocite)');
     }
     if (btHigh && !pltLow) {
+      pattern = 'Timp de sângerare prelungit (PLT normal)';
       diagnoses.push({
-        id: 'platelet_dysfunction',
-        name: 'Disfuncție Plachetară',
+        id: 'vwd',
+        name: 'Boala von Willebrand',
         probability: 'high',
-        description: 'Număr normal, funcție alterată.',
-        affectedFactors: ['PLT'],
-        suggestedTests: ['Agregometrie plachetară', 'PFA-100'],
+        description: 'CEA MAI FRECVENTĂ cauză! 1:100 în populație. IMPORTANT: aPTT este NORMAL în majoritatea cazurilor (tip 1)!',
+        affectedFactors: ['vWF', 'PLT'],
+        suggestedTests: ['vWF:Ag', 'vWF:RCo', 'vWF:CB', 'Factor VIII', 'PFA-100'],
       });
       diagnoses.push({
-        id: 'vwd_type1',
-        name: 'Boala von Willebrand Tip 1',
+        id: 'platelet_dysfunction',
+        name: 'Disfuncție Plachetară Dobândită',
         probability: 'moderate',
-        description: 'Aderare plachetară deficitară.',
-        affectedFactors: ['vWF', 'PLT'],
-        suggestedTests: ['vWF:Ag', 'vWF:RCo', 'RIPA'],
+        description: 'Uremie, ciroză, sindroame mieloproliferative, paraproteinemii.',
+        affectedFactors: ['PLT'],
+        suggestedTests: ['Funcție renală', 'Teste hepatice', 'Electroforeză proteine'],
+      });
+      diagnoses.push({
+        id: 'inherited_platelet',
+        name: 'Trombocitopatie Ereditară',
+        probability: 'low',
+        description: 'Bernard-Soulier, Glanzmann - rare. Istoric familial, debut copilărie.',
+        affectedFactors: ['PLT'],
+        suggestedTests: ['Agregometrie plachetară', 'Citometrie flux (GP)'],
       });
       if (meds.antiplatelet) {
         diagnoses.unshift({
           id: 'antiplatelet_effect',
           name: 'Efect Antiagregant',
           probability: 'high',
-          description: 'Consistent cu medicația antiplachetară.',
+          description: 'Consistent cu medicația antiplachetară (aspirină, clopidogrel).',
           affectedFactors: ['PLT'],
-          suggestedTests: ['Verificare complianță, consider oprire pre-procedural'],
+          suggestedTests: ['Verificare complianță', 'Oprire 7-10 zile pre-procedural'],
         });
       }
+      recommendations.push('IMPORTANT: vWD = cea mai frecventă tulburare de sângerare. aPTT NORMAL în >50% din cazuri!');
+      recommendations.push('NOTĂ: BT = test depășit. ISTH/BSH recomandă PFA-100 sau vWF:Ag/RCo.');
     }
   }
-  // D-dimer elevation alone - thrombosis/thrombophilia workup
+  // D-dimer elevation alone - MULTIPLE causes, not just thrombosis!
   else if (dDimerHigh) {
-    pattern = 'D-dimeri crescuți - evaluare trombofilie';
+    pattern = 'D-dimeri crescuți - diagnostic diferențial larg';
     affectedPathway = 'none';
+
+    // IMPORTANT: D-dimerii sunt NESPECIFICI - multe cauze non-trombotice
+    warnings.push('ATENȚIE: D-dimerii sunt NESPECIFICI! Corelație clinică OBLIGATORIE.');
+
+    // Cauze trombotice (necesită suspiciune clinică)
     diagnoses.push({
       id: 'thrombosis',
-      name: 'Tromboză Venoasă Profundă / EP',
-      probability: 'high',
-      description: 'D-dimeri crescuți - marker fibrinoliză activă.',
+      name: 'Tromboză Venoasă / EP',
+      probability: 'moderate',
+      description: 'Posibil dacă există suspiciune clinică (scor Wells). D-dimerii EXCLUD TEV doar dacă probabilitate pre-test scăzută.',
       affectedFactors: [],
-      suggestedTests: ['Ecografie Doppler venos', 'Angio-CT pulmonar (dacă scor Wells sugestiv)'],
+      suggestedTests: ['Scor Wells TVP/EP', 'Ecografie Doppler venos', 'Angio-CT pulmonar'],
+    });
+
+    // Cauze NON-trombotice (foarte frecvente!)
+    diagnoses.push({
+      id: 'infection_inflammation',
+      name: 'Infecție / Inflamație',
+      probability: 'high',
+      description: 'Cauza cea mai frecventă! Sepsis, pneumonie, COVID-19, boli autoimune, traumatisme.',
+      affectedFactors: [],
+      suggestedTests: ['PCR', 'Procalcitonină', 'Hemocultură', 'Istoric clinic'],
     });
     diagnoses.push({
-      id: 'factor_v_leiden',
-      name: 'Factor V Leiden',
+      id: 'malignancy',
+      name: 'Malignitate',
       probability: 'moderate',
-      description: 'Mutație FV G1691A - rezistență la Proteina C activată. Cea mai frecventă trombofilie.',
-      affectedFactors: ['F5'],
-      suggestedTests: ['Test rezistență APC', 'Genotipare FV Leiden'],
+      description: 'Cancerele activează coagularea. Screening dacă D-dimeri persistent elevați fără cauză.',
+      affectedFactors: [],
+      suggestedTests: ['CT torace-abdomen-pelvis', 'Markeri tumorali', 'Istoric'],
     });
     diagnoses.push({
-      id: 'prothrombin_mutation',
-      name: 'Mutație Protrombină G20210A',
+      id: 'postop_trauma',
+      name: 'Postoperator / Traumatism',
       probability: 'moderate',
-      description: 'Nivel crescut de protrombină - risc trombotic.',
-      affectedFactors: ['F2'],
-      suggestedTests: ['Genotipare PT G20210A'],
+      description: 'D-dimeri fiziologic crescuți 1-4 săptămâni post-chirurgie sau traumă.',
+      affectedFactors: [],
+      suggestedTests: ['Istoric chirurgical recent'],
     });
     diagnoses.push({
-      id: 'protein_c_def',
-      name: 'Deficit Proteină C',
-      probability: 'low',
-      description: 'Anticoagulant natural - activează degradarea FVa și FVIIIa.',
-      affectedFactors: ['PC'],
-      suggestedTests: ['Proteină C funcțională', 'Proteină C antigen'],
+      id: 'pregnancy',
+      name: 'Sarcină / Postpartum',
+      probability: 'moderate',
+      description: 'D-dimeri cresc fiziologic în sarcină (de 2-4x). Praguri ajustate necesare.',
+      affectedFactors: [],
+      suggestedTests: ['Test sarcină', 'Praguri ajustate pe trimestru'],
     });
     diagnoses.push({
-      id: 'protein_s_def',
-      name: 'Deficit Proteină S',
+      id: 'liver_disease_ddimer',
+      name: 'Boală Hepatică',
       probability: 'low',
-      description: 'Cofactor al Proteinei C. Atenție: scăzută în sarcină/COC.',
-      affectedFactors: ['PS'],
-      suggestedTests: ['Proteină S liberă', 'Proteină S totală'],
+      description: 'Clearance redus al D-dimerilor + coagulopatie hepatică.',
+      affectedFactors: [],
+      suggestedTests: ['Teste hepatice', 'Albumină', 'INR'],
     });
     diagnoses.push({
-      id: 'antithrombin_def',
-      name: 'Deficit Antitrombină',
+      id: 'age_related',
+      name: 'Vârstă >50 ani',
       probability: 'low',
-      description: 'Inhibitor principal al trombinei și FXa. Rezistență la heparină!',
-      affectedFactors: ['AT'],
-      suggestedTests: ['Antitrombină funcțională', 'Antitrombină antigen'],
+      description: 'D-dimeri cresc fiziologic cu vârsta. Prag ajustat: vârstă × 10 ng/mL (după 50 ani).',
+      affectedFactors: [],
+      suggestedTests: ['Utilizează prag ajustat pe vârstă'],
     });
-    recommendations.push('D-dimerii au VPN ridicată - exclud TEV dacă probabilitate pre-test scăzută');
-    recommendations.push('Screening trombofilie: la distanță de evenimentul acut (min. 3 luni)');
-    recommendations.push('Nu testa în faza acută sau sub anticoagulant (rezultate fals pozitive/negative)');
+
+    // Trombofilia - DOAR dacă TEV confirmat sau suspiciune clinică puternică
+    recommendations.push('D-dimerii NU confirmă TEV - doar o EXCLUD dacă probabilitate pre-test scăzută');
+    recommendations.push('Cauze frecvente non-trombotice: infecție, inflamație, cancer, sarcină, post-operator, vârstă');
+    recommendations.push('Screening trombofilie: DOAR după TEV confirmat, la distanță (min. 3 luni), fără anticoagulant');
+    recommendations.push('Prag ajustat vârstă (>50 ani): vârstă × 10 ng/mL (ex: 70 ani → 700 ng/mL)');
   }
 
   // TT specific
@@ -538,23 +806,54 @@ export function interpretLabValues(
         suggestedTests: ['Timp reptilază (normal în prezența heparinei)'],
       });
     }
-    if (meds.doac) {
+    if (meds.doacIIa) {
       diagnoses.unshift({
         id: 'dabigatran_effect',
         name: 'Efect Dabigatran',
         probability: 'high',
-        description: 'Dabigatran prelungește marcat TT.',
-        affectedFactors: ['F2'],
-        suggestedTests: ['dTT (diluted TT) pentru cuantificare'],
+        description: 'Dabigatran prelungește marcat TT (inhibitor direct al trombinei).',
+        affectedFactors: ['IIa'],
+        suggestedTests: ['dTT (diluted TT) pentru cuantificare', 'Ecarin time'],
       });
     }
   }
 
-  // F13 consideration - FXIII deficiency has NORMAL PT/aPTT/TT AND NORMAL bleeding time
-  // It can only be detected by specific tests (urea clot solubility, FXIII assay)
-  // We mention it when all standard tests are normal as a reminder for clinical suspicion
-  if (pattern === 'Profil de coagulare normal' && !btHigh) {
-    recommendations.push('Notă: Deficit F.XIII nedetectabil prin teste standard - consideră dacă există istoric de sângerare tardivă/cicatrizare deficitară');
+  // F13 consideration removed - clutters recommendations
+  // FXIII deficiency is now shown visually in cascade (Cheag node)
+
+  // ============================================
+  // MEDICAMENTE ACTIVE CU LABORATOR NORMAL
+  // Adaugă informații când medicamentele sunt active dar PT/aPTT sunt normale
+  // ============================================
+  if (meds.doacXa && !ptHigh && !apttHigh && diagnoses.length === 0) {
+    diagnoses.push({
+      id: 'doac_xa_active',
+      name: 'DOAC anti-Xa activ',
+      probability: 'high',
+      description: 'Rivaroxaban/Apixaban/Edoxaban activ. PT-ul nu este un indicator de încredere.',
+      affectedFactors: ['F10a'],
+      suggestedTests: ['Verificare timp de la ultima doză', 'Istoric dozare'],
+    });
+    recommendations.push('PT-ul nu este un indicator de încredere pentru anti-Xa DOAC');
+  }
+
+  if (meds.doacIIa && !ttHigh && diagnoses.length === 0) {
+    diagnoses.push({
+      id: 'doac_iia_active',
+      name: 'DOAC anti-IIa activ',
+      probability: 'high',
+      description: 'Dabigatran activ. TT este cel mai sensibil test pentru detectare.',
+      affectedFactors: ['IIa'],
+      suggestedTests: ['dTT (diluted TT)', 'Ecarin time'],
+    });
+    recommendations.push('TT normal poate apărea la niveluri terapeutice scăzute de Dabigatran');
+  }
+
+  // ============================================
+  // AVERTISMENTE DOAC
+  // ============================================
+  if (meds.doacXa || meds.doacIIa) {
+    warnings.push('PT-ul nu este un indicator de încredere pentru DOAC');
   }
 
   return {
@@ -571,49 +870,144 @@ export function interpretLabValues(
 export function updateFactorsFromLab(
   factors: Record<string, Factor>,
   lab: LabInput,
-  interpretation: ClinicalInterpretation
+  _interpretation: ClinicalInterpretation,
+  medications: MedicationContext,
+  currentScenario?: string | null
 ): Record<string, Factor> {
   const newFactors = { ...factors };
 
-  // Reset all to normal
+  // Reset all to normal (activity = 1.0)
   for (const id of Object.keys(newFactors)) {
     newFactors[id] = { ...newFactors[id], activity: 1.0 };
   }
 
-  // Collect affected factors from diagnoses (only high probability ones get full reduction)
-  const affectedSet = new Set<string>();
-  for (const diagnosis of interpretation.diagnoses) {
-    // Only use factors from high/moderate probability diagnoses
-    if (diagnosis.probability === 'high' || diagnosis.probability === 'moderate') {
-      for (const factorId of diagnosis.affectedFactors) {
-        affectedSet.add(factorId);
+  // ============================================
+  // CALCULEAZĂ CONCENTRAȚIILE DIN INVERSE-MAPPING
+  // ============================================
+  const result = calculateFactorConcentrations(lab, medications);
+
+  // Dacă e selectat un scenariu educațional, folosește DOAR factorii predefiniți
+  // (pentru a evidenția clar ce e afectat în acea patologie)
+  if (currentScenario && SCENARIO_AFFECTED_FACTORS[currentScenario]) {
+    const scenarioFactors = SCENARIO_AFFECTED_FACTORS[currentScenario];
+
+    for (const factorId of scenarioFactors) {
+      if (newFactors[factorId]) {
+        // Folosește concentrația calculată dacă există, altfel 30% pentru scenarii
+        const conc = result.concentrations[factorId];
+        const activity = conc ? conc.activityPercent / 100 : 0.3;
+        newFactors[factorId] = { ...newFactors[factorId], activity };
+      }
+    }
+    // NU facem return - continuăm cu ajustările pentru medicamente și propagare!
+  } else {
+    // Mod normal: aplică concentrațiile calculate la TOȚI factorii vizuali
+    for (const [factorId, concentration] of Object.entries(result.concentrations)) {
+      if (newFactors[factorId]) {
+        // Convertește activityPercent (0-100) la activity (0-1)
+        const activity = concentration.activityPercent / 100;
+        newFactors[factorId] = { ...newFactors[factorId], activity };
       }
     }
   }
 
-  // Calculate severity based on lab deviations
-  const ptRatio = lab.pt / 12;
-  const apttRatio = lab.aptt / 30;
-  const severity = Math.max(ptRatio, apttRatio);
-  const activityLevel = severity > 1.5 ? Math.max(0.1, 1 / severity) : 0.3;
+  // ============================================
+  // AJUSTĂRI PENTRU MEDICAMENTE
+  // Acestea se aplică ÎNAINTE de propagarea zimogen→activat
+  // pentru că medicamentele afectează ZIMOGENII (sinteza)
+  // ============================================
 
-  // Only reduce factors that are ACTUALLY implicated by the diagnosis
-  for (const factorId of affectedSet) {
-    if (newFactors[factorId]) {
-      newFactors[factorId] = {
-        ...newFactors[factorId],
-        activity: activityLevel,
+  if (medications.warfarin) {
+    // Warfarina reduce SINTEZA factorilor vitamina K dependenți (zimogeni + anticoagulanți)
+    // Include: F2, F7, F9, F10 (procoagulanți) + PC, PS (anticoagulanți)
+    for (const factorId of ['F2', 'F7', 'F9', 'F10', 'PC', 'PS']) {
+      if (newFactors[factorId]) {
+        newFactors[factorId] = {
+          ...newFactors[factorId],
+          activity: Math.min(newFactors[factorId].activity, 0.4),
+        };
+      }
+    }
+  }
+
+  if (medications.heparin) {
+    // Heparina potențează AT → inhibă formele ACTIVATE (IIa, Xa)
+    // Se aplică direct pe formele activate, nu pe zimogeni
+    for (const factorId of ['IIa', 'F10a']) {
+      if (newFactors[factorId]) {
+        newFactors[factorId] = {
+          ...newFactors[factorId],
+          activity: Math.min(newFactors[factorId].activity, 0.2),
+        };
+      }
+    }
+  }
+
+  if (medications.lmwh) {
+    // LMWH - predominant anti-Xa (forma activată)
+    if (newFactors['F10a']) {
+      newFactors['F10a'] = {
+        ...newFactors['F10a'],
+        activity: Math.min(newFactors['F10a'].activity, 0.3),
       };
     }
   }
 
-  // Direct lab value adjustments (these are always relevant)
-  if (lab.fibrinogen < 150) {
-    newFactors['FBG'] = { ...newFactors['FBG'], activity: Math.max(0.1, lab.fibrinogen / 300) };
+  if (medications.doacXa) {
+    // Inhibitori Xa (Rivaroxaban, Apixaban, Edoxaban) - afectează doar F10a
+    if (newFactors['F10a']) {
+      newFactors['F10a'] = {
+        ...newFactors['F10a'],
+        activity: Math.min(newFactors['F10a'].activity, 0.3),
+      };
+    }
   }
 
-  if (lab.platelets < 150) {
-    newFactors['PLT'] = { ...newFactors['PLT'], activity: Math.max(0.1, lab.platelets / 250) };
+  if (medications.doacIIa) {
+    // Dabigatran - afectează doar IIa (trombina)
+    if (newFactors['IIa']) {
+      newFactors['IIa'] = {
+        ...newFactors['IIa'],
+        activity: Math.min(newFactors['IIa'].activity, 0.3),
+      };
+    }
+  }
+
+  if (medications.antiplatelet) {
+    // Antiagregante - reduc funcția trombocitară
+    if (newFactors['PLT']) {
+      newFactors['PLT'] = {
+        ...newFactors['PLT'],
+        activity: Math.min(newFactors['PLT'].activity, 0.5),
+      };
+    }
+  }
+
+  // ============================================
+  // PROPAGARE ZIMOGEN → FORMA ACTIVATĂ
+  // Se aplică DUPĂ ajustările pentru medicamente
+  // Dacă zimogenul e redus, forma activată NU poate fi mai mare
+  // ============================================
+  const zymogenToActivated: Record<string, string> = {
+    'F12': 'F12a',
+    'F11': 'F11a',
+    'F9': 'F9a',
+    'F8': 'F8a',
+    'F7': 'F7a',
+    'F10': 'F10a',
+    'F5': 'F5a',
+    'F2': 'IIa',
+    'F13': 'F13a',
+  };
+
+  for (const [zymogen, activated] of Object.entries(zymogenToActivated)) {
+    if (newFactors[zymogen] && newFactors[activated]) {
+      // Forma activată nu poate fi mai mare decât zimogenul
+      newFactors[activated] = {
+        ...newFactors[activated],
+        activity: Math.min(newFactors[activated].activity, newFactors[zymogen].activity),
+      };
+    }
   }
 
   return newFactors;
