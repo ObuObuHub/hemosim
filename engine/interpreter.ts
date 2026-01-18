@@ -140,7 +140,7 @@ export function shouldShowISTHCalculator(lab: LabInput, meds: MedicationContext)
   return classicTriad || withDDimers;
 }
 
-/** Determines if the 4T HIT calculator should be shown */
+/** Determines if the 4T calculator for heparin-induced thrombocytopenia should be shown */
 export function shouldShowHIT4TCalculator(meds: MedicationContext, lab: LabInput): boolean {
   // Show when heparin/LMWH active and platelets < 150
   return (meds.heparin || meds.lmwh) && lab.platelets < 150;
@@ -154,13 +154,13 @@ export function calculate4TScore(criteria: Hit4TCriteria): Hit4TScore {
 
   if (total <= 3) {
     probability = 'low';
-    interpretation = 'Probabilitate scăzută HIT (<5%) - HIT puțin probabil';
+    interpretation = 'Probabilitate scăzută (<5%) - trombocitopenia indusă de heparină puțin probabilă';
   } else if (total <= 5) {
     probability = 'intermediate';
-    interpretation = 'Probabilitate intermediară HIT (~14%) - Testează anti-PF4/heparină';
+    interpretation = 'Probabilitate intermediară (~14%) - testează anticorpi anti-PF4/heparină';
   } else {
     probability = 'high';
-    interpretation = 'Probabilitate RIDICATĂ HIT (~64%) - OPREȘTE heparina!';
+    interpretation = 'Probabilitate RIDICATĂ (~64%) - OPREȘTE heparina!';
   }
 
   return {
@@ -203,13 +203,13 @@ export function interpretLabValues(
   let isthScore: ISTHScore | undefined;
   let hit4TScore: Hit4TScore | undefined;
 
-  // Calculate 4T score for HIT when heparin is used and platelets are low
+  // Calculate 4T score for heparin-induced thrombocytopenia when heparin is used and platelets are low
   if ((meds.heparin || meds.lmwh) && pltLow && hit4TCriteria) {
     hit4TScore = calculate4TScore(hit4TCriteria);
     if (hit4TScore.probability === 'high') {
-      warnings.push(`ATENȚIE: Scor 4T = ${hit4TScore.total}/8 - Probabilitate ridicată HIT. Contactați clinicianul curant URGENT.`);
+      warnings.push(`ATENȚIE: Scor 4T = ${hit4TScore.total}/8 - Probabilitate ridicată de trombocitopenie indusă de heparină. URGENT!`);
     } else if (hit4TScore.probability === 'intermediate') {
-      warnings.push(`Suspiciune HIT: Scor 4T = ${hit4TScore.total}/8 - Testează anti-PF4/heparină`);
+      warnings.push(`Suspiciune trombocitopenie indusă de heparină: Scor 4T = ${hit4TScore.total}/8 - Testează anti-PF4`);
     }
   }
 
@@ -311,7 +311,7 @@ export function interpretLabValues(
       // Mixing test DOES NOT CORRECT = Inhibitor present
       diagnoses.push({
         id: 'lupus_anticoagulant',
-        name: 'Sindrom Antifosfolipidic (APS)',
+        name: 'Sindrom Antifosfolipidic',
         probability: 'high',
         description: 'TROMBOFILIE! Paradox: aPTT↑ in vitro dar risc TROMBOTIC in vivo.',
         affectedFactors: ['F12'],
@@ -381,7 +381,7 @@ export function interpretLabValues(
       });
       diagnoses.push({
         id: 'lupus_anticoagulant',
-        name: 'Sindrom Antifosfolipidic (APS)',
+        name: 'Sindrom Antifosfolipidic',
         probability: 'low',
         description: 'TROMBOFILIE! Paradox: aPTT↑ in vitro dar risc TROMBOTIC in vivo.',
         affectedFactors: ['F12'],
@@ -606,7 +606,7 @@ export function interpretLabValues(
         // Trombocitopenie severă/critică - cauze majore
         diagnoses.push({
           id: 'itp',
-          name: 'Purpură Trombocitopenică Imună (ITP)',
+          name: 'Purpură Trombocitopenică Imună',
           probability: 'high',
           description: 'Distrugere autoimună. Frotiu: trombocite mari, fără schizocite.',
           affectedFactors: ['PLT'],
@@ -614,9 +614,9 @@ export function interpretLabValues(
         });
         diagnoses.push({
           id: 'ttp_hus',
-          name: 'TTP / SHU (Microangiopatie)',
+          name: 'Microangiopatie Trombotică',
           probability: 'moderate',
-          description: 'URGENȚĂ! Pentada: trombocitopenie, anemie hemolitică, febră, afectare renală, neurologică.',
+          description: 'Purpură Trombotică Trombocitopenică sau Sindrom Hemolitic Uremic. URGENȚĂ! Pentada: trombocitopenie, anemie hemolitică, febră, afectare renală, neurologică.',
           affectedFactors: ['PLT'],
           suggestedTests: ['Frotiu (schizocite)', 'LDH↑', 'Bilirubină↑', 'ADAMTS13', 'Creatinină'],
         });
@@ -628,14 +628,13 @@ export function interpretLabValues(
           affectedFactors: ['PLT'],
           suggestedTests: ['Hemogramă completă', 'Frotiu', 'Puncție medulară'],
         });
-        warnings.push(`TROMBOCITOPENIE ${severity.toUpperCase()}: ${riskLevel}`);
       } else {
         // Trombocitopenie ușoară/moderată - cauze frecvente
         diagnoses.push({
           id: 'drug_induced',
           name: 'Trombocitopenie Indusă Medicamentos',
           probability: 'moderate',
-          description: 'Cauze frecvente: heparină (HIT), chinină, antibiotice, anticonvulsivante.',
+          description: 'Cauze frecvente: heparină (trombocitopenie indusă de heparină), chinină, antibiotice, anticonvulsivante.',
           affectedFactors: ['PLT'],
           suggestedTests: ['Istoric medicamentos', 'Cronologie (oprire medicament)'],
         });
@@ -655,12 +654,6 @@ export function interpretLabValues(
           affectedFactors: ['PLT'],
           suggestedTests: ['Recoltare pe citrat', 'Frotiu periferic (agregate)'],
         });
-      }
-
-      if (lab.platelets < 20) {
-        warnings.push('URGENȚĂ: Trombocite <20.000 - risc hemoragie spontană SNC!');
-      } else if (lab.platelets < 50) {
-        warnings.push('Trombocite <50.000 - Risc hemoragic crescut la proceduri invazive.');
       }
 
       recommendations.push('Frotiu periferic OBLIGATORIU: exclude pseudotrombocitopenie și microangiopatie (schizocite)');
@@ -715,11 +708,11 @@ export function interpretLabValues(
     // Cauze trombotice (necesită suspiciune clinică)
     diagnoses.push({
       id: 'thrombosis',
-      name: 'Tromboză Venoasă / EP',
+      name: 'Tromboembolism Venos',
       probability: 'moderate',
-      description: 'Posibil dacă există suspiciune clinică (scor Wells). D-dimerii EXCLUD TEV doar dacă probabilitate pre-test scăzută.',
+      description: 'Tromboză venoasă profundă sau embolie pulmonară. Posibil dacă există suspiciune clinică (scor Wells). D-dimerii exclud tromboembolismul doar dacă probabilitate pre-test scăzută.',
       affectedFactors: [],
-      suggestedTests: ['Scor Wells TVP/EP', 'Ecografie Doppler venos', 'Angio-CT pulmonar'],
+      suggestedTests: ['Scor Wells', 'Ecografie Doppler venos', 'Angio-CT pulmonar'],
     });
 
     // Cauze NON-trombotice (foarte frecvente!)
@@ -772,10 +765,10 @@ export function interpretLabValues(
       suggestedTests: ['Utilizează prag ajustat pe vârstă'],
     });
 
-    // Trombofilia - DOAR dacă TEV confirmat sau suspiciune clinică puternică
-    recommendations.push('D-dimerii NU confirmă TEV - doar o EXCLUD dacă probabilitate pre-test scăzută');
+    // Trombofilia - DOAR dacă tromboembolism confirmat sau suspiciune clinică puternică
+    recommendations.push('D-dimerii NU confirmă tromboza - doar o EXCLUD dacă probabilitate pre-test scăzută');
     recommendations.push('Cauze frecvente non-trombotice: infecție, inflamație, cancer, sarcină, post-operator, vârstă');
-    recommendations.push('Screening trombofilie: DOAR după TEV confirmat, la distanță (min. 3 luni), fără anticoagulant');
+    recommendations.push('Screening trombofilie: DOAR după tromboembolism confirmat, la distanță (min. 3 luni), fără anticoagulant');
     recommendations.push('Prag ajustat vârstă (>50 ani): vârstă × 10 ng/mL (ex: 70 ani → 700 ng/mL)');
   }
 

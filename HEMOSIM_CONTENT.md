@@ -129,7 +129,7 @@
 #### Mixing Test NU CORECTEAZĂ (Inhibitor)
 | ID | Diagnostic | Probabilitate | Descriere |
 |----|------------|---------------|-----------|
-| lupus_anticoagulant | Sindrom Antifosfolipidic (APS) | `high` | TROMBOFILIE! Paradox: aPTT↑ in vitro dar risc TROMBOTIC in vivo. |
+| lupus_anticoagulant | Sindrom Antifosfolipidic | `high` | TROMBOFILIE! Paradox: aPTT↑ in vitro dar risc TROMBOTIC in vivo. |
 | acquired_hemophilia | Hemofilie Dobândită | `moderate` | Autoanticorpi anti-Factor VIII. Mai frecvent la vârstnici, postpartum, autoimun. |
 | specific_inhibitor | Inhibitor Specific de Factor | `low` | Anticorpi împotriva unui factor specific (rar). |
 
@@ -141,7 +141,7 @@
 | hemophilia_c | Hemofilie C (Deficit F.XI) | `moderate` | Deficit Factor XI. Sângerare variabilă. |
 | vwd | Boala von Willebrand | `moderate` | Deficit vWF cu afectare secundară F.VIII. aPTT poate fi ușor prelungit sau normal. |
 | f12_deficiency | Deficit Factor XII | `low` | NU cauzează sângerare! Prelungește aPTT in vitro dar fără risc hemoragic clinic. |
-| lupus_anticoagulant | Sindrom Antifosfolipidic (APS) | `low` | TROMBOFILIE! Paradox: aPTT↑ in vitro dar risc TROMBOTIC in vivo. |
+| lupus_anticoagulant | Sindrom Antifosfolipidic | `low` | TROMBOFILIE! Paradox: aPTT↑ in vitro dar risc TROMBOTIC in vivo. |
 
 ---
 
@@ -220,15 +220,15 @@
 | ID | Diagnostic | Probabilitate | Descriere |
 |----|------------|---------------|-----------|
 | thrombocytopenia | Trombocitopenie [Severitate] | `high` | [Severitate]. [Descriere risc]. |
-| itp | Purpură Trombocitopenică Imună (ITP) | `high` | Distrugere autoimună. Frotiu: trombocite mari, fără schizocite. |
-| ttp_hus | TTP / SHU (Microangiopatie) | `moderate` | URGENȚĂ! Pentada: trombocitopenie, anemie hemolitică, febră, afectare renală, neurologică. |
+| itp | Purpură Trombocitopenică Imună | `high` | Distrugere autoimună. Frotiu: trombocite mari, fără schizocite. |
+| ttp_hus | Microangiopatie Trombotică | `moderate` | Purpură Trombotică Trombocitopenică sau Sindrom Hemolitic Uremic. URGENȚĂ! Pentada: trombocitopenie, anemie hemolitică, febră, afectare renală, neurologică. |
 | bone_marrow_failure | Insuficiență Medulară | `moderate` | Producție scăzută: aplazie, infiltrare (leucemie, metastaze), mielodisplazie. |
 
 #### Trombocitopenie Ușoară/Moderată (50-150.000)
 | ID | Diagnostic | Probabilitate | Descriere |
 |----|------------|---------------|-----------|
 | thrombocytopenia | Trombocitopenie [Severitate] | `high` | [Severitate]. [Descriere risc]. |
-| drug_induced | Trombocitopenie Indusă Medicamentos | `moderate` | Cauze frecvente: heparină (HIT), chinină, antibiotice, anticonvulsivante. |
+| drug_induced | Trombocitopenie Indusă Medicamentos | `moderate` | Cauze frecvente: heparină (trombocitopenie indusă de heparină), chinină, antibiotice, anticonvulsivante. |
 | hypersplenism | Hipersplenism / Sechestrare | `moderate` | Splenomegalie (ciroză, hipertensiune portală). Până la 90% din PLT în splină. |
 | pseudothrombocytopenia | Pseudotrombocitopenie | `low` | Artefact EDTA - agregare in vitro. PLT real normal! |
 
@@ -265,10 +265,10 @@
 #### Cauze Trombotice (necesită suspiciune clinică!)
 | ID | Diagnostic | Probabilitate | Descriere |
 |----|------------|---------------|-----------|
-| thrombosis | Tromboză Venoasă / EP | `moderate` | Posibil dacă există suspiciune clinică (scor Wells). D-dimerii EXCLUD TEV doar dacă probabilitate pre-test scăzută. |
+| thrombosis | Tromboembolism Venos | `moderate` | Tromboză venoasă profundă sau embolie pulmonară. Posibil dacă există suspiciune clinică (scor Wells). D-dimerii exclud tromboembolismul doar dacă probabilitate pre-test scăzută. |
 
-**NOTĂ CRITICĂ:** D-dimerii NU confirmă TEV - doar îl EXCLUD dacă probabilitate pre-test scăzută!
-Screening trombofilie: DOAR după TEV confirmat, la distanță (min. 3 luni), fără anticoagulant.
+**NOTĂ CRITICĂ:** D-dimerii NU confirmă tromboembolismul - doar îl EXCLUD dacă probabilitate pre-test scăzută!
+Screening trombofilie: DOAR după tromboembolismul confirmat, la distanță (min. 3 luni), fără anticoagulant.
 
 ---
 
@@ -297,7 +297,7 @@ Screening trombofilie: DOAR după TEV confirmat, la distanță (min. 3 luni), f�
 - Test de mixaj CORECTEAZĂ → Deficit de factor confirmat
 - Dozează factorii individuali: VIII, IX, XI
 - Test de mixaj NU CORECTEAZĂ → Inhibitor confirmat
-- ATENȚIE: APS = risc TROMBOTIC, nu hemoragic!
+- ATENȚIE: Sindromul antifosfolipidic = risc TROMBOTIC, nu hemoragic!
 - Dacă sângerare: consideră hemofilie dobândită (anti-FVIII)
 - Efectuează test de mixaj pentru diferențiere deficit vs inhibitor
 - ATENȚIE: aPTT prelungit NU exclude trombofilie (anticoagulant lupic)
@@ -317,9 +317,9 @@ Screening trombofilie: DOAR după TEV confirmat, la distanță (min. 3 luni), f�
 - Frotiu periferic OBLIGATORIU: exclude pseudotrombocitopenie și microangiopatie (schizocite)
 
 ### D-dimeri Crescuți
-- D-dimerii NU confirmă TEV - doar o EXCLUD dacă probabilitate pre-test scăzută
+- D-dimerii NU confirmă tromboembolismul - doar o EXCLUD dacă probabilitate pre-test scăzută
 - Cauze frecvente non-trombotice: infecție, inflamație, cancer, sarcină, post-operator, vârstă
-- Screening trombofilie: DOAR după TEV confirmat, la distanță (min. 3 luni), fără anticoagulant
+- Screening trombofilie: DOAR după tromboembolismul confirmat, la distanță (min. 3 luni), fără anticoagulant
 - Prag ajustat vârstă (>50 ani): vârstă × 10 ng/mL (ex: 70 ani → 700 ng/mL)
 
 ### DOAC
@@ -332,18 +332,13 @@ Screening trombofilie: DOAR după TEV confirmat, la distanță (min. 3 luni), f�
 
 | Condiție | Mesaj |
 |----------|-------|
-| Scor 4T ≥ 6 (HIT High) | ATENȚIE: Scor 4T = X/8 - Probabilitate ridicată HIT. Contactați clinicianul curant URGENT. |
-| Scor 4T 4-5 (HIT Intermediate) | Suspiciune HIT: Scor 4T = X/8 - Testează anti-PF4/heparină |
+| Scor 4T ≥ 6 | ATENȚIE: Scor 4T = X/8 - Probabilitate ridicată de trombocitopenie indusă de heparină. URGENT! |
+| Scor 4T 4-5 | Suspiciune trombocitopenie indusă de heparină: Scor 4T = X/8 - Testează anti-PF4 |
 | INR ≥ 6 | URGENȚĂ: INR X - PLASMĂ INCOAGULABILĂ! Risc hemoragic major. |
 | PT > 25s sub AVK | PT >25s - risc hemoragic crescut sub AVK |
 | Mixing test nu corectează | TEST DE MIXAJ NU CORECTEAZĂ → Inhibitor prezent! |
-| ISTH ≥ 5 | URGENȚĂ: CID MANIFEST (Scor ISTH X/8) - Corelație clinică urgentă necesară. |
-| ISTH 3-4 | Suspiciune CID (Scor ISTH X/8) - monitorizare strânsă! |
 | Fibrinogen < 50 | AFIBRINOGENEMIE: Risc hemoragic sever! Evaluare urgentă necesară. |
 | Fibrinogen < 100 | Fibrinogen < 100 mg/dL: Risc hemoragic crescut la proceduri! |
-| Trombocite < 50.000 | Trombocite <50.000 - Risc hemoragic crescut la proceduri invazive. |
-| Trombocite < 20.000 | URGENȚĂ: Trombocite <20.000 - risc hemoragie spontană SNC! |
-| Trombocitopenie severă/critică | TROMBOCITOPENIE [SEVERĂ/CRITICĂ]: [descriere risc] |
 | D-dimeri crescuți | ATENȚIE: D-dimerii sunt NESPECIFICI! Corelație clinică OBLIGATORIE. |
 | DOAC activ | PT-ul nu este un indicator de încredere pentru DOAC |
 
@@ -365,12 +360,12 @@ Screening trombofilie: DOAR după TEV confirmat, la distanță (min. 3 luni), f�
 - **3-4 puncte:** Posibil CID non-manifest - repetă la 24-48h
 - **<3 puncte:** CID puțin probabil
 
-### Scor 4T pentru HIT
+### Scor 4T pentru Trombocitopenia Indusă de Heparină
 
 **Interpretare:**
-- **0-3 puncte:** Probabilitate scăzută HIT (<5%) - HIT puțin probabil
-- **4-5 puncte:** Probabilitate intermediară HIT (~14%) - Testează anti-PF4/heparină
-- **6-8 puncte:** Probabilitate RIDICATĂ HIT (~64%) - OPREȘTE heparina!
+- **0-3 puncte:** Probabilitate scăzută (<5%) - trombocitopenia indusă de heparină puțin probabilă
+- **4-5 puncte:** Probabilitate intermediară (~14%) - testează anticorpi anti-PF4/heparină
+- **6-8 puncte:** Probabilitate RIDICATĂ (~64%) - OPREȘTE heparina!
 
 ### Index Rosner (Mixing Test)
 
