@@ -56,6 +56,7 @@ const TREATMENT_PRESETS: Preset[] = [
 ];
 
 const PATHOLOGY_PRESETS: Preset[] = [
+  // === CALE INTRINSECĂ ===
   {
     id: 'hemophilia_a',
     name: 'Hemofilie A',
@@ -73,7 +74,7 @@ const PATHOLOGY_PRESETS: Preset[] = [
   },
   {
     id: 'f12_deficiency',
-    name: 'Deficit Factor XII',
+    name: 'Deficit factor XII',
     lab: { pt: 12, inr: 1.0, aptt: 85, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 },
   },
   {
@@ -81,39 +82,75 @@ const PATHOLOGY_PRESETS: Preset[] = [
     name: 'Boala von Willebrand',
     lab: { pt: 12, inr: 1.0, aptt: 45, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 12 },
   },
+  // === CALE COMUNĂ (deficite rare) ===
   {
-    id: 'itp',
-    name: 'Purpura Trombocitopenică',
-    lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 25, dDimers: 300, bleedingTime: 12 },
+    id: 'f2_deficiency',
+    name: 'Deficit factor II',
+    lab: { pt: 22, inr: 1.9, aptt: 48, tt: 18, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 },
   },
   {
+    id: 'f5_deficiency',
+    name: 'Deficit factor V',
+    lab: { pt: 20, inr: 1.7, aptt: 45, tt: 17, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 },
+  },
+  {
+    id: 'f10_deficiency',
+    name: 'Deficit factor X',
+    lab: { pt: 24, inr: 2.0, aptt: 52, tt: 17, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 6 },
+  },
+  // === FIBRINOGEN ===
+  {
+    id: 'afibrinogenemia',
+    name: 'Afibrinogenemie',
+    lab: { pt: 60, inr: 5.5, aptt: 120, tt: 120, fibrinogen: 20, platelets: 250, dDimers: 100, bleedingTime: 15 },
+  },
+  {
+    id: 'dysfibrinogenemia',
+    name: 'Disfibrinogenemie',
+    lab: { pt: 16, inr: 1.3, aptt: 35, tt: 45, fibrinogen: 150, platelets: 250, dDimers: 300, bleedingTime: 7 },
+  },
+  {
+    id: 'f13_deficiency',
+    name: 'Deficit factor XIII',
+    lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 },
+  },
+  // === TROMBOCITOPENII ===
+  {
+    id: 'itp',
+    name: 'Purpură trombocitopenică',
+    lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 25, dDimers: 300, bleedingTime: 12 },
+  },
+  // === CID - PROGRESIE FAZICĂ ===
+  {
     id: 'dic_activation',
-    name: 'CID - Faza Activare',
+    name: 'CID - faza activare',
     lab: { pt: 18, inr: 1.5, aptt: 33, tt: 18, fibrinogen: 280, platelets: 120, dDimers: 1500, bleedingTime: 6 },
   },
   {
     id: 'dic_consumption',
-    name: 'CID - Faza Consum',
+    name: 'CID - faza consum',
     lab: { pt: 22, inr: 1.8, aptt: 45, tt: 24, fibrinogen: 150, platelets: 70, dDimers: 3000, bleedingTime: 8 },
   },
   {
     id: 'dic_bleeding',
-    name: 'CID - Faza Hemoragică',
+    name: 'CID - faza hemoragică',
     lab: { pt: 32, inr: 2.7, aptt: 65, tt: 35, fibrinogen: 60, platelets: 25, dDimers: 6000, bleedingTime: 15 },
   },
+  // === DEFICITE DOBÂNDITE ===
   {
     id: 'liver_failure',
-    name: 'Insuficiență Hepatică',
+    name: 'Insuficiență hepatică',
     lab: { pt: 20, inr: 1.7, aptt: 48, tt: 22, fibrinogen: 120, platelets: 90, dDimers: 800, bleedingTime: 8 },
   },
   {
     id: 'vitk_def',
-    name: 'Deficit Vitamina K',
+    name: 'Deficit vitamina K',
     lab: { pt: 24, inr: 2.0, aptt: 50, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 300, bleedingTime: 5 },
   },
+  // === TROMBOFILII ===
   {
     id: 'aps',
-    name: 'Sindrom Antifosfolipidic',
+    name: 'Sindrom antifosfolipidic',
     lab: { pt: 13, inr: 1.1, aptt: 52, tt: 16, fibrinogen: 320, platelets: 180, dDimers: 900, bleedingTime: 5 },
   },
   {
@@ -136,13 +173,13 @@ interface LabInputPanelProps {
 type NumericLabKey = 'pt' | 'inr' | 'aptt' | 'tt' | 'fibrinogen' | 'platelets' | 'dDimers' | 'bleedingTime';
 
 // PT and INR are handled separately in a special row
-const LAB_FIELDS: { key: NumericLabKey; label: string; step: number }[] = [
+const LAB_FIELDS: { key: NumericLabKey; label: string; step: number; note?: string }[] = [
   { key: 'aptt', label: 'aPTT', step: 0.1 },
   { key: 'tt', label: 'TT', step: 0.1 },
   { key: 'fibrinogen', label: 'Fibrinogen', step: 10 },
   { key: 'platelets', label: 'Trombocite', step: 1 },
   { key: 'dDimers', label: 'D-Dimeri', step: 50 },
-  { key: 'bleedingTime', label: 'Timp sângerare', step: 0.5 },
+  { key: 'bleedingTime', label: 'Timp sângerare', step: 0.5, note: 'desuet' },
 ];
 
 const MEDICATION_OPTIONS: { key: keyof MedicationContext; label: string; short: string }[] = [
@@ -400,7 +437,7 @@ export function LabInputPanel({
               </div>
             </div>
 
-            {LAB_FIELDS.map(({ key, label, step }) => {
+            {LAB_FIELDS.map(({ key, label, step, note }) => {
               const range = LAB_RANGES[key];
               const status = getInputStatus(values[key], key);
 
@@ -413,7 +450,7 @@ export function LabInputPanel({
                 >
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-medium text-slate-600">
-                      {label}
+                      {label}{note ? <span className="text-[10px] text-slate-400 font-normal"> ({note})</span> : ''}
                     </label>
                     <span className="text-[10px] text-slate-400">
                       {range.min}–{range.max} {range.unit}

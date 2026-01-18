@@ -121,6 +121,7 @@ export function MobileLayout({
               onFactorHover={setHoveredFactor}
               showFeedback={state.showFeedback}
               showInhibition={state.showInhibition}
+              currentScenario={state.currentScenario}
             />
           </div>
         </div>
@@ -148,6 +149,7 @@ export function MobileLayout({
               labInput={state.labInput}
               onHit4TCriteriaChange={updateHit4TCriteria}
               onIsthManualCriteriaChange={updateIsthManualCriteria}
+              currentScenario={state.currentScenario}
             />
           </section>
         </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { ClinicalInterpretation, Diagnosis, Hit4TCriteria, ISTHManualCriteria, LabInput, MedicationContext } from '@/types';
-import { calculate4TScore, calculateManualISTHScore, shouldShowISTHCalculator, shouldShowHIT4TCalculator } from '@/engine/interpreter';
+import { calculate4TScore, calculateManualISTHScore, shouldShowISTHCalculator, shouldShowHIT4TCalculator, SCENARIO_AFFECTED_FACTORS, formatFactorsForDisplay } from '@/engine/interpreter';
 
 interface InterpretationPanelProps {
   interpretation: ClinicalInterpretation | null;
@@ -11,6 +11,7 @@ interface InterpretationPanelProps {
   labInput: LabInput;
   onHit4TCriteriaChange: (criteria: Hit4TCriteria) => void;
   onIsthManualCriteriaChange: (criteria: ISTHManualCriteria) => void;
+  currentScenario?: string | null;
 }
 
 function ProbabilityBadge({ probability }: { probability: Diagnosis['probability'] }): React.ReactElement {
@@ -49,6 +50,7 @@ export function InterpretationPanel({
   labInput,
   onHit4TCriteriaChange,
   onIsthManualCriteriaChange,
+  currentScenario,
 }: InterpretationPanelProps): React.ReactElement {
   const showISTHCalculator = shouldShowISTHCalculator(labInput, medications);
   const showHIT4TCalculator = shouldShowHIT4TCalculator(medications, labInput);
@@ -79,6 +81,52 @@ export function InterpretationPanel({
           Interpretare Clinica
         </h2>
       </div>
+
+      {/* Educational Scenario Badge */}
+      {currentScenario && (
+        <div className="mb-4 p-3 rounded-lg bg-purple-50 border border-purple-200">
+          <div className="flex items-center gap-2 mb-1">
+            <svg className="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+            <span className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Mod Educațional</span>
+          </div>
+          <div className="text-sm font-medium text-purple-800">
+            {currentScenario}
+          </div>
+          {SCENARIO_AFFECTED_FACTORS[currentScenario] && SCENARIO_AFFECTED_FACTORS[currentScenario].length > 0 && (
+            <div className="mt-1 text-xs text-purple-600">
+              Factori afectați: {formatFactorsForDisplay(SCENARIO_AFFECTED_FACTORS[currentScenario])}
+            </div>
+          )}
+
+          {/* Special note for Factor XIII deficiency */}
+          {currentScenario === 'Deficit factor XIII' && (
+            <div className="mt-3 p-2 bg-orange-100 border border-orange-300 rounded-lg">
+              <div className="flex items-start gap-2">
+                <svg className="w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                  <div className="text-xs font-bold text-orange-800 mb-1">
+                    ⚠️ TESTE UZUALE = NORMALE!
+                  </div>
+                  <p className="text-[10px] text-orange-700 leading-relaxed">
+                    PT, aPTT, TT, Fibrinogen sunt <strong>toate normale</strong> în deficit de F.XIII!
+                  </p>
+                  <p className="text-[10px] text-orange-700 leading-relaxed mt-1">
+                    Sângele formează un cheag inițial, dar acesta este <strong>instabil</strong>.
+                    Fără Factor XIII, rețeaua de fibrină nu se întărește și cheagul se dezintegrează rapid.
+                  </p>
+                  <p className="text-[10px] text-orange-800 font-semibold mt-1">
+                    → Necesită test specific: dozare F.XIII sau test de solubilitate a cheagului în uree 5M
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Pattern summary */}
       <div className={`p-3 rounded-lg mb-4 ${

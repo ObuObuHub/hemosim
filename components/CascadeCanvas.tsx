@@ -31,6 +31,8 @@ interface CascadeCanvasProps {
   // Toggle-uri pentru vizualizare relații
   showFeedback?: boolean;
   showInhibition?: boolean;
+  // Educational scenario
+  currentScenario?: string | null;
 }
 
 // Culori conform convențiilor medicale (similar cu Frontiers/Harrison's)
@@ -300,6 +302,7 @@ export function CascadeCanvas({
   onFactorClick,
   showFeedback = false,
   showInhibition = false,
+  currentScenario,
 }: CascadeCanvasProps): React.ReactElement {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -377,6 +380,7 @@ export function CascadeCanvas({
     showInhibition,
     isolationFactors,
     selectedFactor,
+    currentScenario,
   });
 
   useEffect(() => {
@@ -393,8 +397,9 @@ export function CascadeCanvas({
       showInhibition,
       isolationFactors,
       selectedFactor,
+      currentScenario,
     };
-  }, [factors, visibleFactors, activeFactor, highlightedFactors, dDimers, dicPhase, mode, blockedFactors, showFeedback, showInhibition, isolationFactors, selectedFactor]);
+  }, [factors, visibleFactors, activeFactor, highlightedFactors, dDimers, dicPhase, mode, blockedFactors, showFeedback, showInhibition, isolationFactors, selectedFactor, currentScenario]);
 
   useEffect(() => {
     const updateSize = (): void => {
@@ -940,6 +945,43 @@ export function CascadeCanvas({
           ctx.arc(x, y, radius + 8, 0, Math.PI * 2);
           ctx.fillStyle = `rgba(239, 68, 68, ${pulse * 0.3})`; // Red glow
           ctx.fill();
+          ctx.restore();
+        }
+
+        // PULSATION EFFECT: Factor XIII deficiency - unstable clot visualization
+        // F13 și FIBRIN_NET pulsează portocaliu pentru a arăta instabilitatea cheagului
+        const isF13Deficiency = state.currentScenario === 'Deficit factor XIII';
+        const isF13Related = factor.id === 'F13' || factor.id === 'F13a' || factor.id === 'FIBRIN_NET';
+        if (isF13Deficiency && isF13Related) {
+          // Pulsație rapidă + efect de "dezintegrare" (raze care radiază)
+          const pulseBase = Math.sin(Date.now() / 150) * 0.5 + 0.5; // 0-1, rapid
+          const pulseGlow = Math.sin(Date.now() / 300) * 0.3 + 0.7; // 0.4-1, mai lent
+
+          ctx.save();
+
+          // Glow principal portocaliu pulsatil
+          ctx.beginPath();
+          ctx.arc(x, y, radius + 10 * pulseGlow, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(249, 115, 22, ${pulseBase * 0.4})`; // Orange-500
+          ctx.fill();
+
+          // Raze radiale pentru efect de "cheag instabil care se dezintegrează"
+          if (factor.id === 'FIBRIN_NET') {
+            const rayCount = 8;
+            const rayLength = 15 + 10 * pulseBase;
+            for (let i = 0; i < rayCount; i++) {
+              const angle = (i / rayCount) * Math.PI * 2 + Date.now() / 2000;
+              const startR = radius + 5;
+              const endR = radius + rayLength;
+              ctx.beginPath();
+              ctx.moveTo(x + Math.cos(angle) * startR, y + Math.sin(angle) * startR);
+              ctx.lineTo(x + Math.cos(angle) * endR, y + Math.sin(angle) * endR);
+              ctx.strokeStyle = `rgba(249, 115, 22, ${pulseBase * 0.6})`;
+              ctx.lineWidth = 2;
+              ctx.stroke();
+            }
+          }
+
           ctx.restore();
         }
 

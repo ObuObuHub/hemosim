@@ -13,18 +13,40 @@ interface Preset {
 
 // IMPORTANT: Numele presetelor TREBUIE să se potrivească cu SCENARIO_AFFECTED_FACTORS din interpreter.ts
 const PRESETS: Preset[] = [
+  // === TRATAMENT ANTICOAGULANT ===
   { id: 'normal', name: 'Normal', lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 } },
   { id: 'warfarin', name: 'AVK/Warfarină', lab: { pt: 28, inr: 2.3, aptt: 38, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 250 }, meds: { warfarin: true } },
   { id: 'heparin', name: 'Heparină UFH', lab: { pt: 14, inr: 1.2, aptt: 85, tt: 35, fibrinogen: 300, platelets: 220, dDimers: 300 }, meds: { heparin: true } },
+  { id: 'lmwh', name: 'LMWH', lab: { pt: 12, inr: 1.0, aptt: 38, tt: 18, fibrinogen: 300, platelets: 240, dDimers: 280, bleedingTime: 5 }, meds: { lmwh: true } },
+  { id: 'doac_xa', name: 'DOAC anti-Xa', lab: { pt: 12, inr: 1.0, aptt: 33, tt: 17, fibrinogen: 300, platelets: 250, dDimers: 250, bleedingTime: 5 }, meds: { doacXa: true } },
+  { id: 'doac_iia', name: 'DOAC anti-IIa', lab: { pt: 13, inr: 1.1, aptt: 38, tt: 35, fibrinogen: 300, platelets: 250, dDimers: 250, bleedingTime: 5 }, meds: { doacIIa: true } },
+  { id: 'antiplatelet', name: 'Antiagregant', lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 9 }, meds: { antiplatelet: true } },
+  // === CALE INTRINSECĂ ===
   { id: 'hemophilia_a', name: 'Hemofilie A', lab: { pt: 12, inr: 1.0, aptt: 65, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, mixingTest: 'corrects' } },
   { id: 'hemophilia_b', name: 'Hemofilie B', lab: { pt: 12, inr: 1.0, aptt: 55, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, mixingTest: 'corrects' } },
   { id: 'hemophilia_c', name: 'Hemofilie C', lab: { pt: 12, inr: 1.0, aptt: 52, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5, mixingTest: 'corrects' } },
-  { id: 'f12_deficiency', name: 'Deficit Factor XII', lab: { pt: 12, inr: 1.0, aptt: 85, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5, mixingTest: 'corrects' } },
+  { id: 'f12_deficiency', name: 'Deficit factor XII', lab: { pt: 12, inr: 1.0, aptt: 85, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5, mixingTest: 'corrects' } },
   { id: 'vwd', name: 'Boala von Willebrand', lab: { pt: 12, inr: 1.0, aptt: 45, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 12, mixingTest: 'corrects' } },
-  { id: 'dic_bleeding', name: 'CID - Faza Hemoragică', lab: { pt: 32, inr: 2.7, aptt: 65, tt: 35, fibrinogen: 60, platelets: 25, dDimers: 6000, bleedingTime: 15 } },
-  { id: 'liver', name: 'Insuficiență Hepatică', lab: { pt: 20, inr: 1.7, aptt: 48, tt: 22, fibrinogen: 120, platelets: 90, dDimers: 800 } },
-  { id: 'itp', name: 'Purpura Trombocitopenică', lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 25, dDimers: 300, bleedingTime: 12 } },
-  { id: 'aps', name: 'Sindrom Antifosfolipidic', lab: { pt: 12, inr: 1.0, aptt: 55, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 400, mixingTest: 'does_not_correct' } },
+  // === CALE COMUNĂ (deficite rare) ===
+  { id: 'f2_deficiency', name: 'Deficit factor II', lab: { pt: 22, inr: 1.9, aptt: 48, tt: 18, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 } },
+  { id: 'f5_deficiency', name: 'Deficit factor V', lab: { pt: 20, inr: 1.7, aptt: 45, tt: 17, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 } },
+  { id: 'f10_deficiency', name: 'Deficit factor X', lab: { pt: 24, inr: 2.0, aptt: 52, tt: 17, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 6 } },
+  // === FIBRINOGEN ===
+  { id: 'afibrinogenemia', name: 'Afibrinogenemie', lab: { pt: 60, inr: 5.5, aptt: 120, tt: 120, fibrinogen: 20, platelets: 250, dDimers: 100, bleedingTime: 15 } },
+  { id: 'dysfibrinogenemia', name: 'Disfibrinogenemie', lab: { pt: 16, inr: 1.3, aptt: 35, tt: 45, fibrinogen: 150, platelets: 250, dDimers: 300, bleedingTime: 7 } },
+  { id: 'f13_deficiency', name: 'Deficit factor XIII', lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 200, bleedingTime: 5 } },
+  // === TROMBOCITOPENII ===
+  { id: 'itp', name: 'Purpură trombocitopenică', lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 300, platelets: 25, dDimers: 300, bleedingTime: 12 } },
+  // === CID - PROGRESIE FAZICĂ ===
+  { id: 'dic_activation', name: 'CID - faza activare', lab: { pt: 18, inr: 1.5, aptt: 33, tt: 18, fibrinogen: 280, platelets: 120, dDimers: 1500, bleedingTime: 6 } },
+  { id: 'dic_consumption', name: 'CID - faza consum', lab: { pt: 22, inr: 1.8, aptt: 45, tt: 24, fibrinogen: 150, platelets: 70, dDimers: 3000, bleedingTime: 8 } },
+  { id: 'dic_bleeding', name: 'CID - faza hemoragică', lab: { pt: 32, inr: 2.7, aptt: 65, tt: 35, fibrinogen: 60, platelets: 25, dDimers: 6000, bleedingTime: 15 } },
+  // === DEFICITE DOBÂNDITE ===
+  { id: 'liver', name: 'Insuficiență hepatică', lab: { pt: 20, inr: 1.7, aptt: 48, tt: 22, fibrinogen: 120, platelets: 90, dDimers: 800 } },
+  { id: 'vitk_def', name: 'Deficit vitamina K', lab: { pt: 24, inr: 2.0, aptt: 50, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 300, bleedingTime: 5 } },
+  // === TROMBOFILII ===
+  { id: 'aps', name: 'Sindrom antifosfolipidic', lab: { pt: 12, inr: 1.0, aptt: 55, tt: 16, fibrinogen: 300, platelets: 250, dDimers: 400, mixingTest: 'does_not_correct' } },
+  { id: 'thrombophilia', name: 'Trombofilie', lab: { pt: 12, inr: 1.0, aptt: 30, tt: 16, fibrinogen: 350, platelets: 280, dDimers: 1200, bleedingTime: 5 } },
 ];
 
 interface MobileLabInputProps {
@@ -41,7 +63,7 @@ interface MobileLabInputProps {
 type NumericLabKey = 'pt' | 'inr' | 'aptt' | 'tt' | 'fibrinogen' | 'platelets' | 'dDimers' | 'bleedingTime';
 
 // PT and INR are handled separately in a special row
-const LAB_FIELDS: { key: NumericLabKey; label: string; short: string; step: number }[] = [
+const LAB_FIELDS: { key: NumericLabKey; label: string; short: string; step: number; note?: string }[] = [
   { key: 'aptt', label: 'aPTT', short: 'aPTT', step: 1 },
   { key: 'tt', label: 'TT', short: 'TT', step: 0.5 },
   { key: 'fibrinogen', label: 'Fibrinogen', short: 'Fib', step: 10 },
@@ -277,7 +299,6 @@ export function MobileLabInput({
           );
         })}
       </div>
-
       {/* Medications - horizontal chips */}
       <div className="pt-2 border-t border-slate-100">
         <div className="flex flex-wrap gap-1.5">

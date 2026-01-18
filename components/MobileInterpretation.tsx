@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { ClinicalInterpretation, Diagnosis, Hit4TCriteria, ISTHManualCriteria, MedicationContext, LabInput } from '@/types';
-import { calculate4TScore, calculateManualISTHScore, shouldShowISTHCalculator, shouldShowHIT4TCalculator } from '@/engine/interpreter';
+import { calculate4TScore, calculateManualISTHScore, shouldShowISTHCalculator, shouldShowHIT4TCalculator, SCENARIO_AFFECTED_FACTORS, formatFactorsForDisplay } from '@/engine/interpreter';
 
 interface MobileInterpretationProps {
   interpretation: ClinicalInterpretation | null;
@@ -12,6 +12,7 @@ interface MobileInterpretationProps {
   labInput: LabInput;
   onHit4TCriteriaChange: (criteria: Hit4TCriteria) => void;
   onIsthManualCriteriaChange: (criteria: ISTHManualCriteria) => void;
+  currentScenario?: string | null;
 }
 
 function CollapsibleSection({
@@ -83,6 +84,7 @@ export function MobileInterpretation({
   labInput,
   onHit4TCriteriaChange,
   onIsthManualCriteriaChange,
+  currentScenario,
 }: MobileInterpretationProps): React.ReactElement {
   const showISTHCalculator = shouldShowISTHCalculator(labInput, medications);
   const showHIT4TCalculator = shouldShowHIT4TCalculator(medications, labInput);
@@ -102,6 +104,42 @@ export function MobileInterpretation({
 
   return (
     <div className="space-y-0">
+      {/* Educational Scenario Badge */}
+      {currentScenario && (
+        <div className="mb-3 p-2.5 rounded-lg bg-purple-50 border border-purple-200">
+          <div className="flex items-center gap-1.5 mb-1">
+            <svg className="w-3.5 h-3.5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+            <span className="text-[9px] font-semibold text-purple-700 uppercase tracking-wide">Mod Educațional</span>
+          </div>
+          <div className="text-[11px] font-medium text-purple-800">
+            {currentScenario}
+          </div>
+          {SCENARIO_AFFECTED_FACTORS[currentScenario] && SCENARIO_AFFECTED_FACTORS[currentScenario].length > 0 && (
+            <div className="mt-0.5 text-[10px] text-purple-600">
+              Factori: {formatFactorsForDisplay(SCENARIO_AFFECTED_FACTORS[currentScenario])}
+            </div>
+          )}
+
+          {/* Special note for Factor XIII deficiency */}
+          {currentScenario === 'Deficit factor XIII' && (
+            <div className="mt-2 p-2 bg-orange-100 border border-orange-300 rounded">
+              <div className="text-[10px] font-bold text-orange-800 mb-1">
+                ⚠️ TESTE UZUALE = NORMALE!
+              </div>
+              <p className="text-[9px] text-orange-700 leading-relaxed">
+                PT, aPTT, TT, Fibrinogen sunt <strong>toate normale</strong>!
+                Cheagul se formează dar este <strong>instabil</strong> și se dezintegrează rapid.
+              </p>
+              <p className="text-[9px] text-orange-800 font-semibold mt-1">
+                → Test specific: dozare F.XIII / solubilitate uree 5M
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Warnings - always visible */}
       {interpretation.warnings.length > 0 && (
         <div className="mb-3 space-y-1.5">

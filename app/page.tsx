@@ -129,6 +129,7 @@ export default function Home(): React.ReactElement {
                 onFactorClick={handleFactorClick}
                 showFeedback={state.showFeedback}
                 showInhibition={state.showInhibition}
+                currentScenario={state.currentScenario}
               />
             </div>
           </main>
@@ -142,6 +143,7 @@ export default function Home(): React.ReactElement {
               labInput={state.labInput}
               onHit4TCriteriaChange={updateHit4TCriteria}
               onIsthManualCriteriaChange={updateIsthManualCriteria}
+              currentScenario={state.currentScenario}
             />
           </aside>
         </div>

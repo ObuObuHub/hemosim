@@ -4,32 +4,63 @@ import { calculateFactorConcentrations } from './inverse-mapping';
 
 // Mapare scenariu → factori afectați (pentru educație)
 // Când un scenariu este selectat, acești factori sunt evidențiați în loc de diagnosticul diferențial
-const SCENARIO_AFFECTED_FACTORS: Record<string, string[]> = {
-  // Coagulopatii congenitale
+export const SCENARIO_AFFECTED_FACTORS: Record<string, string[]> = {
+  // Coagulopatii congenitale - Hemofilia
   'Hemofilie A': ['F8'],
   'Hemofilie B': ['F9'],
-  'Hemofilie C': ['F11'],  // Deficit Factor XI - sângerare variabilă
-  'Deficit Factor XII': ['F12'],  // aPTT prelungit izolat, FĂRĂ risc de sângerare
+  'Hemofilie C': ['F11'],  // Deficit FXI - sângerare variabilă
+  'Deficit factor XII': ['F12'],  // aPTT prelungit izolat, FĂRĂ risc de sângerare
   'Boala von Willebrand': ['vWF', 'F8'],
-  'Purpura Trombocitopenică': ['PLT'],
+  'Purpură trombocitopenică': ['PLT'],
+
+  // Coagulopatii congenitale - Fibrinogen
+  'Afibrinogenemie': ['FBG'],  // Fibrinogen < 50 mg/dL - AR, 1:1.000.000
+  'Disfibrinogenemie': ['FBG'],  // Fibrinogen calitativ anormal
+
+  // Coagulopatii congenitale - Cale Comună (rare)
+  'Deficit factor II': ['F2'],   // Protrombină - AR, foarte rar
+  'Deficit factor V': ['F5'],    // AR, sângerare variabilă
+  'Deficit factor X': ['F10'],   // AR, sângerare severă
+  'Deficit factor XIII': ['F13'], // Screening NORMAL! Necesită test specific
+
   // Deficite dobândite
-  'Deficit Vitamina K': ['F2', 'F7', 'F9', 'F10', 'PC', 'PS'],  // Vit K dependenți (PC, PS = anticoagulanți)
-  'Insuficiență Hepatică': ['F2', 'F5', 'F7', 'F9', 'F10', 'F11', 'F12', 'F13', 'FBG', 'AT', 'PC'],  // Toți factorii produși în ficat (FĂRĂ F8!)
+  'Deficit vitamina K': ['F2', 'F7', 'F9', 'F10', 'PC', 'PS'],  // Vit K dependenți (PC, PS = anticoagulanți)
+  'Insuficiență hepatică': ['F2', 'F5', 'F7', 'F9', 'F10', 'F11', 'F12', 'F13', 'FBG', 'AT', 'PC'],  // Toți factorii produși în ficat (FĂRĂ FVIII!)
+
   // Trombofilie (nu deficit, ci hipercoagulabilitate)
-  'Sindrom Antifosfolipidic': [],
+  'Sindrom antifosfolipidic': [],
   'Trombofilie': [],
+
   // CID - progresie fazică
-  'CID - Faza Activare': ['FBG', 'PLT'],  // Consum incipient
-  'CID - Faza Consum': ['F2', 'F5', 'F8', 'F10', 'FBG', 'PLT'],
-  'CID - Faza Hemoragică': ['F2', 'F5', 'F8', 'F10', 'FBG', 'PLT'],
+  'CID - faza activare': ['FBG', 'PLT'],  // Consum incipient
+  'CID - faza consum': ['F2', 'F5', 'F8', 'F10', 'FBG', 'PLT'],
+  'CID - faza hemoragică': ['F2', 'F5', 'F8', 'F10', 'FBG', 'PLT'],
+
   // Anticoagulante
   'AVK/Warfarină': ['F2', 'F7', 'F9', 'F10', 'PC', 'PS'],  // Vitamina K dependenți (inclusiv anticoagulanți)
-  'Heparină UFH': ['IIa', 'F10a'],  // Potențează AT → inhibă IIa și Xa
+  'Heparină UFH': ['IIa', 'F10a'],  // Potențează AT → inhibă FIIa și FXa
   'LMWH': ['F10a'],  // Predominant anti-Xa
   'DOAC anti-Xa': ['F10a'],  // Rivaroxaban, Apixaban, Edoxaban
   'DOAC anti-IIa': ['IIa'],  // Dabigatran
   'Antiagregant': ['PLT'],  // Aspirină, Clopidogrel - inhibă funcția trombocitară
 };
+
+// Conversie ID intern → afișare cu cifre romane (pentru UI)
+const FACTOR_DISPLAY_NAMES: Record<string, string> = {
+  'F2': 'FII', 'F5': 'FV', 'F7': 'FVII', 'F8': 'FVIII', 'F9': 'FIX',
+  'F10': 'FX', 'F11': 'FXI', 'F12': 'FXII', 'F13': 'FXIII',
+  'F10a': 'FXa', 'IIa': 'FIIa',
+  'vWF': 'vWF', 'FBG': 'Fibrinogen', 'PLT': 'Trombocite',
+  'PC': 'Proteina C', 'PS': 'Proteina S', 'AT': 'Antitrombina',
+};
+
+export function formatFactorForDisplay(factorId: string): string {
+  return FACTOR_DISPLAY_NAMES[factorId] || factorId;
+}
+
+export function formatFactorsForDisplay(factorIds: string[]): string {
+  return factorIds.map(formatFactorForDisplay).join(', ');
+}
 
 type LabStatus = 'normal' | 'high' | 'low' | 'critical';
 
