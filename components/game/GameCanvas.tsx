@@ -2,7 +2,7 @@
 'use client';
 
 import type { GameState } from '@/types/game';
-import { GAME_CANVAS, PANEL_CONFIGS } from '@/engine/game/game-config';
+import { GAME_CANVAS, PANEL_CONFIGS, COLORS } from '@/engine/game/game-config';
 import { GameHUD } from './GameHUD';
 import { SurfacePanel } from './SurfacePanel';
 import { FactorPalette } from './FactorPalette';
@@ -24,7 +24,7 @@ export function GameCanvas({
         position: 'relative',
         width: GAME_CANVAS.width,
         height: GAME_CANVAS.height,
-        backgroundColor: '#0F172A',
+        backgroundColor: COLORS.panelBackgroundLocked,
         overflow: 'hidden',
         fontFamily: 'system-ui, -apple-system, sans-serif',
       }}

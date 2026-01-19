@@ -2,7 +2,6 @@
 'use client';
 
 import { useEffect, useCallback } from 'react';
-import { GAME_CANVAS } from '@/engine/game/game-config';
 
 interface GameControlsProps {
   onDeselect: () => void;
@@ -31,17 +30,6 @@ export function GameControls({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
-  return (
-    <div
-      onClick={onDeselect}
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: GAME_CANVAS.width,
-        height: GAME_CANVAS.height,
-        pointerEvents: 'none', // Let clicks pass through to children
-      }}
-    />
-  );
+  // This component only handles keyboard shortcuts - no visual output needed
+  return <></>;
 }

@@ -24,7 +24,7 @@ export function FactorPalette({
         top: LAYOUT.palette.y,
         width: GAME_CANVAS.width,
         height: LAYOUT.palette.height,
-        backgroundColor: '#0F172A',
+        backgroundColor: COLORS.panelBackgroundLocked,
         borderTop: `1px solid ${COLORS.panelBorder}`,
         display: 'flex',
         flexDirection: 'column',
