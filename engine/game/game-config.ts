@@ -1,302 +1,190 @@
-/**
- * Game configuration constants for the Coagulation Cascade Builder game.
- *
- * Players catch floating coagulation factors and dock them to build
- * Tenase and Prothrombinase complexes.
- */
+// engine/game/game-config.ts
+import type { Slot, Surface } from '@/types/game';
 
 // =============================================================================
 // CANVAS DIMENSIONS
 // =============================================================================
 
 export const GAME_CANVAS = {
-  /** Canvas width in pixels */
   width: 1000,
-  /** Canvas height in pixels */
   height: 700,
 } as const;
 
 // =============================================================================
-// TIMING CONSTANTS (in milliseconds)
+// LAYOUT CONFIGURATION
 // =============================================================================
 
-export const TIMING = {
-  /** Interval between factor spawns */
-  spawnIntervalMs: 2000,
-  /** Time window to catch a factor after tap/click */
-  catchTimeoutMs: 500,
-  /** Time before an antagonist targets an uncaught factor */
-  dockTimeoutMs: 10000,
-  /** Duration of catch animation */
-  catchAnimationMs: 300,
-  /** Duration of dock animation */
-  dockAnimationMs: 500,
-  /** Delay before next level starts */
-  levelTransitionMs: 2000,
-  /** Factor lifetime before it exits screen (if not caught) */
-  factorLifetimeMs: 15000,
-} as const;
-
-// =============================================================================
-// PHYSICS CONSTANTS
-// =============================================================================
-
-export const PHYSICS = {
-  /** Minimum factor movement speed (pixels per frame at 60fps) */
-  minSpeed: 1,
-  /** Maximum factor movement speed (pixels per frame at 60fps) */
-  maxSpeed: 3,
-  /** Amplitude of sine wave drift pattern (pixels) */
-  driftAmplitude: 20,
-  /** Frequency of drift oscillation */
-  driftFrequency: 0.02,
-  /** Factor hitbox radius for tap detection (pixels) */
-  hitboxRadius: 40,
-  /** Snap distance for docking zones (pixels) */
-  dockSnapDistance: 60,
-} as const;
-
-// =============================================================================
-// SCORING
-// =============================================================================
-
-export const SCORING = {
-  /** Points for catching a factor */
-  catch: 10,
-  /** Points for successfully docking a factor */
-  dock: 50,
-  /** Points for completing the Tenase complex (IXa + VIIIa) */
-  tenaseComplete: 200,
-  /** Points for completing the Prothrombinase complex (Xa + Va) */
-  prothrombinaseComplete: 200,
-  /** Bonus points for completing a level */
-  levelBonus: 500,
-  /** Multiplier for consecutive catches without miss */
-  comboMultiplier: 0.1,
-  /** Maximum combo multiplier */
-  maxComboMultiplier: 3.0,
-} as const;
-
-// =============================================================================
-// LIVES AND DIFFICULTY
-// =============================================================================
-
-/** Starting number of lives */
-export const INITIAL_LIVES = 3;
-
-/** Maximum lives a player can accumulate */
-export const MAX_LIVES = 5;
-
-/** Score threshold to earn an extra life */
-export const EXTRA_LIFE_THRESHOLD = 1000;
-
-// =============================================================================
-// FACTOR VISUAL CONFIGURATION
-// =============================================================================
-
-export const FACTOR_VISUALS = {
-  /** Base radius of factor circles (pixels) */
-  baseRadius: 35,
-  /** Font size for factor labels */
-  labelFontSize: 14,
-  /** Glow effect radius when factor is highlighted */
-  glowRadius: 8,
-  /** Opacity of inactive/uncatchable factors */
-  inactiveOpacity: 0.4,
-} as const;
-
-// =============================================================================
-// DOCK ZONE CONFIGURATION
-// =============================================================================
-
-export const DOCK_ZONES = {
-  /** Tenase complex dock zone position */
-  tenase: {
-    x: 200,
-    y: 550,
-    width: 180,
-    height: 100,
+export const LAYOUT = {
+  // Header area (thrombin meter + message)
+  header: {
+    y: 0,
+    height: 80,
   },
-  /** Prothrombinase complex dock zone position */
-  prothrombinase: {
-    x: 620,
-    y: 550,
-    width: 180,
-    height: 100,
+  // Surface panels area
+  panels: {
+    y: 80,
+    height: 480,
   },
+  // Factor palette area
+  palette: {
+    y: 560,
+    height: 140,
+  },
+  // Panel widths (3 equal panels)
+  panelWidth: Math.floor(GAME_CANVAS.width / 3),
 } as const;
 
 // =============================================================================
-// LEVEL CONFIGURATION TYPES
+// SURFACE PANEL POSITIONS
 // =============================================================================
 
-/** Difficulty settings that scale per level */
-export interface LevelDifficulty {
-  /** Level number (1-based) */
-  level: number;
-  /** Factor spawn interval for this level (ms) */
-  spawnIntervalMs: number;
-  /** Speed multiplier for factors */
-  speedMultiplier: number;
-  /** Number of antagonist factors active */
-  antagonistCount: number;
-  /** Required complexes to complete the level */
-  requiredComplexes: number;
+export interface PanelConfig {
+  surface: Surface;
+  title: string;
+  subtitle: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  lockedMessage: string | null;
+  isComingSoon: boolean;
 }
 
-/** Configuration for a specific level */
-export interface LevelConfig {
-  /** Level number */
-  level: number;
-  /** Level name/title */
-  name: string;
-  /** Educational description shown before level */
-  description: string;
-  /** Difficulty parameters */
-  difficulty: LevelDifficulty;
-  /** Which factors can spawn in this level */
-  availableFactors: string[];
-  /** Target complex(es) to build */
-  targetComplexes: Array<'tenase' | 'prothrombinase'>;
-  /** Optional tutorial hints for this level */
-  hints?: string[];
-}
-
-// =============================================================================
-// LEVEL PRESETS
-// =============================================================================
-
-/**
- * Default level configurations.
- * Level 1: Tutorial - build Tenase only
- * Level 2: Build Prothrombinase
- * Level 3+: Both complexes with increasing difficulty
- */
-export const LEVEL_PRESETS: LevelConfig[] = [
+export const PANEL_CONFIGS: PanelConfig[] = [
   {
-    level: 1,
-    name: 'Tenase Complex',
-    description:
-      'Learn to build the Tenase complex by catching Factor IXa (enzyme) and Factor VIIIa (cofactor).',
-    difficulty: {
-      level: 1,
-      spawnIntervalMs: 2500,
-      speedMultiplier: 0.8,
-      antagonistCount: 0,
-      requiredComplexes: 1,
-    },
-    availableFactors: ['F9a', 'F8a'],
-    targetComplexes: ['tenase'],
-    hints: [
-      'Tap factors to catch them',
-      'Drag caught factors to the dock zone',
-      'IXa is the enzyme, VIIIa is the cofactor',
-    ],
+    surface: 'tf-cell',
+    title: 'TF-BEARING CELL',
+    subtitle: 'Initiation',
+    x: 0,
+    y: LAYOUT.panels.y,
+    width: LAYOUT.panelWidth,
+    height: LAYOUT.panels.height,
+    lockedMessage: null, // always active
+    isComingSoon: false,
   },
   {
-    level: 2,
-    name: 'Prothrombinase Complex',
-    description:
-      'Build the Prothrombinase complex using Factor Xa (enzyme) and Factor Va (cofactor).',
-    difficulty: {
-      level: 2,
-      spawnIntervalMs: 2200,
-      speedMultiplier: 1.0,
-      antagonistCount: 0,
-      requiredComplexes: 1,
-    },
-    availableFactors: ['F10a', 'F5a'],
-    targetComplexes: ['prothrombinase'],
-    hints: [
-      'Xa is the enzyme, Va is the cofactor',
-      'Together they convert prothrombin to thrombin',
-    ],
+    surface: 'platelet',
+    title: 'PLATELET',
+    subtitle: 'Amplification',
+    x: LAYOUT.panelWidth,
+    y: LAYOUT.panels.y,
+    width: LAYOUT.panelWidth,
+    height: LAYOUT.panels.height,
+    lockedMessage: 'LOCKED: THR ≥ 30%',
+    isComingSoon: false,
   },
   {
-    level: 3,
-    name: 'Both Complexes',
-    description: 'Build both Tenase and Prothrombinase complexes before time runs out.',
-    difficulty: {
-      level: 3,
-      spawnIntervalMs: 2000,
-      speedMultiplier: 1.2,
-      antagonistCount: 1,
-      requiredComplexes: 2,
-    },
-    availableFactors: ['F9a', 'F8a', 'F10a', 'F5a'],
-    targetComplexes: ['tenase', 'prothrombinase'],
-    hints: ['Watch out for antagonist factors!', 'Build complexes in any order'],
-  },
-  {
-    level: 4,
-    name: 'Anticoagulant Challenge',
-    description: 'Build complexes while avoiding Antithrombin and Protein C interference.',
-    difficulty: {
-      level: 4,
-      spawnIntervalMs: 1800,
-      speedMultiplier: 1.4,
-      antagonistCount: 2,
-      requiredComplexes: 3,
-    },
-    availableFactors: ['F9a', 'F8a', 'F10a', 'F5a', 'AT', 'APC'],
-    targetComplexes: ['tenase', 'prothrombinase'],
-  },
-  {
-    level: 5,
-    name: 'Cascade Master',
-    description: 'The ultimate challenge - fast spawns, multiple antagonists, more complexes.',
-    difficulty: {
-      level: 5,
-      spawnIntervalMs: 1500,
-      speedMultiplier: 1.6,
-      antagonistCount: 3,
-      requiredComplexes: 4,
-    },
-    availableFactors: ['F9a', 'F8a', 'F10a', 'F5a', 'AT', 'APC', 'TFPI'],
-    targetComplexes: ['tenase', 'prothrombinase'],
+    surface: 'activated-platelet',
+    title: 'ACTIVATED PLATELET',
+    subtitle: 'Propagation',
+    x: LAYOUT.panelWidth * 2,
+    y: LAYOUT.panels.y,
+    width: LAYOUT.panelWidth,
+    height: LAYOUT.panels.height,
+    lockedMessage: null,
+    isComingSoon: true, // v2
   },
 ];
 
 // =============================================================================
-// HELPER FUNCTIONS
+// INITIAL SLOTS
 // =============================================================================
 
-/**
- * Get level configuration by level number.
- * Returns the last level config if level exceeds available presets.
- */
-export function getLevelConfig(level: number): LevelConfig {
-  const index = Math.min(level - 1, LEVEL_PRESETS.length - 1);
-  const baseConfig = LEVEL_PRESETS[Math.max(0, index)];
-
-  // For levels beyond presets, scale difficulty
-  if (level > LEVEL_PRESETS.length) {
-    const scaleFactor = 1 + (level - LEVEL_PRESETS.length) * 0.1;
-    return {
-      ...baseConfig,
-      level,
-      name: `Level ${level}`,
-      difficulty: {
-        ...baseConfig.difficulty,
-        level,
-        spawnIntervalMs: Math.max(1000, baseConfig.difficulty.spawnIntervalMs - (level - LEVEL_PRESETS.length) * 100),
-        speedMultiplier: baseConfig.difficulty.speedMultiplier * scaleFactor,
-        antagonistCount: Math.min(5, baseConfig.difficulty.antagonistCount + Math.floor((level - LEVEL_PRESETS.length) / 2)),
-        requiredComplexes: baseConfig.difficulty.requiredComplexes + Math.floor((level - LEVEL_PRESETS.length) / 2),
-      },
-    };
-  }
-
-  return baseConfig;
+export function createInitialSlots(): Slot[] {
+  return [
+    // TF-cell slots (Initiation)
+    {
+      id: 'tf-cell-fx',
+      surface: 'tf-cell',
+      acceptsFactorId: 'FX',
+      isLocked: false,
+      placedFactorId: null,
+      isActive: false,
+    },
+    {
+      id: 'tf-cell-fii',
+      surface: 'tf-cell',
+      acceptsFactorId: 'FII',
+      isLocked: false,
+      placedFactorId: null,
+      isActive: false,
+    },
+    // Platelet slots (Amplification) - locked until thrombin threshold
+    {
+      id: 'platelet-fv',
+      surface: 'platelet',
+      acceptsFactorId: 'FV',
+      isLocked: true,
+      placedFactorId: null,
+      isActive: false,
+    },
+    {
+      id: 'platelet-fviii',
+      surface: 'platelet',
+      acceptsFactorId: 'FVIII',
+      isLocked: true,
+      placedFactorId: null,
+      isActive: false,
+    },
+  ];
 }
 
-/**
- * Calculate score with combo multiplier.
- */
-export function calculateScore(basePoints: number, comboCount: number): number {
-  const multiplier = Math.min(
-    SCORING.maxComboMultiplier,
-    1 + comboCount * SCORING.comboMultiplier
-  );
-  return Math.round(basePoints * multiplier);
+// =============================================================================
+// SLOT POSITIONS WITHIN PANELS
+// =============================================================================
+
+export interface SlotPosition {
+  slotId: string;
+  x: number; // relative to panel
+  y: number; // relative to panel
+  width: number;
+  height: number;
 }
+
+export const SLOT_POSITIONS: Record<string, SlotPosition> = {
+  'tf-cell-fx': { slotId: 'tf-cell-fx', x: 40, y: 200, width: 120, height: 80 },
+  'tf-cell-fii': { slotId: 'tf-cell-fii', x: 180, y: 200, width: 120, height: 80 },
+  'platelet-fv': { slotId: 'platelet-fv', x: 60, y: 180, width: 120, height: 80 },
+  'platelet-fviii': { slotId: 'platelet-fviii', x: 60, y: 280, width: 140, height: 80 },
+} as const;
+
+// =============================================================================
+// PREPLACED ELEMENT POSITIONS (TF+VIIa, trace Va on TF-cell)
+// =============================================================================
+
+export const PREPLACED_POSITIONS = {
+  'tf-viia': { x: 40, y: 80, width: 120, height: 60 },
+  'va-trace': { x: 180, y: 80, width: 100, height: 50 },
+} as const;
+
+// =============================================================================
+// COLORS
+// =============================================================================
+
+export const COLORS = {
+  panelBackground: '#1E293B',
+  panelBackgroundLocked: '#0F172A',
+  panelBorder: '#334155',
+  panelBorderActive: '#3B82F6',
+  slotBackground: '#374151',
+  slotBackgroundHover: '#4B5563',
+  slotBorderValid: '#22C55E',
+  slotBorderInvalid: '#EF4444',
+  textPrimary: '#F8FAFC',
+  textSecondary: '#94A3B8',
+  textDim: '#64748B',
+  thrombinMeterFill: '#EF4444',
+  thrombinMeterBackground: '#1E293B',
+  successMessage: '#22C55E',
+  errorMessage: '#EF4444',
+} as const;
+
+// =============================================================================
+// ANIMATION TIMING
+// =============================================================================
+
+export const ANIMATION = {
+  factorFlipDuration: 400, // ms
+  slotPulseDuration: 1000, // ms
+  messageFadeDuration: 300, // ms
+} as const;
