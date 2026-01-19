@@ -1,233 +1,152 @@
+// components/game/GameHUD.tsx
 'use client';
 
-import { memo } from 'react';
-import type { ReactElement } from 'react';
-
-// =============================================================================
-// TYPES
-// =============================================================================
+import { COLORS, LAYOUT, GAME_CANVAS } from '@/engine/game/game-config';
+import { THROMBIN_STARTER_THRESHOLD } from '@/engine/game/validation-rules';
 
 interface GameHUDProps {
-  /** Current player score */
-  score: number;
-  /** Seconds remaining on the timer */
-  timer: number;
-  /** Remaining lives (0-5) */
-  lives: number;
-  /** Current level number (1-based) */
-  currentLevel: number;
-  /** Optional level name/title */
-  levelName?: string;
-  /** Current combo count for consecutive catches */
-  combo?: number;
+  thrombinMeter: number;
+  currentMessage: string;
+  isError: boolean;
+  phase: string;
 }
 
-// =============================================================================
-// CONSTANTS
-// =============================================================================
-
-const MAX_DISPLAYABLE_LIVES = 5;
-
-const COLORS = {
-  background: 'rgba(15, 23, 42, 0.85)', // Dark slate with transparency
-  text: {
-    primary: '#ffffff',
-    secondary: '#94a3b8',
-    accent: '#fbbf24', // Amber for combo/highlights
-  },
-  heart: {
-    filled: '#ef4444',   // Red for active lives
-    empty: '#374151',    // Gray for lost lives
-  },
-  timer: {
-    normal: '#22c55e',   // Green when time is plenty
-    warning: '#eab308',  // Yellow when running low
-    critical: '#ef4444', // Red when critical
-  },
-} as const;
-
-const STYLES = {
-  hud: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '12px 20px',
-    background: COLORS.background,
-    borderBottom: '1px solid rgba(71, 85, 105, 0.5)',
-    fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-    fontSize: '14px',
-    color: COLORS.text.primary,
-    userSelect: 'none' as const,
-  },
-  section: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px',
-  },
-  label: {
-    fontSize: '11px',
-    fontWeight: 500,
-    color: COLORS.text.secondary,
-    textTransform: 'uppercase' as const,
-    letterSpacing: '0.5px',
-    marginRight: '4px',
-  },
-  value: {
-    fontSize: '18px',
-    fontWeight: 700,
-    fontVariantNumeric: 'tabular-nums' as const,
-  },
-  combo: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    padding: '2px 8px',
-    borderRadius: '12px',
-    background: 'rgba(251, 191, 36, 0.2)',
-    color: COLORS.text.accent,
-    fontSize: '13px',
-    fontWeight: 600,
-  },
-  level: {
-    textAlign: 'center' as const,
-  },
-  levelNumber: {
-    fontSize: '20px',
-    fontWeight: 700,
-  },
-  levelName: {
-    fontSize: '12px',
-    color: COLORS.text.secondary,
-    marginTop: '2px',
-  },
-  lives: {
-    display: 'flex',
-    gap: '4px',
-  },
-  heart: {
-    fontSize: '18px',
-    lineHeight: 1,
-  },
-} as const;
-
-// =============================================================================
-// HELPER FUNCTIONS
-// =============================================================================
-
-/**
- * Formats seconds into mm:ss display format.
- * Handles float values by flooring to whole seconds.
- */
-function formatTime(seconds: number): string {
-  const totalSeconds = Math.floor(Math.max(0, seconds));
-  const mins = Math.floor(totalSeconds / 60);
-  const secs = totalSeconds % 60;
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
-
-/**
- * Returns appropriate color for timer based on remaining time.
- */
-function getTimerColor(seconds: number): string {
-  if (seconds <= 10) return COLORS.timer.critical;
-  if (seconds <= 30) return COLORS.timer.warning;
-  return COLORS.timer.normal;
-}
-
-/**
- * Renders heart symbols for lives display.
- * Filled hearts for remaining lives, empty for lost lives.
- */
-function renderLives(lives: number): ReactElement[] {
-  const hearts: ReactElement[] = [];
-  const displayLives = Math.min(lives, MAX_DISPLAYABLE_LIVES);
-
-  for (let i = 0; i < MAX_DISPLAYABLE_LIVES; i++) {
-    const isFilled = i < displayLives;
-    hearts.push(
-      <span
-        key={i}
-        style={{
-          ...STYLES.heart,
-          color: isFilled ? COLORS.heart.filled : COLORS.heart.empty,
-          opacity: isFilled ? 1 : 0.4,
-        }}
-        aria-hidden="true"
-      >
-        {isFilled ? '\u2665' : '\u2661'}
-      </span>
-    );
-  }
-
-  return hearts;
-}
-
-// =============================================================================
-// COMPONENT
-// =============================================================================
-
-/**
- * Heads-Up Display component showing game stats.
- * Positioned at the top of the game area with score, timer, lives, and level info.
- * Memoized to prevent unnecessary re-renders when props haven't changed.
- */
-export const GameHUD = memo(function GameHUD({
-  score,
-  timer,
-  lives,
-  currentLevel,
-  levelName,
-  combo = 0,
-}: GameHUDProps): ReactElement {
-  const timerColor = getTimerColor(timer);
+export function GameHUD({
+  thrombinMeter,
+  currentMessage,
+  isError,
+  phase,
+}: GameHUDProps): React.ReactElement {
+  const meterWidth = 300;
+  const fillWidth = (thrombinMeter / 100) * meterWidth;
+  const thresholdPosition = (THROMBIN_STARTER_THRESHOLD / 100) * meterWidth;
 
   return (
-    <div style={STYLES.hud} role="status" aria-live="off">
-      {/* Left section: Score and Combo */}
-      <div style={STYLES.section}>
-        <div>
-          <span style={STYLES.label}>Score</span>
-          <span style={STYLES.value}>{score.toLocaleString()}</span>
-        </div>
-        {combo > 0 && (
-          <span style={STYLES.combo} aria-label={`${combo}x combo`}>
-            x{combo}
-          </span>
-        )}
-      </div>
+    <div
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: GAME_CANVAS.width,
+        height: LAYOUT.header.height,
+        backgroundColor: '#0F172A',
+        borderBottom: `1px solid ${COLORS.panelBorder}`,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '8px 16px',
+      }}
+    >
+      {/* Top row: Thrombin meter */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 16,
+          marginBottom: 8,
+        }}
+      >
+        <span
+          style={{
+            fontSize: 12,
+            fontWeight: 600,
+            color: COLORS.textSecondary,
+            textTransform: 'uppercase',
+          }}
+        >
+          Thrombin:
+        </span>
 
-      {/* Center section: Level info */}
-      <div style={STYLES.level}>
-        <div style={STYLES.levelNumber}>Level {currentLevel}</div>
-        {levelName && <div style={STYLES.levelName}>{levelName}</div>}
-      </div>
+        {/* Meter bar */}
+        <div
+          style={{
+            position: 'relative',
+            width: meterWidth,
+            height: 20,
+            backgroundColor: COLORS.thrombinMeterBackground,
+            borderRadius: 4,
+            border: `1px solid ${COLORS.panelBorder}`,
+            overflow: 'hidden',
+          }}
+        >
+          {/* Fill */}
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              width: fillWidth,
+              height: '100%',
+              backgroundColor: COLORS.thrombinMeterFill,
+              transition: 'width 0.3s ease',
+            }}
+          />
 
-      {/* Right section: Timer and Lives */}
-      <div style={STYLES.section}>
-        <div>
-          <span style={STYLES.label}>Time</span>
+          {/* Threshold marker */}
+          <div
+            style={{
+              position: 'absolute',
+              left: thresholdPosition,
+              top: 0,
+              width: 2,
+              height: '100%',
+              backgroundColor: '#FBBF24',
+            }}
+          />
+
+          {/* Percentage text */}
           <span
             style={{
-              ...STYLES.value,
-              color: timerColor,
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
+              fontSize: 11,
+              fontWeight: 600,
+              color: COLORS.textPrimary,
             }}
           >
-            {formatTime(timer)}
+            {thrombinMeter}%
           </span>
         </div>
-        <div>
-          <span style={STYLES.label}>Lives</span>
-          <div
-            style={STYLES.lives}
-            role="img"
-            aria-label={`${lives} lives remaining`}
-            aria-live="polite"
-          >
-            {renderLives(lives)}
-          </div>
-        </div>
+
+        {/* Threshold label */}
+        <span
+          style={{
+            fontSize: 10,
+            color: COLORS.textDim,
+          }}
+        >
+          Starter: {THROMBIN_STARTER_THRESHOLD}%
+        </span>
+
+        {/* Phase indicator */}
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: phase === 'complete' ? '#22C55E' : '#3B82F6',
+            textTransform: 'uppercase',
+            marginLeft: 'auto',
+          }}
+        >
+          {phase === 'complete' ? 'Complete!' : phase}
+        </span>
+      </div>
+
+      {/* Message area */}
+      <div
+        style={{
+          fontSize: 13,
+          color: isError ? COLORS.errorMessage : COLORS.successMessage,
+          textAlign: 'center',
+          minHeight: 20,
+          transition: 'color 0.2s ease',
+        }}
+      >
+        {currentMessage}
       </div>
     </div>
   );
-});
-
-export default GameHUD;
+}
