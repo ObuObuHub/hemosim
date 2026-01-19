@@ -69,19 +69,23 @@ function createDockingSlots(level: number): DockingSlot[] {
     }
 
     if (complexType === 'prothrombinase') {
+      // Prothrombinase slots start locked if Tenase is also a target
+      // This implements sequential gating: Tenase must be built first
+      const tenaseIsTarget = levelConfig.targetComplexes.includes('tenase');
+
       slots.push({
         id: 'prothrombinase-enzyme',
         complexType: 'prothrombinase',
         role: 'enzyme',
         acceptsFactors: ['F10a'],
-        isLocked: false,
+        isLocked: tenaseIsTarget,
       });
       slots.push({
         id: 'prothrombinase-cofactor',
         complexType: 'prothrombinase',
         role: 'cofactor',
         acceptsFactors: ['F5a'],
-        isLocked: false,
+        isLocked: tenaseIsTarget,
       });
     }
   }
@@ -359,6 +363,16 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         return state; // Slot is locked
       }
 
+      // Check if slot is already occupied
+      const targetComplex = state.complexes.find((c) => c.type === slot.complexType);
+      if (targetComplex) {
+        const isOccupied =
+          slot.role === 'enzyme' ? targetComplex.enzyme !== null : targetComplex.cofactor !== null;
+        if (isOccupied) {
+          return state; // Slot already has a factor docked
+        }
+      }
+
       // Update the factor state to docked
       const updatedFactors = [...state.factors];
       updatedFactors[factorIndex] = {
@@ -474,16 +488,30 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           ? SCORING.tenaseComplete
           : SCORING.prothrombinaseComplete;
 
-      // Check if all required complexes are complete
+      // Sequential gating: When Tenase is completed, unlock Prothrombinase slots
+      let updatedSlots = state.dockingSlots;
+      if (action.complexType === 'tenase') {
+        updatedSlots = state.dockingSlots.map((slot) => {
+          if (slot.complexType === 'prothrombinase') {
+            return { ...slot, isLocked: false };
+          }
+          return slot;
+        });
+      }
+
+      // Check victory condition: all target complexes must be active
       const levelConfig = getLevelConfig(state.currentLevel);
-      const activeComplexCount = updatedComplexes.filter((c) => c.isActive).length;
-      const allComplete = activeComplexCount >= levelConfig.difficulty.requiredComplexes;
+      const allTargetComplexesActive = levelConfig.targetComplexes.every((targetType) => {
+        const complex = updatedComplexes.find((c) => c.type === targetType);
+        return complex?.isActive === true;
+      });
 
       return {
         ...state,
         complexes: updatedComplexes,
-        score: state.score + complexBonus + (allComplete ? SCORING.levelBonus : 0),
-        phase: allComplete ? 'complete' : 'catch',
+        dockingSlots: updatedSlots,
+        score: state.score + complexBonus + (allTargetComplexesActive ? SCORING.levelBonus : 0),
+        phase: allTargetComplexesActive ? 'complete' : 'catch',
       };
     }
 
