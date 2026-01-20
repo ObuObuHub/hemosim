@@ -23,6 +23,7 @@ export function GameOverScreen({
 
   return (
     <div
+      className="game-result-overlay"
       style={{
         position: 'absolute',
         top: 0,
@@ -50,6 +51,7 @@ export function GameOverScreen({
       />
 
       <div
+        className="game-result-card"
         style={{
           backgroundColor: '#1E293B',
           borderRadius: 16,
@@ -64,6 +66,7 @@ export function GameOverScreen({
       >
         {/* Title */}
         <h2
+          className="game-result-title"
           style={{
             fontSize: 32,
             fontWeight: 700,
@@ -78,6 +81,7 @@ export function GameOverScreen({
         </h2>
 
         <p
+          className="game-result-subtitle"
           style={{
             fontSize: 14,
             color: COLORS.textSecondary,
@@ -89,6 +93,7 @@ export function GameOverScreen({
 
         {/* Stats */}
         <div
+          className="game-result-stats"
           style={{
             backgroundColor: '#0F172A',
             borderRadius: 8,
@@ -153,6 +158,7 @@ export function GameOverScreen({
 
         {/* Buttons */}
         <div
+          className="game-result-buttons"
           style={{
             display: 'flex',
             gap: 16,

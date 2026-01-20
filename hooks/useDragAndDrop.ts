@@ -204,6 +204,11 @@ export function useDragAndDrop({
     if (!heldFactor) return;
 
     const handleMove = (event: MouseEvent | TouchEvent): void => {
+      // Prevent scroll/zoom during drag on touch devices
+      if ('touches' in event) {
+        event.preventDefault();
+      }
+
       let clientX: number;
       let clientY: number;
 

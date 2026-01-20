@@ -1074,3 +1074,230 @@ input[type="number"] {
 .factor-docking {
   animation: factor-dock 350ms ease-out forwards;
 }
+
+/* =============================================================================
+   PHASE TRANSITION ANIMATIONS
+   Educational: Visual feedback for game progression milestones
+   ============================================================================= */
+
+/* Panel flash/glow animation when unlocking a phase */
+@keyframes phase-unlock-flash {
+  0% {
+    filter: brightness(1);
+    box-shadow: none;
+  }
+  30% {
+    filter: brightness(1.4);
+    box-shadow: 0 0 30px rgba(74, 222, 128, 0.6), inset 0 0 20px rgba(74, 222, 128, 0.2);
+  }
+  100% {
+    filter: brightness(1);
+    box-shadow: none;
+  }
+}
+
+.phase-unlocking {
+  animation: phase-unlock-flash 1s ease-out;
+}
+
+/* Phase unlock banner animation */
+@keyframes phase-banner-enter {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+  40% {
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  60% {
+    transform: translate(-50%, -50%) scale(1.02);
+  }
+  80%, 100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes phase-banner-exit {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9) translateY(-20px);
+  }
+}
+
+.phase-unlock-banner {
+  animation: phase-banner-enter 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.phase-unlock-banner-exit {
+  animation: phase-banner-exit 0.4s ease-in forwards;
+}
+
+/* Shimmer effect for unlock text */
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.phase-unlock-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* =============================================================================
+   MOBILE TOUCH OPTIMIZATIONS
+   Ensures smooth drag-and-drop on touch devices
+   ============================================================================= */
+
+/* Prevent zoom on double-tap */
+.game-canvas-wrapper {
+  touch-action: manipulation;
+}
+
+/* Ensure touch targets are appropriately sized */
+.game-interactive {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* Prevent text selection during drag */
+.game-canvas-wrapper * {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Prevent pull-to-refresh on game canvas */
+.game-container {
+  overscroll-behavior: none;
+}
+
+/* Touch-specific hover state removal */
+@media (hover: none) {
+  .game-interactive:hover {
+    transform: none;
+  }
+}
+
+/* =============================================================================
+   TUTORIAL OVERLAY ANIMATIONS
+   ============================================================================= */
+
+@keyframes tutorial-fade-in {
+  0% {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    backdrop-filter: blur(4px);
+  }
+}
+
+@keyframes tutorial-slide-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tutorial-overlay {
+  animation: tutorial-fade-in 0.3s ease-out forwards;
+}
+
+.tutorial-content {
+  animation: tutorial-slide-up 0.4s ease-out 0.1s both;
+}
+
+.tutorial-step {
+  animation: tutorial-slide-up 0.3s ease-out both;
+}
+
+.tutorial-step:nth-child(1) { animation-delay: 0.15s; }
+.tutorial-step:nth-child(2) { animation-delay: 0.25s; }
+.tutorial-step:nth-child(3) { animation-delay: 0.35s; }
+
+/* =============================================================================
+   VICTORY/DEFEAT SCREEN ANIMATIONS
+   Stagger animations for polished feel
+   ============================================================================= */
+
+@keyframes screen-fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes card-scale-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes element-stagger-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.game-result-overlay {
+  animation: screen-fade-in 0.3s ease-out forwards;
+}
+
+.game-result-card {
+  animation: card-scale-in 0.4s ease-out 0.1s both;
+}
+
+.game-result-title {
+  animation: element-stagger-in 0.3s ease-out 0.2s both;
+}
+
+.game-result-subtitle {
+  animation: element-stagger-in 0.3s ease-out 0.3s both;
+}
+
+.game-result-stats {
+  animation: element-stagger-in 0.3s ease-out 0.4s both;
+}
+
+.game-result-summary {
+  animation: element-stagger-in 0.3s ease-out 0.5s both;
+}
+
+.game-result-buttons {
+  animation: element-stagger-in 0.3s ease-out 0.6s both;
+}

@@ -1,8 +1,8 @@
 // components/game/GameCanvas.tsx
 'use client';
 
-import { forwardRef } from 'react';
-import type { GameState, VisualState } from '@/types/game';
+import { forwardRef, useState, useEffect, useRef, useCallback } from 'react';
+import type { GameState, VisualState, GamePhase } from '@/types/game';
 import { GAME_CANVAS, PANEL_CONFIGS, COLORS } from '@/engine/game/game-config';
 import { getFactorDefinition } from '@/engine/game/factor-definitions';
 import { GameHUD } from './GameHUD';
@@ -13,6 +13,8 @@ import { CirculationTray } from './CirculationTray';
 import { AnimationLayer } from './AnimationLayer';
 import { GameOverScreen } from './GameOverScreen';
 import { VictoryScreen } from './VictoryScreen';
+import { PhaseUnlockBanner } from './PhaseUnlockBanner';
+import { TutorialOverlay } from './TutorialOverlay';
 
 interface GameCanvasProps {
   gameState: GameState;
@@ -30,6 +32,12 @@ interface GameCanvasProps {
   /** Callback for main menu button */
   onMainMenu?: () => void;
 }
+
+// =============================================================================
+// LOCAL STORAGE KEY FOR TUTORIAL
+// =============================================================================
+
+const TUTORIAL_DISMISSED_KEY = 'hemosim-tutorial-dismissed';
 
 export const GameCanvas = forwardRef<HTMLDivElement, GameCanvasProps>(function GameCanvas(
   {
@@ -49,6 +57,45 @@ export const GameCanvas = forwardRef<HTMLDivElement, GameCanvasProps>(function G
   const heldFactorDef = gameState.heldFactor
     ? getFactorDefinition(gameState.heldFactor.factorId)
     : null;
+
+  // Tutorial state - check localStorage to see if already dismissed
+  // Initialize with a function to avoid calling localStorage on every render
+  const [showTutorial, setShowTutorial] = useState(() => {
+    // Only run in browser
+    if (typeof window === 'undefined') return false;
+    return !localStorage.getItem(TUTORIAL_DISMISSED_KEY);
+  });
+
+  // Phase unlock banner state
+  const [showPhaseUnlock, setShowPhaseUnlock] = useState<GamePhase | null>(null);
+  const prevPhaseRef = useRef<GamePhase>(gameState.phase);
+
+  // Track phase changes and show unlock banner
+  // Note: This pattern triggers the set-state-in-effect lint warning
+  // but is the standard React pattern for tracking prop changes.
+  useEffect(() => {
+    const prevPhase = prevPhaseRef.current;
+    const currentPhase = gameState.phase;
+
+    // Only show banner when transitioning to a new phase (not initiation)
+    if (prevPhase !== currentPhase && currentPhase !== 'initiation') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setShowPhaseUnlock(currentPhase);
+    }
+
+    prevPhaseRef.current = currentPhase;
+  }, [gameState.phase]);
+
+  // Handle tutorial dismissal
+  const handleDismissTutorial = useCallback(() => {
+    setShowTutorial(false);
+    localStorage.setItem(TUTORIAL_DISMISSED_KEY, 'true');
+  }, []);
+
+  // Handle phase unlock banner completion
+  const handlePhaseUnlockComplete = useCallback(() => {
+    setShowPhaseUnlock(null);
+  }, []);
 
   return (
     <div
@@ -202,6 +249,19 @@ export const GameCanvas = forwardRef<HTMLDivElement, GameCanvasProps>(function G
           onPlayAgain={onPlayAgain}
           onMainMenu={onMainMenu}
         />
+      )}
+
+      {/* Phase Unlock Banner */}
+      {showPhaseUnlock && gameState.gameResult === null && (
+        <PhaseUnlockBanner
+          phase={showPhaseUnlock}
+          onComplete={handlePhaseUnlockComplete}
+        />
+      )}
+
+      {/* Tutorial Overlay (shown on first play) */}
+      {showTutorial && gameState.gameResult === null && (
+        <TutorialOverlay onDismiss={handleDismissTutorial} />
       )}
     </div>
   );

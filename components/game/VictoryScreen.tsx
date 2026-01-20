@@ -23,6 +23,7 @@ export function VictoryScreen({
 
   return (
     <div
+      className="game-result-overlay"
       style={{
         position: 'absolute',
         top: 0,
@@ -50,6 +51,7 @@ export function VictoryScreen({
       />
 
       <div
+        className="game-result-card"
         style={{
           backgroundColor: '#1E293B',
           borderRadius: 16,
@@ -64,6 +66,7 @@ export function VictoryScreen({
       >
         {/* Title */}
         <h2
+          className="game-result-title"
           style={{
             fontSize: 32,
             fontWeight: 700,
@@ -78,6 +81,7 @@ export function VictoryScreen({
         </h2>
 
         <p
+          className="game-result-subtitle"
           style={{
             fontSize: 14,
             color: COLORS.textSecondary,
@@ -89,6 +93,7 @@ export function VictoryScreen({
 
         {/* Stats */}
         <div
+          className="game-result-stats"
           style={{
             backgroundColor: '#0F172A',
             borderRadius: 8,
@@ -156,6 +161,7 @@ export function VictoryScreen({
 
         {/* Educational Summary */}
         <div
+          className="game-result-summary"
           style={{
             backgroundColor: '#0F172A',
             borderRadius: 8,
@@ -207,6 +213,7 @@ export function VictoryScreen({
 
         {/* Buttons */}
         <div
+          className="game-result-buttons"
           style={{
             display: 'flex',
             gap: 16,
