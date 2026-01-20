@@ -495,6 +495,7 @@ export function SurfacePanel({
   // Track scramblase animation for activated platelet
   const [prevPhase, setPrevPhase] = useState<GamePhase>(gameState.phase);
   const [isActivating, setIsActivating] = useState(false);
+  const [isUnlocking, setIsUnlocking] = useState(false);
 
   useEffect(() => {
     // Trigger scramblase animation when transitioning to propagation phase
@@ -510,6 +511,20 @@ export function SurfacePanel({
       }, 1500);
       return () => clearTimeout(timer);
     }
+
+    // Trigger panel unlock glow for any surface that transitions from locked to unlocked
+    const wasLocked = prevPhase === 'initiation' && config.surface === 'platelet';
+    const isNowUnlocked = gameState.phase === 'amplification' && config.surface === 'platelet';
+
+    const wasLockedProp = prevPhase !== 'propagation' && config.surface === 'activated-platelet';
+    const isNowUnlockedProp = gameState.phase === 'propagation' && config.surface === 'activated-platelet';
+
+    if ((wasLocked && isNowUnlocked) || (wasLockedProp && isNowUnlockedProp)) {
+      setIsUnlocking(true);
+      const unlockTimer = setTimeout(() => setIsUnlocking(false), 1000);
+      return () => clearTimeout(unlockTimer);
+    }
+
     setPrevPhase(gameState.phase);
   }, [gameState.phase, prevPhase, config.surface]);
 
@@ -521,6 +536,7 @@ export function SurfacePanel({
   return (
     <div
       ref={panelRef}
+      className={isUnlocking ? 'phase-unlocking' : undefined}
       style={{
         position: 'absolute',
         left: config.x,

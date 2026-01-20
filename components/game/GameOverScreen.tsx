@@ -156,6 +156,61 @@ export function GameOverScreen({
           </div>
         </div>
 
+        {/* Educational Summary */}
+        <div
+          className="game-result-summary"
+          style={{
+            backgroundColor: '#0F172A',
+            borderRadius: 8,
+            padding: 16,
+            marginBottom: 24,
+            textAlign: 'left',
+          }}
+        >
+          <h3
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: COLORS.textSecondary,
+              textTransform: 'uppercase',
+              marginBottom: 12,
+              letterSpacing: '1px',
+            }}
+          >
+            What Went Wrong
+          </h3>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12, color: COLORS.textDim }}>
+            {stats.factorsLostToAntithrombin > 0 && (
+              <p>
+                <span style={{ color: '#8B5CF6' }}>Antithrombin</span> inhibited your serine proteases (IIa, Xa, IXa).
+                These enzymes are the workhorses of coagulation - losing them slows clot formation.
+              </p>
+            )}
+            {stats.factorsLostToAPC > 0 && (
+              <p>
+                <span style={{ color: '#EC4899' }}>Activated Protein C</span> degraded your cofactors (FVa, FVIIIa).
+                Cofactors amplify enzyme activity - without them, the cascade loses power.
+              </p>
+            )}
+            {stats.factorsLostToPlasmin > 0 && (
+              <p>
+                <span style={{ color: '#06B6D4' }}>Plasmin</span> dissolved your fibrin.
+                Cross-linking with Factor XIII helps protect fibrin from plasmin degradation.
+              </p>
+            )}
+            {stats.factorsLostToEscape > 0 && (
+              <p>
+                <span style={{ color: '#F59E0B' }}>Factors escaped</span> the bloodstream before you could catch them.
+                Speed is essential - grab factors quickly before they float away!
+              </p>
+            )}
+            <p style={{ marginTop: 8, fontStyle: 'italic', color: COLORS.textSecondary }}>
+              Tip: Prioritize catching factors that antagonists are hunting. Dock them quickly on membrane surfaces where they&apos;re protected.
+            </p>
+          </div>
+        </div>
+
         {/* Buttons */}
         <div
           className="game-result-buttons"
