@@ -11,12 +11,14 @@ interface GameCanvasProps {
   gameState: GameState;
   onFactorSelect: (factorId: string) => void;
   onSlotClick: (slotId: string) => void;
+  onComplexSlotClick: (complexSlotId: string) => void;
 }
 
 export function GameCanvas({
   gameState,
   onFactorSelect,
   onSlotClick,
+  onComplexSlotClick,
 }: GameCanvasProps): React.ReactElement {
   return (
     <div
@@ -43,8 +45,10 @@ export function GameCanvas({
           key={config.surface}
           config={config}
           slots={gameState.slots}
+          complexSlots={gameState.complexSlots}
           gameState={gameState}
           onSlotClick={onSlotClick}
+          onComplexSlotClick={onComplexSlotClick}
         />
       ))}
 

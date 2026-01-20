@@ -1,26 +1,30 @@
 // components/game/SurfacePanel.tsx
 'use client';
 
-import type { Slot } from '@/types/game';
+import type { Slot, ComplexSlot } from '@/types/game';
 import type { PanelConfig } from '@/engine/game/game-config';
-import { COLORS, SLOT_POSITIONS, PREPLACED_POSITIONS } from '@/engine/game/game-config';
+import { COLORS, SLOT_POSITIONS, PREPLACED_POSITIONS, COMPLEX_SLOT_POSITIONS, COMPLEX_LABELS } from '@/engine/game/game-config';
 import { PREPLACED_ELEMENTS, getFactorDefinition } from '@/engine/game/factor-definitions';
-import { getValidSlotsForFactor } from '@/engine/game/validation-rules';
+import { getValidSlotsForFactor, isTenaseComplete } from '@/engine/game/validation-rules';
 import { FactorToken } from './FactorToken';
 import type { GameState } from '@/types/game';
 
 interface SurfacePanelProps {
   config: PanelConfig;
   slots: Slot[];
+  complexSlots: ComplexSlot[];
   gameState: GameState;
   onSlotClick: (slotId: string) => void;
+  onComplexSlotClick: (complexSlotId: string) => void;
 }
 
 export function SurfacePanel({
   config,
   slots,
+  complexSlots,
   gameState,
   onSlotClick,
+  onComplexSlotClick,
 }: SurfacePanelProps): React.ReactElement {
   const panelSlots = slots.filter((s) => s.surface === config.surface);
   const isLocked = panelSlots.some((s) => s.isLocked);
@@ -194,6 +198,96 @@ export function SurfacePanel({
             </div>
           );
         })}
+
+      {/* Complex Slots (Activated Platelet only) */}
+      {!config.isComingSoon && config.surface === 'activated-platelet' && (
+        <>
+          {/* Tenase label */}
+          <div
+            style={{
+              position: 'absolute',
+              left: 30,
+              top: 70,
+              fontSize: 12,
+              fontWeight: 700,
+              color: COLORS.textSecondary,
+            }}
+          >
+            {COMPLEX_LABELS.tenase.name}
+          </div>
+
+          {/* Prothrombinase label */}
+          <div
+            style={{
+              position: 'absolute',
+              left: 30,
+              top: 190,
+              fontSize: 12,
+              fontWeight: 700,
+              color: COLORS.textSecondary,
+            }}
+          >
+            {COMPLEX_LABELS.prothrombinase.name}
+          </div>
+
+          {/* Complex slots */}
+          {complexSlots.map((complexSlot) => {
+            const pos = COMPLEX_SLOT_POSITIONS[complexSlot.id];
+            if (!pos) return null;
+
+            const isEnzymeSlot = !complexSlot.isAutoFilled;
+            const isClickable = isEnzymeSlot;
+            const placedFactor = complexSlot.placedFactorId
+              ? getFactorDefinition(complexSlot.placedFactorId)
+              : null;
+
+            // Prothrombinase-enzyme slot is dimmed if Tenase not complete
+            const isDimmed =
+              complexSlot.id === 'prothrombinase-enzyme' &&
+              !isTenaseComplete(gameState);
+
+            return (
+              <div
+                key={complexSlot.id}
+                onClick={() => isClickable && onComplexSlotClick(complexSlot.id)}
+                style={{
+                  position: 'absolute',
+                  left: pos.x,
+                  top: pos.y,
+                  width: pos.width,
+                  height: pos.height,
+                  backgroundColor: isDimmed
+                    ? `${COLORS.slotBackground}30`
+                    : COLORS.slotBackground,
+                  border: complexSlot.isAutoFilled
+                    ? `2px solid ${COLORS.panelBorder}`
+                    : `2px dashed ${COLORS.panelBorder}`,
+                  borderRadius: 8,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: isClickable ? 'pointer' : 'default',
+                  opacity: isDimmed ? 0.5 : 1,
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                {placedFactor ? (
+                  <FactorToken factor={placedFactor} isActive={true} />
+                ) : (
+                  <span
+                    style={{
+                      fontSize: 11,
+                      color: COLORS.textDim,
+                    }}
+                  >
+                    {complexSlot.role}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </>
+      )}
     </div>
   );
 }

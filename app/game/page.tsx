@@ -12,7 +12,7 @@ import { GameCompleteModal } from '@/components/game/GameCompleteModal';
 
 export default function GamePage(): ReactElement {
   const router = useRouter();
-  const { state, selectFactor, deselectFactor, attemptPlace, resetGame } = useGameState();
+  const { state, selectFactor, deselectFactor, attemptPlace, attemptComplexPlace, resetGame } = useGameState();
 
   const handleMainMenu = useCallback((): void => {
     router.push('/');
@@ -42,6 +42,7 @@ export default function GamePage(): ReactElement {
           gameState={state}
           onFactorSelect={selectFactor}
           onSlotClick={attemptPlace}
+          onComplexSlotClick={attemptComplexPlace}
         />
 
         {/* Keyboard Controls */}
