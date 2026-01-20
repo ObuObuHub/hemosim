@@ -6,19 +6,22 @@ import { getFactorDefinition } from '@/engine/game/factor-definitions';
 
 interface FloatingFactorProps {
   factor: FloatingFactorType;
-  onClick?: () => void;
+  onDragStart?: (event: React.MouseEvent | React.TouchEvent) => void;
 }
 
-export function FloatingFactor({ factor, onClick }: FloatingFactorProps): React.ReactElement | null {
+export function FloatingFactor({ factor, onDragStart }: FloatingFactorProps): React.ReactElement | null {
   const definition = getFactorDefinition(factor.factorId);
 
   if (!definition) {
     return null;
   }
 
+  const isDraggable = Boolean(onDragStart);
+
   return (
     <div
-      onClick={onClick}
+      onMouseDown={onDragStart}
+      onTouchStart={onDragStart}
       style={{
         position: 'absolute',
         left: factor.position.x,
@@ -33,19 +36,21 @@ export function FloatingFactor({ factor, onClick }: FloatingFactorProps): React.
         background: `linear-gradient(135deg, ${definition.color}50 0%, ${definition.color}30 100%)`,
         border: `2px solid ${definition.color}80`,
         boxShadow: `0 0 12px ${definition.color}40`,
-        cursor: onClick ? 'pointer' : 'default',
+        cursor: isDraggable ? 'grab' : 'default',
         transition: 'transform 0.1s ease-out, box-shadow 0.1s ease-out',
         minWidth: 60,
-        pointerEvents: onClick ? 'auto' : 'none',
+        pointerEvents: isDraggable ? 'auto' : 'none',
+        userSelect: 'none',
+        touchAction: 'none',
       }}
       onMouseEnter={(e) => {
-        if (onClick) {
+        if (isDraggable) {
           e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1.1)';
           e.currentTarget.style.boxShadow = `0 0 20px ${definition.color}70`;
         }
       }}
       onMouseLeave={(e) => {
-        if (onClick) {
+        if (isDraggable) {
           e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1)';
           e.currentTarget.style.boxShadow = `0 0 12px ${definition.color}40`;
         }

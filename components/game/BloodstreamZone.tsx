@@ -7,9 +7,13 @@ import { FloatingFactor } from './FloatingFactor';
 
 interface BloodstreamZoneProps {
   floatingFactors: FloatingFactorType[];
+  onFactorDragStart?: (floatingFactorId: string, event: React.MouseEvent | React.TouchEvent) => void;
 }
 
-export function BloodstreamZone({ floatingFactors }: BloodstreamZoneProps): React.ReactElement {
+export function BloodstreamZone({
+  floatingFactors,
+  onFactorDragStart,
+}: BloodstreamZoneProps): React.ReactElement {
   return (
     <div
       style={{
@@ -59,7 +63,15 @@ export function BloodstreamZone({ floatingFactors }: BloodstreamZoneProps): Reac
 
       {/* Floating factors */}
       {floatingFactors.map((factor) => (
-        <FloatingFactor key={factor.id} factor={factor} />
+        <FloatingFactor
+          key={factor.id}
+          factor={factor}
+          onDragStart={
+            onFactorDragStart
+              ? (event) => onFactorDragStart(factor.id, event)
+              : undefined
+          }
+        />
       ))}
     </div>
   );

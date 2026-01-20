@@ -103,6 +103,16 @@ export interface FloatingFactor {
 }
 
 // =============================================================================
+// HELD FACTOR (Drag & Drop)
+// =============================================================================
+
+export interface HeldFactor {
+  id: string;
+  factorId: string;
+  cursorPosition: { x: number; y: number };
+}
+
+// =============================================================================
 // GAME STATE
 // =============================================================================
 
@@ -118,6 +128,7 @@ export interface GameState {
   currentMessage: string;
   isError: boolean; // for error vs success message styling
   floatingFactors: FloatingFactor[]; // factors floating in bloodstream zone
+  heldFactor: HeldFactor | null; // factor currently being dragged
 }
 
 // =============================================================================
@@ -132,7 +143,10 @@ export type GameAction =
   | { type: 'RESET_GAME' }
   | { type: 'SPAWN_FLOATING_FACTOR'; factor: FloatingFactor }
   | { type: 'TICK_FLOATING_FACTORS'; deltaTime: number }
-  | { type: 'REMOVE_FLOATING_FACTOR'; factorId: string };
+  | { type: 'REMOVE_FLOATING_FACTOR'; factorId: string }
+  | { type: 'GRAB_FACTOR'; floatingFactorId: string; cursorPosition: { x: number; y: number } }
+  | { type: 'UPDATE_HELD_POSITION'; cursorPosition: { x: number; y: number } }
+  | { type: 'DROP_FACTOR' };
 
 // =============================================================================
 // VALIDATION RESULT

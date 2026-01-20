@@ -7,6 +7,7 @@ import type { ReactElement } from 'react';
 import { GAME_CANVAS, BLOODSTREAM_ZONE } from '@/engine/game/game-config';
 import { useGameState } from '@/hooks/useGameState';
 import { useAnimationController } from '@/hooks/useAnimationController';
+import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 import { GameCanvas } from '@/components/game/GameCanvas';
 import { GameControls } from '@/components/game/GameControls';
 import { GameCompleteModal } from '@/components/game/GameCompleteModal';
@@ -38,12 +39,16 @@ export default function GamePage(): ReactElement {
     subscribeToEvents,
     spawnFloatingFactor,
     tickFloatingFactors,
+    grabFactor,
+    updateHeldPosition,
+    dropFactor,
   } = useGameState();
 
   // Refs for game loop
   const lastSpawnTimeRef = useRef<number>(0);
   const lastFrameTimeRef = useRef<number>(0);
   const spawnIndexRef = useRef<number>(0);
+  const canvasRef = useRef<HTMLDivElement>(null);
 
   // Animation controller for smooth visual transitions
   // Note: isProcessing available for future UI indication
@@ -51,6 +56,42 @@ export default function GamePage(): ReactElement {
 
   // Create animation target registry for component position tracking
   const animationRegistry = useAnimationTargetRegistry();
+
+  // Handle slot drop (place factor in slot)
+  const handleSlotDrop = useCallback(
+    (slotId: string) => {
+      // The selectedFactorId is already set when we grabbed the factor
+      attemptPlace(slotId);
+      // Clear held factor state after placement attempt
+      dropFactor();
+    },
+    [attemptPlace, dropFactor]
+  );
+
+  // Handle complex slot drop (place factor in complex slot)
+  const handleComplexSlotDrop = useCallback(
+    (complexSlotId: string) => {
+      attemptComplexPlace(complexSlotId);
+      dropFactor();
+    },
+    [attemptComplexPlace, dropFactor]
+  );
+
+  // Drag and drop hook
+  const { handleDragStart } = useDragAndDrop({
+    heldFactor: state.heldFactor,
+    slots: state.slots,
+    complexSlots: state.complexSlots,
+    canvasRef,
+    onGrab: grabFactor,
+    onMove: updateHeldPosition,
+    onDrop: dropFactor,
+    onSlotDrop: handleSlotDrop,
+    onComplexSlotDrop: handleComplexSlotDrop,
+  });
+
+  // Get held factor display position directly from state
+  const heldFactorDisplayPosition = state.heldFactor?.cursorPosition ?? null;
 
   // Subscribe to game events and forward to animation controller
   useEffect(() => {
@@ -151,11 +192,14 @@ export default function GamePage(): ReactElement {
         >
           {/* Main Game Canvas */}
           <GameCanvas
+            ref={canvasRef}
             gameState={state}
             visualState={visualState}
             onFactorSelect={selectFactor}
             onSlotClick={attemptPlace}
             onComplexSlotClick={attemptComplexPlace}
+            onFactorDragStart={handleDragStart}
+            heldFactorDisplayPosition={heldFactorDisplayPosition}
           />
 
           {/* Keyboard Controls */}

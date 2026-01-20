@@ -2,7 +2,7 @@
 'use client';
 
 import { useReducer, useCallback, useRef, useEffect } from 'react';
-import type { GameState, GameAction, Slot, ComplexSlot, ReducerResult, FloatingFactor } from '@/types/game';
+import type { GameState, GameAction, Slot, ComplexSlot, ReducerResult, FloatingFactor, HeldFactor } from '@/types/game';
 import type { GameEvent } from '@/types/game-events';
 import { createInitialSlots, createInitialComplexSlots, BLOODSTREAM_ZONE } from '@/engine/game/game-config';
 import { getAllFactorIds, getFactorDefinition } from '@/engine/game/factor-definitions';
@@ -125,9 +125,10 @@ function createInitialState(): GameState {
     circulationFactors: [],
     availableFactors: paletteFactors,
     selectedFactorId: null,
-    currentMessage: 'Click a factor in the palette, then click a slot to place it.',
+    currentMessage: 'Drag a factor from the bloodstream onto a slot to place it.',
     isError: false,
     floatingFactors: [],
+    heldFactor: null,
   };
 }
 
@@ -783,6 +784,91 @@ function gameReducer(state: GameState, action: GameAction): ReducerResult {
       };
     }
 
+    case 'GRAB_FACTOR': {
+      // Find the floating factor being grabbed
+      const floatingFactor = state.floatingFactors.find(
+        (f) => f.id === action.floatingFactorId
+      );
+      if (!floatingFactor) {
+        return { state, events: [] };
+      }
+
+      // Create held factor and remove from floating factors
+      const heldFactor: HeldFactor = {
+        id: floatingFactor.id,
+        factorId: floatingFactor.factorId,
+        cursorPosition: action.cursorPosition,
+      };
+
+      const factor = getFactorDefinition(floatingFactor.factorId);
+
+      return {
+        state: {
+          ...state,
+          floatingFactors: state.floatingFactors.filter(
+            (f) => f.id !== action.floatingFactorId
+          ),
+          heldFactor,
+          selectedFactorId: floatingFactor.factorId,
+          currentMessage: factor
+            ? `Holding ${factor.inactiveLabel}. Drop on a valid slot.`
+            : 'Factor held.',
+          isError: false,
+        },
+        events: [],
+      };
+    }
+
+    case 'UPDATE_HELD_POSITION': {
+      if (!state.heldFactor) {
+        return { state, events: [] };
+      }
+
+      return {
+        state: {
+          ...state,
+          heldFactor: {
+            ...state.heldFactor,
+            cursorPosition: action.cursorPosition,
+          },
+        },
+        events: [],
+      };
+    }
+
+    case 'DROP_FACTOR': {
+      if (!state.heldFactor) {
+        return { state, events: [] };
+      }
+
+      // Return factor to bloodstream at drop position
+      const droppedFactor: FloatingFactor = {
+        id: state.heldFactor.id,
+        factorId: state.heldFactor.factorId,
+        position: {
+          x: state.heldFactor.cursorPosition.x,
+          y: Math.min(
+            Math.max(state.heldFactor.cursorPosition.y, BLOODSTREAM_ZONE.spawnYMin),
+            BLOODSTREAM_ZONE.spawnYMax
+          ),
+        },
+        velocity: { x: 40, y: 0 }, // Resume drifting right
+        isVulnerableTo: [],
+      };
+
+      return {
+        state: {
+          ...state,
+          heldFactor: null,
+          selectedFactorId: null,
+          floatingFactors: [...state.floatingFactors, droppedFactor],
+          currentMessage: 'Drag a factor from the bloodstream onto a slot to place it.',
+          isError: false,
+        },
+        events: [],
+      };
+    }
+
     default:
       return { state, events: [] };
   }
@@ -807,6 +893,12 @@ export interface UseGameStateReturn {
   tickFloatingFactors: (deltaTime: number) => void;
   /** Remove a specific floating factor by ID */
   removeFloatingFactor: (factorId: string) => void;
+  /** Grab a floating factor to start dragging */
+  grabFactor: (floatingFactorId: string, cursorPosition: { x: number; y: number }) => void;
+  /** Update held factor position during drag */
+  updateHeldPosition: (cursorPosition: { x: number; y: number }) => void;
+  /** Drop the held factor (returns to stream if not placed) */
+  dropFactor: () => void;
 }
 
 /**
@@ -885,6 +977,24 @@ export function useGameState(): UseGameStateReturn {
     dispatch({ type: 'REMOVE_FLOATING_FACTOR', factorId });
   }, []);
 
+  const grabFactor = useCallback(
+    (floatingFactorId: string, cursorPosition: { x: number; y: number }) => {
+      dispatch({ type: 'GRAB_FACTOR', floatingFactorId, cursorPosition });
+    },
+    []
+  );
+
+  const updateHeldPosition = useCallback(
+    (cursorPosition: { x: number; y: number }) => {
+      dispatch({ type: 'UPDATE_HELD_POSITION', cursorPosition });
+    },
+    []
+  );
+
+  const dropFactor = useCallback(() => {
+    dispatch({ type: 'DROP_FACTOR' });
+  }, []);
+
   return {
     state,
     selectFactor,
@@ -896,5 +1006,8 @@ export function useGameState(): UseGameStateReturn {
     spawnFloatingFactor,
     tickFloatingFactors,
     removeFloatingFactor,
+    grabFactor,
+    updateHeldPosition,
+    dropFactor,
   };
 }
