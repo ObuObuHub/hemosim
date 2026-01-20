@@ -7,6 +7,7 @@ import { getFactorDefinition } from './factor-definitions';
 // =============================================================================
 
 export const THROMBIN_STARTER_THRESHOLD = 30;
+export const CLOT_INTEGRITY_VICTORY = 100;
 
 // =============================================================================
 // VALIDATION MESSAGES
@@ -14,6 +15,7 @@ export const THROMBIN_STARTER_THRESHOLD = 30;
 
 const MESSAGES = {
   PANEL_LOCKED: 'Platelet not yet activated. Need starter thrombin (≥30%).',
+  CLOT_ZONE_LOCKED: 'Clot Zone locked. Complete Prothrombinase first.',
   SLOT_OCCUPIED: 'This slot already has a factor placed.',
   WRONG_FACTOR_FOR_SLOT: (factorId: string) =>
     `${factorId} cannot bind to this slot. Check which surface accepts it.`,
@@ -40,8 +42,12 @@ export function validatePlacement(
     return { isValid: false, errorMessage: `Unknown slot: ${slotId}` };
   }
 
-  // Check if slot is locked (platelet surface before thrombin threshold)
+  // Check if slot is locked
   if (slot.isLocked) {
+    // Provide specific message for clot-zone
+    if (slot.surface === 'clot-zone') {
+      return { isValid: false, errorMessage: MESSAGES.CLOT_ZONE_LOCKED };
+    }
     return { isValid: false, errorMessage: MESSAGES.PANEL_LOCKED };
   }
 
@@ -84,12 +90,8 @@ export function shouldUnlockPlatelet(thrombinMeter: number): boolean {
 // =============================================================================
 
 export function checkVictoryCondition(state: GameState): boolean {
-  // Victory when Prothrombinase is complete (thrombin = 100%)
-  const prothrombinaseComplete = state.complexSlots
-    .filter((s) => s.complexType === 'prothrombinase')
-    .every((s) => s.placedFactorId !== null);
-
-  return state.thrombinMeter >= 100 && prothrombinaseComplete;
+  // Victory when Stabilization is complete (clotIntegrity = 100%)
+  return state.clotIntegrity >= CLOT_INTEGRITY_VICTORY && isStabilizationComplete(state);
 }
 
 // =============================================================================
@@ -114,6 +116,34 @@ export function isTenaseComplete(state: GameState): boolean {
   return state.complexSlots
     .filter((s) => s.complexType === 'tenase')
     .every((s) => s.placedFactorId !== null);
+}
+
+// =============================================================================
+// HELPER: CHECK IF PROTHROMBINASE COMPLEX IS COMPLETE
+// =============================================================================
+
+export function isProthrombinaseComplete(state: GameState): boolean {
+  return state.complexSlots
+    .filter((s) => s.complexType === 'prothrombinase')
+    .every((s) => s.placedFactorId !== null);
+}
+
+// =============================================================================
+// HELPER: CHECK IF CLOT ZONE SHOULD UNLOCK
+// =============================================================================
+
+export function shouldUnlockClotZone(state: GameState): boolean {
+  return isProthrombinaseComplete(state);
+}
+
+// =============================================================================
+// HELPER: CHECK IF STABILIZATION PHASE IS COMPLETE
+// =============================================================================
+
+export function isStabilizationComplete(state: GameState): boolean {
+  // All clot-zone slots must be filled and active
+  const clotZoneSlots = state.slots.filter((s) => s.surface === 'clot-zone');
+  return clotZoneSlots.length > 0 && clotZoneSlots.every((s) => s.placedFactorId !== null && s.isActive);
 }
 
 // =============================================================================
