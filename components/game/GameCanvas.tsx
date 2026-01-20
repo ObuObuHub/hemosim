@@ -55,9 +55,10 @@ export const GameCanvas = forwardRef<HTMLDivElement, GameCanvasProps>(function G
         cursor: gameState.heldFactor ? 'grabbing' : 'default',
       }}
     >
-      {/* Bloodstream Zone (floating factors) */}
+      {/* Bloodstream Zone (floating factors and antagonists) */}
       <BloodstreamZone
         floatingFactors={gameState.floatingFactors}
+        antagonists={gameState.antagonists}
         onFactorDragStart={onFactorDragStart}
       />
 

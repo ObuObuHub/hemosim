@@ -2,7 +2,7 @@
 'use client';
 
 import { useReducer, useCallback, useRef, useEffect } from 'react';
-import type { GameState, GameAction, Slot, ComplexSlot, ReducerResult, FloatingFactor, HeldFactor } from '@/types/game';
+import type { GameState, GameAction, Slot, ComplexSlot, ReducerResult, FloatingFactor, HeldFactor, Antagonist } from '@/types/game';
 import type { GameEvent } from '@/types/game-events';
 import { createInitialSlots, createInitialComplexSlots, BLOODSTREAM_ZONE } from '@/engine/game/game-config';
 import { getAllFactorIds, getFactorDefinition } from '@/engine/game/factor-definitions';
@@ -129,6 +129,7 @@ function createInitialState(): GameState {
     isError: false,
     floatingFactors: [],
     heldFactor: null,
+    antagonists: [],
   };
 }
 
@@ -869,6 +870,63 @@ function gameReducer(state: GameState, action: GameAction): ReducerResult {
       };
     }
 
+    case 'SPAWN_ANTAGONIST': {
+      return {
+        state: {
+          ...state,
+          antagonists: [...state.antagonists, action.antagonist],
+        },
+        events: [],
+      };
+    }
+
+    case 'TICK_ANTAGONISTS': {
+      // Update antagonist positions (AI handled externally, this just applies the results)
+      // Also remove any factors that were destroyed
+      const destroyedIds = new Set(action.destroyedFactorIds);
+      const filteredFactors = state.floatingFactors.filter(
+        (f) => !destroyedIds.has(f.id)
+      );
+
+      return {
+        state: {
+          ...state,
+          antagonists: action.updatedAntagonists,
+          floatingFactors: filteredFactors,
+        },
+        events: [],
+      };
+    }
+
+    case 'DESTROY_FACTOR': {
+      const events: GameEvent[] = [];
+
+      // Find the antagonist to get its type
+      const antagonist = state.antagonists.find((a) => a.id === action.antagonistId);
+
+      if (antagonist) {
+        events.push({
+          type: 'FACTOR_DESTROYED',
+          factorId: action.factorId,
+          antagonistType: antagonist.type,
+          antagonistId: action.antagonistId,
+        });
+      }
+
+      // Remove the destroyed factor
+      const filteredFactors = state.floatingFactors.filter(
+        (f) => f.id !== action.factorId
+      );
+
+      return {
+        state: {
+          ...state,
+          floatingFactors: filteredFactors,
+        },
+        events,
+      };
+    }
+
     default:
       return { state, events: [] };
   }
@@ -899,6 +957,12 @@ export interface UseGameStateReturn {
   updateHeldPosition: (cursorPosition: { x: number; y: number }) => void;
   /** Drop the held factor (returns to stream if not placed) */
   dropFactor: () => void;
+  /** Spawn an antagonist in the bloodstream */
+  spawnAntagonist: (antagonist: Antagonist) => void;
+  /** Update antagonist AI tick and apply results */
+  tickAntagonists: (updatedAntagonists: Antagonist[], destroyedFactorIds: string[]) => void;
+  /** Destroy a factor (called when antagonist catches it) */
+  destroyFactor: (factorId: string, antagonistId: string) => void;
 }
 
 /**
@@ -995,6 +1059,24 @@ export function useGameState(): UseGameStateReturn {
     dispatch({ type: 'DROP_FACTOR' });
   }, []);
 
+  const spawnAntagonist = useCallback((antagonist: Antagonist) => {
+    dispatch({ type: 'SPAWN_ANTAGONIST', antagonist });
+  }, []);
+
+  const tickAntagonists = useCallback(
+    (updatedAntagonists: Antagonist[], destroyedFactorIds: string[]) => {
+      dispatch({ type: 'TICK_ANTAGONISTS', updatedAntagonists, destroyedFactorIds });
+    },
+    []
+  );
+
+  const destroyFactor = useCallback(
+    (factorId: string, antagonistId: string) => {
+      dispatch({ type: 'DESTROY_FACTOR', factorId, antagonistId });
+    },
+    []
+  );
+
   return {
     state,
     selectFactor,
@@ -1009,5 +1091,8 @@ export function useGameState(): UseGameStateReturn {
     grabFactor,
     updateHeldPosition,
     dropFactor,
+    spawnAntagonist,
+    tickAntagonists,
+    destroyFactor,
   };
 }

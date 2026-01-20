@@ -158,6 +158,17 @@ export interface ClotStabilizedEvent {
 }
 
 // =============================================================================
+// ANTAGONIST EVENTS
+// =============================================================================
+
+export interface FactorDestroyedEvent {
+  type: 'FACTOR_DESTROYED';
+  factorId: string;
+  antagonistType: 'antithrombin' | 'apc' | 'plasmin';
+  antagonistId: string;
+}
+
+// =============================================================================
 // UNION TYPE
 // =============================================================================
 
@@ -180,6 +191,7 @@ export type GameEvent =
   | FibrinogenConvertedEvent
   | FXIIIActivatedEvent
   | CrossLinkFormedEvent
+  | FactorDestroyedEvent
   // Low priority
   | MeterChangedEvent
   | ArrowPulseEvent
@@ -213,6 +225,7 @@ export function getEventPriority(event: GameEvent): EventPriority {
     case 'PANEL_STATE_CHANGED':
     case 'FIBRINOGEN_CONVERTED':
     case 'CROSS_LINK_FORMED':
+    case 'FACTOR_DESTROYED':
       return 'standard';
 
     case 'METER_CHANGED':

@@ -1,17 +1,20 @@
 // components/game/BloodstreamZone.tsx
 'use client';
 
-import type { FloatingFactor as FloatingFactorType } from '@/types/game';
+import type { FloatingFactor as FloatingFactorType, Antagonist } from '@/types/game';
 import { BLOODSTREAM_ZONE, GAME_CANVAS, COLORS } from '@/engine/game/game-config';
 import { FloatingFactor } from './FloatingFactor';
+import { AntagonistSprite } from './AntagonistSprite';
 
 interface BloodstreamZoneProps {
   floatingFactors: FloatingFactorType[];
+  antagonists: Antagonist[];
   onFactorDragStart?: (floatingFactorId: string, event: React.MouseEvent | React.TouchEvent) => void;
 }
 
 export function BloodstreamZone({
   floatingFactors,
+  antagonists,
   onFactorDragStart,
 }: BloodstreamZoneProps): React.ReactElement {
   return (
@@ -72,6 +75,11 @@ export function BloodstreamZone({
               : undefined
           }
         />
+      ))}
+
+      {/* Antagonists */}
+      {antagonists.map((antagonist) => (
+        <AntagonistSprite key={antagonist.id} antagonist={antagonist} />
       ))}
     </div>
   );
