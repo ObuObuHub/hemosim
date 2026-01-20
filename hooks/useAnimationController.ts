@@ -57,8 +57,8 @@ function createInitialVisualState(gameState: GameState): VisualState {
 
   return {
     thrombinMeter: createInitialMeterState(gameState.thrombinMeter),
-    fibrinMeter: createInitialMeterState(0), // Not yet in game state
-    clotIntegrityMeter: createInitialMeterState(0), // Not yet in game state
+    fibrinMeter: createInitialMeterState(0), // Not yet in game state (future expansion)
+    clotIntegrityMeter: createInitialMeterState(gameState.clotIntegrity),
     panelStates: {
       'tf-cell': { state: 'active', opacity: 1 },
       platelet: { state: 'locked', opacity: 0.5 },
@@ -393,6 +393,7 @@ export function useAnimationController(gameState: GameState): AnimationControlle
       setVisualState((prev) => {
         // Get targets from game state (source of truth)
         const thrombinTarget = currentGameState.thrombinMeter;
+        const clotIntegrityTarget = currentGameState.clotIntegrity;
 
         // Compute panel states from game phase
         const newPanelStates = { ...prev.panelStates };
@@ -435,7 +436,7 @@ export function useAnimationController(gameState: GameState): AnimationControlle
         );
         const clotNeedsUpdate = !isApproximatelyEqual(
           prev.clotIntegrityMeter.current,
-          prev.clotIntegrityMeter.target,
+          clotIntegrityTarget,
           METER_EPSILON
         );
 
@@ -468,8 +469,9 @@ export function useAnimationController(gameState: GameState): AnimationControlle
           },
           clotIntegrityMeter: {
             ...prev.clotIntegrityMeter,
+            target: clotIntegrityTarget,
             current: clotNeedsUpdate
-              ? lerp(prev.clotIntegrityMeter.current, prev.clotIntegrityMeter.target, METER_LERP_FACTOR)
+              ? lerp(prev.clotIntegrityMeter.current, clotIntegrityTarget, METER_LERP_FACTOR)
               : prev.clotIntegrityMeter.current,
           },
           panelStates: newPanelStates,
