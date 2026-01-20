@@ -2,14 +2,16 @@
 'use client';
 
 import { useReducer, useCallback } from 'react';
-import type { GameState, GameAction, Slot } from '@/types/game';
-import { createInitialSlots } from '@/engine/game/game-config';
+import type { GameState, GameAction, Slot, ComplexSlot } from '@/types/game';
+import { createInitialSlots, createInitialComplexSlots } from '@/engine/game/game-config';
 import { getAllFactorIds, getFactorDefinition } from '@/engine/game/factor-definitions';
 import {
   validatePlacement,
+  validateComplexPlacement,
   shouldUnlockPlatelet,
   checkVictoryCondition,
-  THROMBIN_STARTER_THRESHOLD,
+  isAmplificationComplete,
+  isTenaseComplete,
 } from '@/engine/game/validation-rules';
 
 // =============================================================================
@@ -17,15 +19,65 @@ import {
 // =============================================================================
 
 function createInitialState(): GameState {
+  // Filter out FXa-tenase from palette (it's spawned by Tenase, not player-selectable)
+  const paletteFactors = getAllFactorIds().filter((id) => id !== 'FXa-tenase');
+
   return {
     phase: 'initiation',
     thrombinMeter: 0,
     slots: createInitialSlots(),
-    availableFactors: getAllFactorIds(),
+    complexSlots: createInitialComplexSlots(),
+    circulationFactors: [],
+    availableFactors: paletteFactors,
     selectedFactorId: null,
     currentMessage: 'Click a factor in the palette, then click a slot to place it.',
     isError: false,
   };
+}
+
+// =============================================================================
+// HELPER: CHECK IF FACTOR IS SELECTABLE
+// =============================================================================
+
+function isFactorSelectable(state: GameState, factorId: string): boolean {
+  // Check if in palette
+  if (state.availableFactors.includes(factorId)) {
+    return true;
+  }
+
+  // Check if in circulation (e.g., FIXa)
+  if (state.circulationFactors.includes(factorId)) {
+    return true;
+  }
+
+  // Check if FXa-tenase is available (Tenase complete spawns it, not yet docked)
+  if (factorId === 'FXa-tenase' && isTenaseComplete(state)) {
+    const prothrombinaseEnzyme = state.complexSlots.find((s) => s.id === 'prothrombinase-enzyme');
+    if (prothrombinaseEnzyme?.placedFactorId === null) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// =============================================================================
+// HELPER: AUTO-FILL COMPLEX COFACTOR SLOTS
+// =============================================================================
+
+function autoFillCofactorSlots(complexSlots: ComplexSlot[]): ComplexSlot[] {
+  return complexSlots.map((slot) => {
+    if (slot.isAutoFilled && slot.placedFactorId === null) {
+      // Auto-fill cofactor slots
+      if (slot.id === 'tenase-cofactor') {
+        return { ...slot, placedFactorId: 'FVIIIa' };
+      }
+      if (slot.id === 'prothrombinase-cofactor') {
+        return { ...slot, placedFactorId: 'FVa' };
+      }
+    }
+    return slot;
+  });
 }
 
 // =============================================================================
@@ -45,8 +97,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         };
       }
 
-      // Can only select factors still in palette
-      if (!state.availableFactors.includes(action.factorId)) {
+      // Check if factor is selectable (palette, circulation, or Tenase-spawned)
+      if (!isFactorSelectable(state, action.factorId)) {
         return state;
       }
 
@@ -116,9 +168,15 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       // Remove factor from available palette
       const newAvailableFactors = state.availableFactors.filter((f) => f !== factorId);
 
+      // Track circulation factors - FIX placed adds FIXa to circulation
+      const newCirculationFactors = factorId === 'FIX'
+        ? [...state.circulationFactors, 'FIXa']
+        : [...state.circulationFactors];
+
       // Determine message
       let newMessage = factor.activationMessage;
       let newPhase = state.phase;
+      let newComplexSlots = state.complexSlots;
 
       // Check if we just hit thrombin threshold
       if (shouldUnlockPlatelet(newThrombinMeter) && !shouldUnlockPlatelet(state.thrombinMeter)) {
@@ -126,17 +184,34 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         newPhase = 'amplification';
       }
 
-      // Build intermediate state to check victory
+      // Build intermediate state to check amplification
       const intermediateState: GameState = {
         ...state,
         phase: newPhase,
         thrombinMeter: newThrombinMeter,
         slots: newSlots,
+        complexSlots: newComplexSlots,
+        circulationFactors: newCirculationFactors,
         availableFactors: newAvailableFactors,
         selectedFactorId: null,
         currentMessage: newMessage,
         isError: false,
       };
+
+      // Check if amplification is complete (FV and FVIII placed)
+      if (isAmplificationComplete(intermediateState) && state.phase === 'amplification') {
+        // Auto-fill cofactor slots on transition to propagation
+        newComplexSlots = autoFillCofactorSlots(intermediateState.complexSlots);
+        newPhase = 'propagation';
+        newMessage = 'Cofactors positioned. Place FIXa from circulation into Tenase.';
+
+        return {
+          ...intermediateState,
+          phase: newPhase,
+          complexSlots: newComplexSlots,
+          currentMessage: newMessage,
+        };
+      }
 
       // Check victory condition
       if (checkVictoryCondition(intermediateState)) {
@@ -144,6 +219,79 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           ...intermediateState,
           phase: 'complete',
           currentMessage: 'Platelet primed. Cofactors positioned for propagation.',
+        };
+      }
+
+      return intermediateState;
+    }
+
+    case 'ATTEMPT_COMPLEX_PLACE': {
+      // Must have a factor selected
+      if (!state.selectedFactorId) {
+        return {
+          ...state,
+          currentMessage: 'Select a factor first.',
+          isError: true,
+        };
+      }
+
+      const factorId = state.selectedFactorId;
+      const validation = validateComplexPlacement(state, factorId, action.complexSlotId);
+
+      if (!validation.isValid) {
+        return {
+          ...state,
+          currentMessage: validation.errorMessage ?? 'Invalid complex placement.',
+          isError: true,
+        };
+      }
+
+      // Valid placement - update complex slot
+      const newComplexSlots: ComplexSlot[] = state.complexSlots.map((slot) =>
+        slot.id === action.complexSlotId
+          ? { ...slot, placedFactorId: factorId }
+          : slot
+      );
+
+      // Remove placed factor from circulation (if it was there)
+      const newCirculationFactors = state.circulationFactors.filter((f) => f !== factorId);
+
+      // Build intermediate state
+      let intermediateState: GameState = {
+        ...state,
+        complexSlots: newComplexSlots,
+        circulationFactors: newCirculationFactors,
+        selectedFactorId: null,
+        isError: false,
+      };
+
+      // Check if Tenase is now complete (FIXa + FVIIIa) - enables FXa-tenase selection
+      if (action.complexSlotId === 'tenase-enzyme' && isTenaseComplete(intermediateState)) {
+        intermediateState = {
+          ...intermediateState,
+          currentMessage: 'Tenase complete! FXa generated. Place FXa into Prothrombinase.',
+        };
+      } else if (action.complexSlotId === 'prothrombinase-enzyme') {
+        // Prothrombinase enzyme filled - thrombin burst!
+        intermediateState = {
+          ...intermediateState,
+          thrombinMeter: 100,
+          currentMessage: 'Prothrombinase complete! Thrombin burst achieved.',
+        };
+      } else {
+        const factor = getFactorDefinition(factorId);
+        intermediateState = {
+          ...intermediateState,
+          currentMessage: factor?.activationMessage ?? 'Factor placed.',
+        };
+      }
+
+      // Check victory condition
+      if (checkVictoryCondition(intermediateState)) {
+        return {
+          ...intermediateState,
+          phase: 'complete',
+          currentMessage: 'Coagulation cascade complete! Maximum thrombin generation achieved.',
         };
       }
 
@@ -168,6 +316,7 @@ export interface UseGameStateReturn {
   selectFactor: (factorId: string) => void;
   deselectFactor: () => void;
   attemptPlace: (slotId: string) => void;
+  attemptComplexPlace: (complexSlotId: string) => void;
   resetGame: () => void;
 }
 
@@ -186,6 +335,10 @@ export function useGameState(): UseGameStateReturn {
     dispatch({ type: 'ATTEMPT_PLACE', slotId });
   }, []);
 
+  const attemptComplexPlace = useCallback((complexSlotId: string) => {
+    dispatch({ type: 'ATTEMPT_COMPLEX_PLACE', complexSlotId });
+  }, []);
+
   const resetGame = useCallback(() => {
     dispatch({ type: 'RESET_GAME' });
   }, []);
@@ -195,6 +348,7 @@ export function useGameState(): UseGameStateReturn {
     selectFactor,
     deselectFactor,
     attemptPlace,
+    attemptComplexPlace,
     resetGame,
   };
 }
