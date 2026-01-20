@@ -5,6 +5,7 @@ import type { GameState, VisualState } from '@/types/game';
 import { GAME_CANVAS, PANEL_CONFIGS, COLORS } from '@/engine/game/game-config';
 import { GameHUD } from './GameHUD';
 import { SurfacePanel } from './SurfacePanel';
+import { ClotZonePanel } from './ClotZonePanel';
 import { FactorPalette } from './FactorPalette';
 import { CirculationTray } from './CirculationTray';
 import { AnimationLayer } from './AnimationLayer';
@@ -36,27 +37,45 @@ export function GameCanvas({
         fontFamily: 'system-ui, -apple-system, sans-serif',
       }}
     >
-      {/* HUD (thrombin meter + message) */}
+      {/* HUD (thrombin meter + clot integrity meter + message) */}
       <GameHUD
         thrombinMeter={gameState.thrombinMeter}
         thrombinDisplayValue={visualState?.thrombinMeter.current}
+        clotIntegrity={gameState.clotIntegrity}
+        clotIntegrityDisplayValue={visualState?.clotIntegrityMeter.current}
         currentMessage={gameState.currentMessage}
         isError={gameState.isError}
         phase={gameState.phase}
       />
 
       {/* Surface Panels */}
-      {PANEL_CONFIGS.map((config) => (
-        <SurfacePanel
-          key={config.surface}
-          config={config}
-          slots={gameState.slots}
-          complexSlots={gameState.complexSlots}
-          gameState={gameState}
-          onSlotClick={onSlotClick}
-          onComplexSlotClick={onComplexSlotClick}
-        />
-      ))}
+      {PANEL_CONFIGS.map((config) => {
+        // Use ClotZonePanel for clot-zone surface
+        if (config.surface === 'clot-zone') {
+          return (
+            <ClotZonePanel
+              key={config.surface}
+              config={config}
+              slots={gameState.slots}
+              gameState={gameState}
+              onSlotClick={onSlotClick}
+            />
+          );
+        }
+
+        // Use SurfacePanel for other surfaces
+        return (
+          <SurfacePanel
+            key={config.surface}
+            config={config}
+            slots={gameState.slots}
+            complexSlots={gameState.complexSlots}
+            gameState={gameState}
+            onSlotClick={onSlotClick}
+            onComplexSlotClick={onComplexSlotClick}
+          />
+        );
+      })}
 
       {/* Factor Palette */}
       <FactorPalette
