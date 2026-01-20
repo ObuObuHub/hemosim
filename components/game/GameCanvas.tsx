@@ -1,15 +1,18 @@
 // components/game/GameCanvas.tsx
 'use client';
 
-import type { GameState } from '@/types/game';
+import type { GameState, VisualState } from '@/types/game';
 import { GAME_CANVAS, PANEL_CONFIGS, COLORS } from '@/engine/game/game-config';
 import { GameHUD } from './GameHUD';
 import { SurfacePanel } from './SurfacePanel';
 import { FactorPalette } from './FactorPalette';
 import { CirculationTray } from './CirculationTray';
+import { AnimationLayer } from './AnimationLayer';
 
 interface GameCanvasProps {
   gameState: GameState;
+  /** Optional visual state for animations - if provided, AnimationLayer is rendered */
+  visualState?: VisualState;
   onFactorSelect: (factorId: string) => void;
   onSlotClick: (slotId: string) => void;
   onComplexSlotClick: (complexSlotId: string) => void;
@@ -17,6 +20,7 @@ interface GameCanvasProps {
 
 export function GameCanvas({
   gameState,
+  visualState,
   onFactorSelect,
   onSlotClick,
   onComplexSlotClick,
@@ -35,6 +39,7 @@ export function GameCanvas({
       {/* HUD (thrombin meter + message) */}
       <GameHUD
         thrombinMeter={gameState.thrombinMeter}
+        thrombinDisplayValue={visualState?.thrombinMeter.current}
         currentMessage={gameState.currentMessage}
         isError={gameState.isError}
         phase={gameState.phase}
@@ -67,6 +72,9 @@ export function GameCanvas({
         gameState={gameState}
         onFactorClick={onFactorSelect}
       />
+
+      {/* Animation overlay - renders on top */}
+      {visualState && <AnimationLayer visualState={visualState} />}
     </div>
   );
 }

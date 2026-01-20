@@ -9,53 +9,62 @@ import { useGameState } from '@/hooks/useGameState';
 import { GameCanvas } from '@/components/game/GameCanvas';
 import { GameControls } from '@/components/game/GameControls';
 import { GameCompleteModal } from '@/components/game/GameCompleteModal';
+import {
+  AnimationTargetProvider,
+  useAnimationTargetRegistry,
+} from '@/hooks/useAnimationTarget';
 
 export default function GamePage(): ReactElement {
   const router = useRouter();
   const { state, selectFactor, deselectFactor, attemptPlace, attemptComplexPlace, resetGame } = useGameState();
+
+  // Create animation target registry for component position tracking
+  const animationRegistry = useAnimationTargetRegistry();
 
   const handleMainMenu = useCallback((): void => {
     router.push('/');
   }, [router]);
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        backgroundColor: '#020617',
-        padding: 16,
-      }}
-    >
+    <AnimationTargetProvider registry={animationRegistry}>
       <div
         style={{
-          position: 'relative',
-          width: GAME_CANVAS.width,
-          height: GAME_CANVAS.height,
-          maxWidth: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          backgroundColor: '#020617',
+          padding: 16,
         }}
       >
-        {/* Main Game Canvas */}
-        <GameCanvas
-          gameState={state}
-          onFactorSelect={selectFactor}
-          onSlotClick={attemptPlace}
-          onComplexSlotClick={attemptComplexPlace}
-        />
-
-        {/* Keyboard Controls */}
-        <GameControls onDeselect={deselectFactor} onReset={resetGame} />
-
-        {/* Victory Modal */}
-        {state.phase === 'complete' && (
-          <GameCompleteModal
-            onPlayAgain={resetGame}
-            onMainMenu={handleMainMenu}
+        <div
+          style={{
+            position: 'relative',
+            width: GAME_CANVAS.width,
+            height: GAME_CANVAS.height,
+            maxWidth: '100%',
+          }}
+        >
+          {/* Main Game Canvas */}
+          <GameCanvas
+            gameState={state}
+            onFactorSelect={selectFactor}
+            onSlotClick={attemptPlace}
+            onComplexSlotClick={attemptComplexPlace}
           />
-        )}
+
+          {/* Keyboard Controls */}
+          <GameControls onDeselect={deselectFactor} onReset={resetGame} />
+
+          {/* Victory Modal */}
+          {state.phase === 'complete' && (
+            <GameCompleteModal
+              onPlayAgain={resetGame}
+              onMainMenu={handleMainMenu}
+            />
+          )}
+        </div>
       </div>
-    </div>
+    </AnimationTargetProvider>
   );
 }

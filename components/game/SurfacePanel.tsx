@@ -1,12 +1,14 @@
 // components/game/SurfacePanel.tsx
 'use client';
 
+import { useRef } from 'react';
 import type { Slot, ComplexSlot } from '@/types/game';
 import type { PanelConfig } from '@/engine/game/game-config';
 import { COLORS, SLOT_POSITIONS, PREPLACED_POSITIONS, COMPLEX_SLOT_POSITIONS, COMPLEX_LABELS } from '@/engine/game/game-config';
 import { PREPLACED_ELEMENTS, getFactorDefinition } from '@/engine/game/factor-definitions';
 import { getValidSlotsForFactor, isTenaseComplete } from '@/engine/game/validation-rules';
 import { FactorToken } from './FactorToken';
+import { useAnimationTarget } from '@/hooks/useAnimationTarget';
 import type { GameState } from '@/types/game';
 
 interface SurfacePanelProps {
@@ -50,6 +52,218 @@ function getPanelStatus(
   return null;
 }
 
+// =============================================================================
+// SLOT COMPONENT (with animation target registration)
+// =============================================================================
+
+interface SlotComponentProps {
+  slot: Slot;
+  isValidTarget: boolean;
+  placedFactor: ReturnType<typeof getFactorDefinition> | null;
+  onSlotClick: (slotId: string) => void;
+}
+
+function SlotComponent({ slot, isValidTarget, placedFactor, onSlotClick }: SlotComponentProps): React.ReactElement | null {
+  const slotRef = useRef<HTMLDivElement>(null);
+  useAnimationTarget(`slot-${slot.id}`, slotRef);
+
+  const pos = SLOT_POSITIONS[slot.id];
+  if (!pos) return null;
+
+  return (
+    <div
+      ref={slotRef}
+      onClick={() => !slot.isLocked && onSlotClick(slot.id)}
+      style={{
+        position: 'absolute',
+        left: pos.x,
+        top: pos.y,
+        width: pos.width,
+        height: pos.height,
+        backgroundColor: slot.isLocked
+          ? `${COLORS.slotBackground}50`
+          : COLORS.slotBackground,
+        border: `2px dashed ${
+          isValidTarget
+            ? COLORS.slotBorderValid
+            : slot.isLocked
+            ? COLORS.textDim
+            : COLORS.panelBorder
+        }`,
+        borderRadius: 8,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: slot.isLocked ? 'not-allowed' : 'pointer',
+        transition: 'all 0.2s ease',
+        boxShadow: isValidTarget ? `0 0 10px ${COLORS.slotBorderValid}50` : 'none',
+      }}
+    >
+      {slot.transferredToCirculation ? (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 2,
+          }}
+        >
+          <span style={{ fontSize: 10, color: COLORS.textDim }}>
+            {placedFactor?.activeLabel}
+          </span>
+          <span style={{ fontSize: 9, color: slot.acceptsFactorId === 'FII' ? '#EF4444' : '#06B6D4' }}>
+            {slot.acceptsFactorId === 'FII' ? '→ primes platelet' : '→ circulation'}
+          </span>
+        </div>
+      ) : placedFactor ? (
+        <FactorToken factor={placedFactor} isActive={slot.isActive} />
+      ) : (
+        <span
+          style={{
+            fontSize: 11,
+            color: COLORS.textDim,
+          }}
+        >
+          {slot.acceptsFactorId}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
+// PREPLACED ELEMENT COMPONENT (with animation target registration)
+// =============================================================================
+
+interface PreplacedElementComponentProps {
+  element: {
+    id: string;
+    label: string;
+    tooltip: string;
+    isDim: boolean;
+  };
+}
+
+function PreplacedElementComponent({ element }: PreplacedElementComponentProps): React.ReactElement | null {
+  const elementRef = useRef<HTMLDivElement>(null);
+  useAnimationTarget(`preplaced-${element.id}`, elementRef);
+
+  const pos = PREPLACED_POSITIONS[element.id as keyof typeof PREPLACED_POSITIONS];
+  if (!pos) return null;
+
+  return (
+    <div
+      ref={elementRef}
+      title={element.tooltip}
+      style={{
+        position: 'absolute',
+        left: pos.x,
+        top: pos.y,
+        width: pos.width,
+        height: pos.height,
+        backgroundColor: element.isDim ? `${COLORS.textDim}30` : '#F59E0B40',
+        border: `2px solid ${element.isDim ? COLORS.textDim : '#F59E0B'}`,
+        borderRadius: 8,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 12,
+        fontWeight: 600,
+        color: element.isDim ? COLORS.textDim : '#F59E0B',
+        cursor: 'help',
+      }}
+    >
+      {element.label}
+    </div>
+  );
+}
+
+// =============================================================================
+// COMPLEX SLOT COMPONENT (with animation target registration)
+// =============================================================================
+
+interface ComplexSlotComponentProps {
+  complexSlot: ComplexSlot;
+  gameState: GameState;
+  onComplexSlotClick: (complexSlotId: string) => void;
+}
+
+function ComplexSlotComponent({ complexSlot, gameState, onComplexSlotClick }: ComplexSlotComponentProps): React.ReactElement | null {
+  const slotRef = useRef<HTMLDivElement>(null);
+  // Register as complex-{complexType}-{role} (e.g., complex-tenase-enzyme)
+  useAnimationTarget(`complex-${complexSlot.complexType}-${complexSlot.role}`, slotRef);
+
+  const pos = COMPLEX_SLOT_POSITIONS[complexSlot.id];
+  if (!pos) return null;
+
+  const isEnzymeSlot = !complexSlot.isAutoFilled;
+  const isClickable = isEnzymeSlot && gameState.phase === 'propagation';
+  const placedFactor = complexSlot.placedFactorId
+    ? getFactorDefinition(complexSlot.placedFactorId)
+    : null;
+
+  // For cofactor slots, show expected factor even before placed (greyed)
+  const previewFactorId = complexSlot.isAutoFilled
+    ? (complexSlot.id === 'tenase-cofactor' ? 'FVIII' : 'FV')
+    : null;
+  const previewFactor = previewFactorId ? getFactorDefinition(previewFactorId) : null;
+
+  // Determine if slot should be dimmed
+  const isLocked = gameState.phase !== 'propagation' && gameState.phase !== 'complete';
+  const needsTenase = complexSlot.id === 'prothrombinase-enzyme' && !isTenaseComplete(gameState);
+  const isDimmed = isLocked || needsTenase;
+
+  return (
+    <div
+      ref={slotRef}
+      onClick={() => isClickable && !needsTenase && onComplexSlotClick(complexSlot.id)}
+      style={{
+        position: 'absolute',
+        left: pos.x,
+        top: pos.y,
+        width: pos.width,
+        height: pos.height,
+        backgroundColor: isDimmed
+          ? `${COLORS.slotBackground}30`
+          : COLORS.slotBackground,
+        border: complexSlot.isAutoFilled
+          ? `2px solid ${isDimmed ? COLORS.textDim : COLORS.panelBorder}`
+          : `2px dashed ${isDimmed ? COLORS.textDim : COLORS.panelBorder}`,
+        borderRadius: 8,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: isClickable && !needsTenase ? 'pointer' : 'default',
+        opacity: isDimmed ? 0.5 : 1,
+        transition: 'all 0.2s ease',
+      }}
+    >
+      {placedFactor ? (
+        <FactorToken factor={placedFactor} isActive={true} />
+      ) : previewFactor ? (
+        <FactorToken
+          factor={previewFactor}
+          isActive={true}
+          style={{ opacity: 0.4 }}
+        />
+      ) : (
+        <span
+          style={{
+            fontSize: 11,
+            color: COLORS.textDim,
+          }}
+        >
+          {complexSlot.role}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
+// MAIN SURFACE PANEL COMPONENT
+// =============================================================================
+
 export function SurfacePanel({
   config,
   slots,
@@ -58,6 +272,10 @@ export function SurfacePanel({
   onSlotClick,
   onComplexSlotClick,
 }: SurfacePanelProps): React.ReactElement {
+  // Register panel as animation target
+  const panelRef = useRef<HTMLDivElement>(null);
+  useAnimationTarget(`panel-${config.surface}`, panelRef);
+
   const panelSlots = slots.filter((s) => s.surface === config.surface);
   const isLocked = panelSlots.some((s) => s.isLocked);
   const preplacedElements = PREPLACED_ELEMENTS.filter((e) => e.surface === config.surface);
@@ -72,6 +290,7 @@ export function SurfacePanel({
 
   return (
     <div
+      ref={panelRef}
       style={{
         position: 'absolute',
         left: config.x,
@@ -165,106 +384,26 @@ export function SurfacePanel({
 
       {/* Pre-placed elements (TF+VIIa, trace Va) */}
       {!config.isComingSoon &&
-        preplacedElements.map((element) => {
-          const pos = PREPLACED_POSITIONS[element.id as keyof typeof PREPLACED_POSITIONS];
-          if (!pos) return null;
-
-          return (
-            <div
-              key={element.id}
-              title={element.tooltip}
-              style={{
-                position: 'absolute',
-                left: pos.x,
-                top: pos.y,
-                width: pos.width,
-                height: pos.height,
-                backgroundColor: element.isDim ? `${COLORS.textDim}30` : '#F59E0B40',
-                border: `2px solid ${element.isDim ? COLORS.textDim : '#F59E0B'}`,
-                borderRadius: 8,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 12,
-                fontWeight: 600,
-                color: element.isDim ? COLORS.textDim : '#F59E0B',
-                cursor: 'help',
-              }}
-            >
-              {element.label}
-            </div>
-          );
-        })}
+        preplacedElements.map((element) => (
+          <PreplacedElementComponent key={element.id} element={element} />
+        ))}
 
       {/* Slots */}
       {!config.isComingSoon &&
         panelSlots.map((slot) => {
-          const pos = SLOT_POSITIONS[slot.id];
-          if (!pos) return null;
-
           const isValidTarget = validSlotIds.includes(slot.id);
           const placedFactor = slot.placedFactorId
             ? getFactorDefinition(slot.placedFactorId)
             : null;
 
           return (
-            <div
+            <SlotComponent
               key={slot.id}
-              onClick={() => !slot.isLocked && onSlotClick(slot.id)}
-              style={{
-                position: 'absolute',
-                left: pos.x,
-                top: pos.y,
-                width: pos.width,
-                height: pos.height,
-                backgroundColor: slot.isLocked
-                  ? `${COLORS.slotBackground}50`
-                  : COLORS.slotBackground,
-                border: `2px dashed ${
-                  isValidTarget
-                    ? COLORS.slotBorderValid
-                    : slot.isLocked
-                    ? COLORS.textDim
-                    : COLORS.panelBorder
-                }`,
-                borderRadius: 8,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: slot.isLocked ? 'not-allowed' : 'pointer',
-                transition: 'all 0.2s ease',
-                boxShadow: isValidTarget ? `0 0 10px ${COLORS.slotBorderValid}50` : 'none',
-              }}
-            >
-              {slot.transferredToCirculation ? (
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: 2,
-                  }}
-                >
-                  <span style={{ fontSize: 10, color: COLORS.textDim }}>
-                    {placedFactor?.activeLabel}
-                  </span>
-                  <span style={{ fontSize: 9, color: slot.acceptsFactorId === 'FII' ? '#EF4444' : '#06B6D4' }}>
-                    {slot.acceptsFactorId === 'FII' ? '→ primes platelet' : '→ circulation'}
-                  </span>
-                </div>
-              ) : placedFactor ? (
-                <FactorToken factor={placedFactor} isActive={slot.isActive} />
-              ) : (
-                <span
-                  style={{
-                    fontSize: 11,
-                    color: COLORS.textDim,
-                  }}
-                >
-                  {slot.acceptsFactorId}
-                </span>
-              )}
-            </div>
+              slot={slot}
+              isValidTarget={isValidTarget}
+              placedFactor={placedFactor}
+              onSlotClick={onSlotClick}
+            />
           );
         })}
 
@@ -300,73 +439,14 @@ export function SurfacePanel({
           </div>
 
           {/* Complex slots */}
-          {complexSlots.map((complexSlot) => {
-            const pos = COMPLEX_SLOT_POSITIONS[complexSlot.id];
-            if (!pos) return null;
-
-            const isEnzymeSlot = !complexSlot.isAutoFilled;
-            const isClickable = isEnzymeSlot && gameState.phase === 'propagation';
-            const placedFactor = complexSlot.placedFactorId
-              ? getFactorDefinition(complexSlot.placedFactorId)
-              : null;
-
-            // For cofactor slots, show expected factor even before placed (greyed)
-            const previewFactorId = complexSlot.isAutoFilled
-              ? (complexSlot.id === 'tenase-cofactor' ? 'FVIII' : 'FV')
-              : null;
-            const previewFactor = previewFactorId ? getFactorDefinition(previewFactorId) : null;
-
-            // Determine if slot should be dimmed
-            const isLocked = gameState.phase !== 'propagation' && gameState.phase !== 'complete';
-            const needsTenase = complexSlot.id === 'prothrombinase-enzyme' && !isTenaseComplete(gameState);
-            const isDimmed = isLocked || needsTenase;
-
-            return (
-              <div
-                key={complexSlot.id}
-                onClick={() => isClickable && !needsTenase && onComplexSlotClick(complexSlot.id)}
-                style={{
-                  position: 'absolute',
-                  left: pos.x,
-                  top: pos.y,
-                  width: pos.width,
-                  height: pos.height,
-                  backgroundColor: isDimmed
-                    ? `${COLORS.slotBackground}30`
-                    : COLORS.slotBackground,
-                  border: complexSlot.isAutoFilled
-                    ? `2px solid ${isDimmed ? COLORS.textDim : COLORS.panelBorder}`
-                    : `2px dashed ${isDimmed ? COLORS.textDim : COLORS.panelBorder}`,
-                  borderRadius: 8,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: isClickable && !needsTenase ? 'pointer' : 'default',
-                  opacity: isDimmed ? 0.5 : 1,
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                {placedFactor ? (
-                  <FactorToken factor={placedFactor} isActive={true} />
-                ) : previewFactor ? (
-                  <FactorToken
-                    factor={previewFactor}
-                    isActive={true}
-                    style={{ opacity: 0.4 }}
-                  />
-                ) : (
-                  <span
-                    style={{
-                      fontSize: 11,
-                      color: COLORS.textDim,
-                    }}
-                  >
-                    {complexSlot.role}
-                  </span>
-                )}
-              </div>
-            );
-          })}
+          {complexSlots.map((complexSlot) => (
+            <ComplexSlotComponent
+              key={complexSlot.id}
+              complexSlot={complexSlot}
+              gameState={gameState}
+              onComplexSlotClick={onComplexSlotClick}
+            />
+          ))}
         </>
       )}
     </div>

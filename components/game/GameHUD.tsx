@@ -5,7 +5,10 @@ import { COLORS, LAYOUT, GAME_CANVAS } from '@/engine/game/game-config';
 import { THROMBIN_STARTER_THRESHOLD } from '@/engine/game/validation-rules';
 
 interface GameHUDProps {
+  /** Logical thrombin value (instant) - used for threshold checks and display percentage */
   thrombinMeter: number;
+  /** Optional interpolated display value (lerped) - used for visual fill width */
+  thrombinDisplayValue?: number;
   currentMessage: string;
   isError: boolean;
   phase: string;
@@ -13,13 +16,24 @@ interface GameHUDProps {
 
 export function GameHUD({
   thrombinMeter,
+  thrombinDisplayValue,
   currentMessage,
   isError,
   phase,
 }: GameHUDProps): React.ReactElement {
   const meterWidth = 300;
-  const fillWidth = (thrombinMeter / 100) * meterWidth;
+  // Use displayValue for visual fill width if provided, otherwise use logical value
+  const visualValue = thrombinDisplayValue ?? thrombinMeter;
+  const fillWidth = (visualValue / 100) * meterWidth;
   const thresholdPosition = (THROMBIN_STARTER_THRESHOLD / 100) * meterWidth;
+
+  // Use logical value for color thresholds (instant state)
+  const fillColor =
+    thrombinMeter >= 100
+      ? '#22C55E' // Green - complete
+      : thrombinMeter >= THROMBIN_STARTER_THRESHOLD
+      ? '#EF4444' // Red - above threshold
+      : '#F59E0B'; // Amber - building up
 
   return (
     <div
@@ -78,8 +92,8 @@ export function GameHUD({
               top: 0,
               width: fillWidth,
               height: '100%',
-              backgroundColor: COLORS.thrombinMeterFill,
-              transition: 'width 0.3s ease',
+              backgroundColor: fillColor,
+              transition: 'width 0.3s ease, background-color 0.3s ease',
             }}
           />
 
