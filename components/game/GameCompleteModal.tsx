@@ -46,7 +46,7 @@ export function GameCompleteModal({
             marginBottom: 16,
           }}
         >
-          Platelet Primed!
+          Thrombin Burst Achieved!
         </h2>
 
         {/* Summary */}
@@ -59,8 +59,7 @@ export function GameCompleteModal({
           }}
         >
           <p style={{ marginBottom: 12 }}>
-            You successfully completed the <strong>Initiation</strong> and{' '}
-            <strong>Amplification</strong> phases of coagulation.
+            You completed the full cell-based coagulation cascade!
           </p>
           <p style={{ marginBottom: 12 }}>
             <strong>What you learned:</strong>
@@ -72,15 +71,15 @@ export function GameCompleteModal({
               marginBottom: 12,
             }}
           >
-            <li>TF+VIIa on TF-bearing cells generates FXa</li>
-            <li>FXa + trace Va produces starter thrombin</li>
-            <li>Starter thrombin activates platelets via PAR</li>
-            <li>Thrombin cleaves FV → FVa and FVIII → FVIIIa</li>
-            <li>Cofactors are now positioned for propagation</li>
+            <li><strong>Initiation:</strong> TF+VIIa generates FXa and FIXa on TF-bearing cells</li>
+            <li><strong>Starter thrombin:</strong> FXa + trace Va produces small thrombin (primes platelets)</li>
+            <li><strong>Amplification:</strong> Thrombin activates FV→FVa and FVIII→FVIIIa</li>
+            <li><strong>Tenase:</strong> FIXa + FVIIIa generates abundant FXa on activated platelet</li>
+            <li><strong>Prothrombinase:</strong> FXa + FVa produces the thrombin burst</li>
           </ul>
           <p>
-            <strong>Next:</strong> In v2, you'll assemble Tenase and Prothrombinase
-            on the activated platelet to generate the thrombin burst.
+            <strong>Key insight:</strong> Surface segregation and enzyme-cofactor complexes
+            amplify the signal from tiny initiation to massive thrombin output.
           </p>
         </div>
 
