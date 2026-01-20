@@ -145,8 +145,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const factor = getFactorDefinition(factorId)!;
 
       // Update slot with placed factor
-      // FIX is special: it transfers to circulation after activation
-      const transfersToCirculation = factorId === 'FIX';
+      // FIX transfers to circulation, FII becomes soluble thrombin (meter shows it)
+      const transfersToCirculation = factorId === 'FIX' || factorId === 'FII';
       let newSlots: Slot[] = state.slots.map((slot) =>
         slot.id === action.slotId
           ? {

@@ -248,8 +248,8 @@ export function SurfacePanel({
                   <span style={{ fontSize: 10, color: COLORS.textDim }}>
                     {placedFactor?.activeLabel}
                   </span>
-                  <span style={{ fontSize: 9, color: '#06B6D4' }}>
-                    → circulation
+                  <span style={{ fontSize: 9, color: slot.acceptsFactorId === 'FII' ? '#EF4444' : '#06B6D4' }}>
+                    {slot.acceptsFactorId === 'FII' ? '→ primes platelet' : '→ circulation'}
                   </span>
                 </div>
               ) : placedFactor ? (

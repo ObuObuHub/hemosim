@@ -36,7 +36,7 @@ export const FACTOR_DEFINITIONS: Record<string, FactorDefinition> = {
     activeLabel: 'Starter THR',
     category: 'zymogen',
     targetSurface: 'tf-cell',
-    activationMessage: 'Starter thrombin via Xa + trace Va (initiation scaffold)',
+    activationMessage: 'Starter thrombin produced → diffuses to platelet, activates PAR receptors',
     errorMessageWrongSlot: 'FII must be placed on TF-bearing cell where FXa + Va can generate thrombin.',
     prerequisites: ['FX'], // FXa must be present
     thrombinContribution: 30,
