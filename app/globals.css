@@ -590,6 +590,162 @@ input[type="number"] {
    GAME STYLES - Coagulation Cascade Builder Game
    ============================================================================= */
 
+/* Pulse animation for valid drop targets */
+@keyframes slot-pulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+    border-color: #22C55E;
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.8), 0 0 30px rgba(34, 197, 94, 0.4);
+    border-color: #4ADE80;
+  }
+}
+
+.slot-valid-target {
+  animation: slot-pulse 1s ease-in-out infinite;
+}
+
+/* Glow animation for active factors */
+@keyframes factor-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px currentColor);
+  }
+  50% {
+    filter: drop-shadow(0 0 16px currentColor);
+  }
+}
+
+.factor-active {
+  animation: factor-glow 2s ease-in-out infinite;
+}
+
+/* Pop-in animation for placed factors */
+@keyframes pop-in {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.factor-placed {
+  animation: pop-in 0.3s ease-out;
+}
+
+/* Shake animation for errors */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(6px); }
+}
+
+.shake {
+  animation: shake 0.4s ease-out;
+}
+
+/* Phase unlock celebration */
+@keyframes phase-unlock {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.phase-unlocked {
+  animation: phase-unlock 0.5s ease-out;
+}
+
+/* Meter fill glow */
+@keyframes meter-glow {
+  0%, 100% {
+    box-shadow: inset 0 0 10px rgba(255,255,255,0.1);
+  }
+  50% {
+    box-shadow: inset 0 0 20px rgba(255,255,255,0.3);
+  }
+}
+
+.meter-active {
+  animation: meter-glow 1.5s ease-in-out infinite;
+}
+
+/* Fibrin mesh line pulse */
+@keyframes line-pulse {
+  0%, 100% {
+    stroke-opacity: 0.8;
+  }
+  50% {
+    stroke-opacity: 1;
+    filter: drop-shadow(0 0 4px currentColor);
+  }
+}
+
+.fibrin-line {
+  animation: line-pulse 2s ease-in-out infinite;
+}
+
+/* Cross-link flash effect */
+@keyframes crosslink-flash {
+  0% {
+    stroke: #9CA3AF;
+    stroke-width: 2;
+    filter: none;
+  }
+  30% {
+    stroke: #FBBF24;
+    stroke-width: 6;
+    filter: drop-shadow(0 0 10px #FBBF24);
+  }
+  100% {
+    stroke: #FBBF24;
+    stroke-width: 4;
+    filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.6));
+  }
+}
+
+.fibrin-crosslinked {
+  animation: crosslink-flash 0.6s ease-out forwards;
+}
+
+/* Victory celebration */
+@keyframes victory-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(34, 197, 94, 0.8), 0 0 60px rgba(34, 197, 94, 0.4);
+  }
+}
+
+.victory-glow {
+  animation: victory-pulse 1s ease-in-out infinite;
+}
+
+/* Smooth hover transitions for interactive elements */
+.game-interactive {
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out, border-color 0.15s ease-out;
+}
+
+.game-interactive:hover {
+  transform: scale(1.02);
+}
+
 /* Game container - centers the game canvas */
 .game-container {
   display: flex;

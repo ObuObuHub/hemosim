@@ -28,32 +28,66 @@ function getSlotCenter(slotId: string): { x: number; y: number } | null {
   };
 }
 
+// Line type for mesh visualization
+interface MeshLine {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  key: string;
+  isPlaceholder?: boolean;
+  isCrossLink?: boolean;
+}
+
 // Generate mesh lines between fibrin slots
 function generateMeshLines(
   fibrinSlots: Slot[],
+  fxiiiSlot: Slot | undefined,
   isCrossLinked: boolean
-): Array<{ x1: number; y1: number; x2: number; y2: number; key: string }> {
+): MeshLine[] {
+  const lines: MeshLine[] = [];
   const placedFibrinSlots = fibrinSlots.filter(
     (s) => s.placedFactorId === 'Fibrinogen' && s.isActive
   );
 
-  if (placedFibrinSlots.length < 2) return [];
-
-  const lines: Array<{ x1: number; y1: number; x2: number; y2: number; key: string }> = [];
-
-  // Connect all placed fibrins to each other
-  for (let i = 0; i < placedFibrinSlots.length; i++) {
-    for (let j = i + 1; j < placedFibrinSlots.length; j++) {
-      const pos1 = getSlotCenter(placedFibrinSlots[i].id);
-      const pos2 = getSlotCenter(placedFibrinSlots[j].id);
+  // Show placeholder lines (dotted) between all fibrin slot positions
+  // to hint at where the mesh will form
+  for (let i = 0; i < fibrinSlots.length; i++) {
+    for (let j = i + 1; j < fibrinSlots.length; j++) {
+      const pos1 = getSlotCenter(fibrinSlots[i].id);
+      const pos2 = getSlotCenter(fibrinSlots[j].id);
       if (pos1 && pos2) {
+        const isPlaced1 = fibrinSlots[i].placedFactorId === 'Fibrinogen';
+        const isPlaced2 = fibrinSlots[j].placedFactorId === 'Fibrinogen';
+
         lines.push({
           x1: pos1.x,
           y1: pos1.y,
           x2: pos2.x,
           y2: pos2.y,
-          key: `${placedFibrinSlots[i].id}-${placedFibrinSlots[j].id}`,
+          key: `${fibrinSlots[i].id}-${fibrinSlots[j].id}`,
+          isPlaceholder: !isPlaced1 || !isPlaced2,
         });
+      }
+    }
+  }
+
+  // Add cross-link lines from FXIII to each fibrin when FXIII is placed
+  if (isCrossLinked && fxiiiSlot) {
+    const fxiiiPos = getSlotCenter(fxiiiSlot.id);
+    if (fxiiiPos) {
+      for (const fibrinSlot of placedFibrinSlots) {
+        const fibrinPos = getSlotCenter(fibrinSlot.id);
+        if (fibrinPos) {
+          lines.push({
+            x1: fxiiiPos.x,
+            y1: fxiiiPos.y,
+            x2: fibrinPos.x,
+            y2: fibrinPos.y,
+            key: `crosslink-${fibrinSlot.id}`,
+            isCrossLink: true,
+          });
+        }
       }
     }
   }
@@ -102,9 +136,14 @@ function SlotComponent({
   // Determine slot label based on factor type
   const slotLabel = slot.acceptsFactorId === 'FXIII' ? 'FXIII' : 'Fibrinogen';
 
+  // Build className for CSS animations
+  const classNames = ['game-interactive'];
+  if (isValidTarget) classNames.push('slot-valid-target');
+
   return (
     <div
       ref={slotRef}
+      className={classNames.join(' ')}
       onClick={() => !slot.isLocked && onSlotClick(slot.id)}
       style={{
         position: 'absolute',
@@ -114,25 +153,29 @@ function SlotComponent({
         height: pos.height,
         backgroundColor: slot.isLocked
           ? `${COLORS.slotBackground}50`
+          : isValidTarget
+          ? `${COLORS.slotBorderValid}20`
           : COLORS.slotBackground,
-        border: `2px dashed ${
+        border: `3px ${isValidTarget ? 'solid' : 'dashed'} ${
           isValidTarget
             ? COLORS.slotBorderValid
             : slot.isLocked
             ? COLORS.textDim
             : COLORS.panelBorder
         }`,
-        borderRadius: 8,
+        borderRadius: 12,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         cursor: slot.isLocked ? 'not-allowed' : 'pointer',
-        transition: 'all 0.2s ease',
-        boxShadow: isValidTarget ? `0 0 10px ${COLORS.slotBorderValid}50` : 'none',
+        transition: slot.isLocked ? 'none' : 'background-color 0.2s ease',
+        zIndex: 2,
       }}
     >
       {placedFactor ? (
-        <FactorToken factor={placedFactor} isActive={slot.isActive} />
+        <div className="factor-placed">
+          <FactorToken factor={placedFactor} isActive={slot.isActive} />
+        </div>
       ) : (
         <span
           style={{
@@ -153,7 +196,7 @@ function SlotComponent({
 // =============================================================================
 
 interface FibrinMeshProps {
-  lines: Array<{ x1: number; y1: number; x2: number; y2: number; key: string }>;
+  lines: MeshLine[];
   isCrossLinked: boolean;
 }
 
@@ -174,19 +217,57 @@ function FibrinMesh({ lines, isCrossLinked }: FibrinMeshProps): React.ReactEleme
         zIndex: 1,
       }}
     >
-      {lines.map((line) => (
+      {/* Render placeholder lines first (underneath) */}
+      {lines.filter(l => l.isPlaceholder).map((line) => (
         <line
           key={line.key}
           x1={line.x1}
           y1={line.y1}
           x2={line.x2}
           y2={line.y2}
-          stroke={isCrossLinked ? COLORS.fibrinStrandCrossLinked : COLORS.fibrinStrandColor}
-          strokeWidth={isCrossLinked ? 4 : 2}
+          stroke={COLORS.textDim}
+          strokeWidth={1}
+          strokeLinecap="round"
+          strokeDasharray="4 4"
+          opacity={0.3}
+        />
+      ))}
+
+      {/* Render solid fibrin lines */}
+      {lines.filter(l => !l.isPlaceholder && !l.isCrossLink).map((line) => (
+        <line
+          key={line.key}
+          className={isCrossLinked ? 'fibrin-crosslinked' : 'fibrin-line'}
+          x1={line.x1}
+          y1={line.y1}
+          x2={line.x2}
+          y2={line.y2}
+          stroke={isCrossLinked ? COLORS.fibrinStrandCrossLinked : '#F97316'}
+          strokeWidth={isCrossLinked ? 5 : 3}
           strokeLinecap="round"
           style={{
-            filter: isCrossLinked ? 'drop-shadow(0 0 4px rgba(251,191,36,0.5))' : 'none',
-            transition: 'all 0.5s ease',
+            filter: isCrossLinked
+              ? 'drop-shadow(0 0 8px rgba(251,191,36,0.8))'
+              : 'drop-shadow(0 0 4px rgba(249,115,22,0.5))',
+          }}
+        />
+      ))}
+
+      {/* Render cross-link lines from FXIII to fibrins */}
+      {lines.filter(l => l.isCrossLink).map((line) => (
+        <line
+          key={line.key}
+          className="fibrin-crosslinked"
+          x1={line.x1}
+          y1={line.y1}
+          x2={line.x2}
+          y2={line.y2}
+          stroke={COLORS.fibrinStrandCrossLinked}
+          strokeWidth={3}
+          strokeLinecap="round"
+          strokeDasharray="8 4"
+          style={{
+            filter: 'drop-shadow(0 0 6px rgba(251,191,36,0.6))',
           }}
         />
       ))}
@@ -222,8 +303,8 @@ export function ClotZonePanel({
 
   // Generate mesh lines
   const meshLines = useMemo(
-    () => generateMeshLines(fibrinSlots, isCrossLinked),
-    [fibrinSlots, isCrossLinked]
+    () => generateMeshLines(fibrinSlots, fxiiiSlot, isCrossLinked),
+    [fibrinSlots, fxiiiSlot, isCrossLinked]
   );
 
   return (

@@ -70,9 +70,14 @@ function SlotComponent({ slot, isValidTarget, placedFactor, onSlotClick }: SlotC
   const pos = SLOT_POSITIONS[slot.id];
   if (!pos) return null;
 
+  // Build className for CSS animations
+  const classNames = ['game-interactive'];
+  if (isValidTarget) classNames.push('slot-valid-target');
+
   return (
     <div
       ref={slotRef}
+      className={classNames.join(' ')}
       onClick={() => !slot.isLocked && onSlotClick(slot.id)}
       style={{
         position: 'absolute',
@@ -82,21 +87,22 @@ function SlotComponent({ slot, isValidTarget, placedFactor, onSlotClick }: SlotC
         height: pos.height,
         backgroundColor: slot.isLocked
           ? `${COLORS.slotBackground}50`
+          : isValidTarget
+          ? `${COLORS.slotBorderValid}20`
           : COLORS.slotBackground,
-        border: `2px dashed ${
+        border: `3px ${isValidTarget ? 'solid' : 'dashed'} ${
           isValidTarget
             ? COLORS.slotBorderValid
             : slot.isLocked
             ? COLORS.textDim
             : COLORS.panelBorder
         }`,
-        borderRadius: 8,
+        borderRadius: 12,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         cursor: slot.isLocked ? 'not-allowed' : 'pointer',
-        transition: 'all 0.2s ease',
-        boxShadow: isValidTarget ? `0 0 10px ${COLORS.slotBorderValid}50` : 'none',
+        transition: slot.isLocked ? 'none' : 'background-color 0.2s ease',
       }}
     >
       {slot.transferredToCirculation ? (
@@ -116,12 +122,15 @@ function SlotComponent({ slot, isValidTarget, placedFactor, onSlotClick }: SlotC
           </span>
         </div>
       ) : placedFactor ? (
-        <FactorToken factor={placedFactor} isActive={slot.isActive} />
+        <div className="factor-placed">
+          <FactorToken factor={placedFactor} isActive={slot.isActive} />
+        </div>
       ) : (
         <span
           style={{
             fontSize: 11,
-            color: COLORS.textDim,
+            color: isValidTarget ? COLORS.slotBorderValid : COLORS.textDim,
+            fontWeight: isValidTarget ? 600 : 400,
           }}
         >
           {slot.acceptsFactorId}
