@@ -1,6 +1,6 @@
 // engine/game/validation-rules.ts
-import type { GameState, Slot, ValidationResult } from '@/types/game';
-import { FACTOR_DEFINITIONS, getFactorDefinition } from './factor-definitions';
+import type { GameState, ValidationResult } from '@/types/game';
+import { getFactorDefinition } from './factor-definitions';
 
 // =============================================================================
 // THROMBIN THRESHOLD
@@ -84,23 +84,75 @@ export function shouldUnlockPlatelet(thrombinMeter: number): boolean {
 // =============================================================================
 
 export function checkVictoryCondition(state: GameState): boolean {
-  // Victory when:
-  // 1. Thrombin meter >= 30%
-  // 2. FVa placed on Platelet
-  // 3. FVIIIa placed on Platelet
+  // Victory when Prothrombinase is complete (thrombin = 100%)
+  const prothrombinaseComplete = state.complexSlots
+    .filter((s) => s.complexType === 'prothrombinase')
+    .every((s) => s.placedFactorId !== null);
 
-  if (state.thrombinMeter < THROMBIN_STARTER_THRESHOLD) {
-    return false;
-  }
+  return state.thrombinMeter >= 100 && prothrombinaseComplete;
+}
 
+// =============================================================================
+// HELPER: CHECK IF AMPLIFICATION PHASE IS COMPLETE
+// =============================================================================
+
+export function isAmplificationComplete(state: GameState): boolean {
   const fvPlaced = state.slots.some(
     (s) => s.placedFactorId === 'FV' && s.isActive
   );
   const fviiiPlaced = state.slots.some(
     (s) => s.placedFactorId === 'FVIII' && s.isActive
   );
-
   return fvPlaced && fviiiPlaced;
+}
+
+// =============================================================================
+// HELPER: CHECK IF TENASE COMPLEX IS COMPLETE
+// =============================================================================
+
+export function isTenaseComplete(state: GameState): boolean {
+  return state.complexSlots
+    .filter((s) => s.complexType === 'tenase')
+    .every((s) => s.placedFactorId !== null);
+}
+
+// =============================================================================
+// COMPLEX SLOT VALIDATION
+// =============================================================================
+
+export function validateComplexPlacement(
+  state: GameState,
+  factorId: string,
+  complexSlotId: string
+): ValidationResult {
+  const complexSlot = state.complexSlots.find((s) => s.id === complexSlotId);
+  if (!complexSlot) {
+    return { isValid: false, errorMessage: `Unknown complex slot: ${complexSlotId}` };
+  }
+
+  // Check if slot is already filled
+  if (complexSlot.placedFactorId !== null) {
+    return { isValid: false, errorMessage: 'This complex slot is already filled.' };
+  }
+
+  // Check if factor matches what slot accepts
+  const expectedFactor = complexSlot.acceptsFactorId;
+  if (factorId !== expectedFactor) {
+    return {
+      isValid: false,
+      errorMessage: `This slot requires ${expectedFactor}.`
+    };
+  }
+
+  // For prothrombinase enzyme slot, Tenase must be complete first
+  if (complexSlot.id === 'prothrombinase-enzyme' && !isTenaseComplete(state)) {
+    return {
+      isValid: false,
+      errorMessage: 'Complete Tenase first to generate FXa for Prothrombinase.'
+    };
+  }
+
+  return { isValid: true, errorMessage: null };
 }
 
 // =============================================================================
