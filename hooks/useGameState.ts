@@ -10,9 +10,12 @@ import {
   validatePlacement,
   validateComplexPlacement,
   shouldUnlockPlatelet,
+  shouldUnlockClotZone,
+  isProthrombinaseComplete,
   checkVictoryCondition,
   isAmplificationComplete,
   isTenaseComplete,
+  isStabilizationComplete,
 } from '@/engine/game/validation-rules';
 
 // =============================================================================
@@ -80,6 +83,26 @@ function getConversionRule(
     }
   }
 
+  // CLOT-ZONE conversions (proteolysis via THR)
+  if (surface === 'clot-zone') {
+    switch (factorId) {
+      case 'Fibrinogen':
+        return {
+          fromId: 'Fibrinogen',
+          toLabel: 'Fibrin',
+          mechanism: 'proteolysis',
+          catalyst: 'THR',
+        };
+      case 'FXIII':
+        return {
+          fromId: 'FXIII',
+          toLabel: 'FXIIIa',
+          mechanism: 'activation',
+          catalyst: 'THR',
+        };
+    }
+  }
+
   return null;
 }
 
@@ -88,8 +111,10 @@ function getConversionRule(
 // =============================================================================
 
 function createInitialState(): GameState {
-  // Filter out FXa-tenase from palette (it's spawned by Tenase, not player-selectable)
-  const paletteFactors = getAllFactorIds().filter((id) => id !== 'FXa-tenase');
+  // Filter out FXa-tenase (spawned by Tenase) and Stabilization factors (added when phase unlocks)
+  const paletteFactors = getAllFactorIds().filter(
+    (id) => id !== 'FXa-tenase' && id !== 'Fibrinogen' && id !== 'FXIII'
+  );
 
   return {
     phase: 'initiation',
@@ -352,6 +377,58 @@ function gameReducer(state: GameState, action: GameAction): ReducerResult {
         }
       }
 
+      // === CLOT-ZONE SPECIAL HANDLING ===
+      let newClotIntegrity = state.clotIntegrity;
+      if (surface === 'clot-zone') {
+        const integrityDelta = 25; // Each placement adds 25%
+        newClotIntegrity = Math.min(100, state.clotIntegrity + integrityDelta);
+
+        // Emit specific events for Fibrinogen/FXIII
+        if (factorId === 'Fibrinogen') {
+          events.push({
+            type: 'FIBRINOGEN_DOCKED',
+            slotId: action.slotId,
+          });
+          events.push({
+            type: 'FIBRINOGEN_CONVERTED',
+            slotId: action.slotId,
+            integrityDelta,
+            totalIntegrity: newClotIntegrity,
+          });
+        } else if (factorId === 'FXIII') {
+          events.push({
+            type: 'FXIII_DOCKED',
+            slotId: action.slotId,
+          });
+          events.push({
+            type: 'FXIII_ACTIVATED',
+            slotId: action.slotId,
+            integrityDelta,
+            totalIntegrity: newClotIntegrity,
+          });
+
+          // Get all fibrin slots that have been placed
+          const fibrinSlotIds = newSlots
+            .filter((s) => s.surface === 'clot-zone' && s.placedFactorId === 'Fibrinogen')
+            .map((s) => s.id);
+
+          if (fibrinSlotIds.length > 0) {
+            events.push({
+              type: 'CROSS_LINK_FORMED',
+              fibrinSlotIds,
+            });
+          }
+        }
+
+        // Emit METER_CHANGED for clot integrity
+        events.push({
+          type: 'METER_CHANGED',
+          meter: 'clotIntegrity',
+          target: newClotIntegrity,
+          delta: integrityDelta,
+        });
+      }
+
       // Check if platelet should unlock
       const plateletUnlocking =
         shouldUnlockPlatelet(newThrombinMeter) && !shouldUnlockPlatelet(state.thrombinMeter);
@@ -401,6 +478,7 @@ function gameReducer(state: GameState, action: GameAction): ReducerResult {
         ...state,
         phase: newPhase,
         thrombinMeter: newThrombinMeter,
+        clotIntegrity: newClotIntegrity,
         slots: newSlots,
         complexSlots: newComplexSlots,
         circulationFactors: newCirculationFactors,
@@ -442,13 +520,38 @@ function gameReducer(state: GameState, action: GameAction): ReducerResult {
         };
       }
 
-      // Check victory condition
+      // Check if stabilization is complete (clot integrity at 100%)
+      if (isStabilizationComplete(intermediateState) && intermediateState.clotIntegrity >= 100) {
+        // Emit CLOT_STABILIZED event
+        events.push({
+          type: 'CLOT_STABILIZED',
+          finalIntegrity: 100,
+        });
+
+        // Emit VICTORY event
+        events.push({
+          type: 'VICTORY',
+          finalThrombin: intermediateState.thrombinMeter,
+          complexesBuilt: ['tenase', 'prothrombinase', 'fibrin-mesh'],
+        });
+
+        return {
+          state: {
+            ...intermediateState,
+            phase: 'complete',
+            currentMessage: 'Clot stabilized! Cross-linked fibrin mesh formed. Hemostasis achieved!',
+          },
+          events,
+        };
+      }
+
+      // Check victory condition (legacy - now requires Stabilization)
       if (checkVictoryCondition(intermediateState)) {
         return {
           state: {
             ...intermediateState,
             phase: 'complete',
-            currentMessage: 'Platelet primed. Cofactors positioned for propagation.',
+            currentMessage: 'Clot stabilized! Cross-linked fibrin mesh formed. Hemostasis achieved!',
           },
           events,
         };
@@ -540,9 +643,9 @@ function gameReducer(state: GameState, action: GameAction): ReducerResult {
       } else if (action.complexSlotId === 'prothrombinase-enzyme') {
         // Prothrombinase enzyme filled - check if both parts are present
         const cofactorSlot = newComplexSlots.find((s) => s.id === 'prothrombinase-cofactor');
-        const isProthrombinaseComplete = cofactorSlot?.placedFactorId !== null;
+        const isProthComplete = cofactorSlot?.placedFactorId !== null;
 
-        if (isProthrombinaseComplete) {
+        if (isProthComplete) {
           // Emit COMPLEX_COMPLETED event
           events.push({
             type: 'COMPLEX_COMPLETED',
@@ -574,13 +677,45 @@ function gameReducer(state: GameState, action: GameAction): ReducerResult {
             toSurface: 'platelet',
             intensity: 'burst',
           });
-        }
 
-        intermediateState = {
-          ...intermediateState,
-          thrombinMeter: 100,
-          currentMessage: 'Prothrombinase complete! Thrombin burst achieved.',
-        };
+          // === Unlock Stabilization phase ===
+          // Unlock clot-zone slots
+          const unlockedSlots = intermediateState.slots.map((slot) =>
+            slot.surface === 'clot-zone' ? { ...slot, isLocked: false } : slot
+          );
+
+          // Add Fibrinogen and FXIII to available factors
+          const updatedFactors = [...intermediateState.availableFactors, 'Fibrinogen', 'FXIII'];
+
+          // Emit PHASE_UNLOCKED for stabilization
+          events.push({
+            type: 'PHASE_UNLOCKED',
+            phase: 'stabilization',
+            trigger: 'prothrombinase_complete',
+          });
+
+          // Emit PANEL_STATE_CHANGED for clot-zone
+          events.push({
+            type: 'PANEL_STATE_CHANGED',
+            surface: 'clot-zone',
+            state: 'active',
+          });
+
+          intermediateState = {
+            ...intermediateState,
+            phase: 'stabilization',
+            thrombinMeter: 100,
+            slots: unlockedSlots,
+            availableFactors: updatedFactors,
+            currentMessage: 'Thrombin burst! Place Fibrinogen in Clot Zone to form fibrin mesh.',
+          };
+        } else {
+          intermediateState = {
+            ...intermediateState,
+            thrombinMeter: 100,
+            currentMessage: 'Prothrombinase enzyme placed. Thrombin burst achieved.',
+          };
+        }
       } else {
         const factor = getFactorDefinition(factorId);
         intermediateState = {
@@ -589,36 +724,8 @@ function gameReducer(state: GameState, action: GameAction): ReducerResult {
         };
       }
 
-      // Check victory condition
-      if (checkVictoryCondition(intermediateState)) {
-        // Emit VICTORY event
-        const complexesBuilt: string[] = [];
-        if (isTenaseComplete(intermediateState)) {
-          complexesBuilt.push('tenase');
-        }
-        // Check if prothrombinase is complete
-        const prothEnzyme = newComplexSlots.find((s) => s.id === 'prothrombinase-enzyme');
-        const prothCofactor = newComplexSlots.find((s) => s.id === 'prothrombinase-cofactor');
-        if (prothEnzyme?.placedFactorId && prothCofactor?.placedFactorId) {
-          complexesBuilt.push('prothrombinase');
-        }
-
-        events.push({
-          type: 'VICTORY',
-          finalThrombin: 100,
-          complexesBuilt,
-        });
-
-        return {
-          state: {
-            ...intermediateState,
-            phase: 'complete',
-            currentMessage: 'Coagulation cascade complete! Maximum thrombin generation achieved.',
-          },
-          events,
-        };
-      }
-
+      // Victory check moved to ATTEMPT_PLACE (stabilization completion)
+      // Prothrombinase completion now transitions to Stabilization phase
       return { state: intermediateState, events };
     }
 
