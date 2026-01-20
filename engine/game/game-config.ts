@@ -18,7 +18,7 @@ export interface ComplexSlotPosition {
 // =============================================================================
 
 export const GAME_CANVAS = {
-  width: 1000,
+  width: 1200,
   height: 700,
 } as const;
 
@@ -42,8 +42,8 @@ export const LAYOUT = {
     y: 560,
     height: 140,
   },
-  // Panel widths (3 equal panels)
-  panelWidth: Math.floor(GAME_CANVAS.width / 3),
+  // Panel widths (4 equal panels)
+  panelWidth: Math.floor(GAME_CANVAS.width / 4),
 } as const;
 
 // =============================================================================
@@ -96,6 +96,17 @@ export const PANEL_CONFIGS: PanelConfig[] = [
     lockedMessage: null,
     isComingSoon: false,
   },
+  {
+    surface: 'clot-zone',
+    title: 'CLOT ZONE',
+    subtitle: 'Stabilization',
+    x: LAYOUT.panelWidth * 3,
+    y: LAYOUT.panels.y,
+    width: LAYOUT.panelWidth,
+    height: LAYOUT.panels.height,
+    lockedMessage: 'LOCKED: Complete Propagation',
+    isComingSoon: false,
+  },
 ];
 
 // =============================================================================
@@ -146,6 +157,43 @@ export function createInitialSlots(): Slot[] {
       id: 'platelet-fviii',
       surface: 'platelet',
       acceptsFactorId: 'FVIII',
+      isLocked: true,
+      placedFactorId: null,
+      isActive: false,
+      transferredToCirculation: false,
+    },
+    // Clot Zone slots (Stabilization) - locked until propagation complete
+    {
+      id: 'clot-zone-fibrin-1',
+      surface: 'clot-zone',
+      acceptsFactorId: 'Fibrinogen',
+      isLocked: true,
+      placedFactorId: null,
+      isActive: false,
+      transferredToCirculation: false,
+    },
+    {
+      id: 'clot-zone-fibrin-2',
+      surface: 'clot-zone',
+      acceptsFactorId: 'Fibrinogen',
+      isLocked: true,
+      placedFactorId: null,
+      isActive: false,
+      transferredToCirculation: false,
+    },
+    {
+      id: 'clot-zone-fibrin-3',
+      surface: 'clot-zone',
+      acceptsFactorId: 'Fibrinogen',
+      isLocked: true,
+      placedFactorId: null,
+      isActive: false,
+      transferredToCirculation: false,
+    },
+    {
+      id: 'clot-zone-fxiii',
+      surface: 'clot-zone',
+      acceptsFactorId: 'FXIII',
       isLocked: true,
       placedFactorId: null,
       isActive: false,
@@ -235,6 +283,11 @@ export const SLOT_POSITIONS: Record<string, SlotPosition> = {
   'tf-cell-fii': { slotId: 'tf-cell-fii', x: 100, y: 280, width: 100, height: 70 },
   'platelet-fv': { slotId: 'platelet-fv', x: 60, y: 180, width: 120, height: 80 },
   'platelet-fviii': { slotId: 'platelet-fviii', x: 60, y: 280, width: 140, height: 80 },
+  // Clot Zone slots (Stabilization)
+  'clot-zone-fibrin-1': { slotId: 'clot-zone-fibrin-1', x: 30, y: 100, width: 100, height: 70 },
+  'clot-zone-fibrin-2': { slotId: 'clot-zone-fibrin-2', x: 170, y: 100, width: 100, height: 70 },
+  'clot-zone-fibrin-3': { slotId: 'clot-zone-fibrin-3', x: 100, y: 200, width: 100, height: 70 },
+  'clot-zone-fxiii': { slotId: 'clot-zone-fxiii', x: 100, y: 320, width: 100, height: 70 },
 } as const;
 
 // =============================================================================
@@ -266,6 +319,10 @@ export const COLORS = {
   thrombinMeterBackground: '#1E293B',
   successMessage: '#22C55E',
   errorMessage: '#EF4444',
+  clotIntegrityMeterFill: '#F97316', // orange
+  clotIntegrityMeterBackground: '#1E293B',
+  fibrinStrandColor: '#9CA3AF', // gray-400 - before cross-linking
+  fibrinStrandCrossLinked: '#FBBF24', // amber - after FXIIIa
 } as const;
 
 // =============================================================================
