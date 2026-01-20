@@ -6,6 +6,7 @@ import { GAME_CANVAS, PANEL_CONFIGS, COLORS } from '@/engine/game/game-config';
 import { GameHUD } from './GameHUD';
 import { SurfacePanel } from './SurfacePanel';
 import { FactorPalette } from './FactorPalette';
+import { CirculationTray } from './CirculationTray';
 
 interface GameCanvasProps {
   gameState: GameState;
@@ -56,6 +57,14 @@ export function GameCanvas({
       <FactorPalette
         availableFactors={gameState.availableFactors}
         selectedFactorId={gameState.selectedFactorId}
+        onFactorClick={onFactorSelect}
+      />
+
+      {/* Circulation Tray */}
+      <CirculationTray
+        circulationFactors={gameState.circulationFactors}
+        selectedFactorId={gameState.selectedFactorId}
+        gameState={gameState}
         onFactorClick={onFactorSelect}
       />
     </div>

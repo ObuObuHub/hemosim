@@ -68,12 +68,12 @@ function isFactorSelectable(state: GameState, factorId: string): boolean {
 function autoFillCofactorSlots(complexSlots: ComplexSlot[]): ComplexSlot[] {
   return complexSlots.map((slot) => {
     if (slot.isAutoFilled && slot.placedFactorId === null) {
-      // Auto-fill cofactor slots
+      // Auto-fill cofactor slots with the factor ID (not active label)
       if (slot.id === 'tenase-cofactor') {
-        return { ...slot, placedFactorId: 'FVIIIa' };
+        return { ...slot, placedFactorId: 'FVIII' };
       }
       if (slot.id === 'prothrombinase-cofactor') {
-        return { ...slot, placedFactorId: 'FVa' };
+        return { ...slot, placedFactorId: 'FV' };
       }
     }
     return slot;
