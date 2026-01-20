@@ -3,7 +3,7 @@
 
 import type { Slot } from '@/types/game';
 import type { PanelConfig } from '@/engine/game/game-config';
-import { COLORS, SLOT_POSITIONS, PREPLACED_POSITIONS, LAYOUT } from '@/engine/game/game-config';
+import { COLORS, SLOT_POSITIONS, PREPLACED_POSITIONS } from '@/engine/game/game-config';
 import { PREPLACED_ELEMENTS, getFactorDefinition } from '@/engine/game/factor-definitions';
 import { getValidSlotsForFactor } from '@/engine/game/validation-rules';
 import { FactorToken } from './FactorToken';
@@ -118,8 +118,8 @@ export function SurfacePanel({
               title={element.tooltip}
               style={{
                 position: 'absolute',
-                left: config.x + pos.x,
-                top: LAYOUT.panels.y + pos.y,
+                left: pos.x,
+                top: pos.y,
                 width: pos.width,
                 height: pos.height,
                 backgroundColor: element.isDim ? `${COLORS.textDim}30` : '#F59E0B40',
@@ -156,8 +156,8 @@ export function SurfacePanel({
               onClick={() => !slot.isLocked && onSlotClick(slot.id)}
               style={{
                 position: 'absolute',
-                left: config.x + pos.x,
-                top: LAYOUT.panels.y + pos.y,
+                left: pos.x,
+                top: pos.y,
                 width: pos.width,
                 height: pos.height,
                 backgroundColor: slot.isLocked
