@@ -1,11 +1,12 @@
 // app/game/page.tsx
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ReactElement } from 'react';
 import { GAME_CANVAS } from '@/engine/game/game-config';
 import { useGameState } from '@/hooks/useGameState';
+import { useAnimationController } from '@/hooks/useAnimationController';
 import { GameCanvas } from '@/components/game/GameCanvas';
 import { GameControls } from '@/components/game/GameControls';
 import { GameCompleteModal } from '@/components/game/GameCompleteModal';
@@ -16,10 +17,22 @@ import {
 
 export default function GamePage(): ReactElement {
   const router = useRouter();
-  const { state, selectFactor, deselectFactor, attemptPlace, attemptComplexPlace, resetGame } = useGameState();
+  const { state, selectFactor, deselectFactor, attemptPlace, attemptComplexPlace, resetGame, subscribeToEvents } = useGameState();
+
+  // Animation controller for smooth visual transitions
+  // Note: isProcessing available for future UI indication
+  const { visualState, enqueue } = useAnimationController(state);
 
   // Create animation target registry for component position tracking
   const animationRegistry = useAnimationTargetRegistry();
+
+  // Subscribe to game events and forward to animation controller
+  useEffect(() => {
+    const unsubscribe = subscribeToEvents((events) => {
+      enqueue(events);
+    });
+    return unsubscribe;
+  }, [subscribeToEvents, enqueue]);
 
   const handleMainMenu = useCallback((): void => {
     router.push('/');
@@ -48,6 +61,7 @@ export default function GamePage(): ReactElement {
           {/* Main Game Canvas */}
           <GameCanvas
             gameState={state}
+            visualState={visualState}
             onFactorSelect={selectFactor}
             onSlotClick={attemptPlace}
             onComplexSlotClick={attemptComplexPlace}
