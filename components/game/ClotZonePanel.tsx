@@ -8,6 +8,7 @@ import { COLORS, SLOT_POSITIONS } from '@/engine/game/game-config';
 import { getFactorDefinition } from '@/engine/game/factor-definitions';
 import { getValidSlotsForFactor } from '@/engine/game/validation-rules';
 import { FactorToken } from './FactorToken';
+import { MembraneBackground } from './MembraneBackground';
 import { useAnimationTarget } from '@/hooks/useAnimationTarget';
 import type { GameState } from '@/types/game';
 
@@ -322,8 +323,16 @@ export function ClotZonePanel({
         flexDirection: 'column',
         alignItems: 'center',
         padding: 16,
+        overflow: 'hidden',
       }}
     >
+      {/* Membrane Background - fibrin mesh texture */}
+      <MembraneBackground
+        surfaceType="clot-zone"
+        width={config.width}
+        height={config.height}
+      />
+
       {/* Panel Title */}
       <div
         style={{
@@ -332,6 +341,8 @@ export function ClotZonePanel({
           color: COLORS.textPrimary,
           textAlign: 'center',
           marginBottom: 4,
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         {config.title}
@@ -341,6 +352,8 @@ export function ClotZonePanel({
           fontSize: 11,
           color: COLORS.textSecondary,
           marginBottom: 8,
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         {config.subtitle}
@@ -358,6 +371,8 @@ export function ClotZonePanel({
             borderRadius: 4,
             marginBottom: 12,
             letterSpacing: '0.5px',
+            position: 'relative',
+            zIndex: 1,
           }}
         >
           {panelStatus.label}
@@ -377,6 +392,7 @@ export function ClotZonePanel({
             color: COLORS.textDim,
             textAlign: 'center',
             whiteSpace: 'nowrap',
+            zIndex: 2,
           }}
         >
           {config.lockedMessage}
@@ -419,6 +435,7 @@ export function ClotZonePanel({
             padding: '4px 8px',
             backgroundColor: `${COLORS.fibrinStrandCrossLinked}20`,
             borderRadius: 4,
+            zIndex: 3,
           }}
         >
           CROSS-LINKED

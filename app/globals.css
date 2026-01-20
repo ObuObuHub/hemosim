@@ -786,3 +786,174 @@ input[type="number"] {
     max-height: 100%;
   }
 }
+
+/* =============================================================================
+   MEMBRANE THEMING ANIMATIONS
+   Educational: Coagulation happens on cell surfaces, not randomly in blood
+   ============================================================================= */
+
+/* Wobble animation for resting platelet (fluid membrane) */
+@keyframes membrane-wobble {
+  0%, 100% {
+    transform: scaleY(1) scaleX(1);
+  }
+  25% {
+    transform: scaleY(1.01) scaleX(0.99);
+  }
+  50% {
+    transform: scaleY(0.99) scaleX(1.01);
+  }
+  75% {
+    transform: scaleY(1.01) scaleX(0.99);
+  }
+}
+
+.membrane-wobble {
+  animation: membrane-wobble 4s ease-in-out infinite;
+  transform-origin: center center;
+}
+
+/* Pulse animation for TF-cell (static with occasional pulse) */
+@keyframes tf-pulse {
+  0%, 90%, 100% {
+    opacity: 1;
+  }
+  95% {
+    opacity: 0.85;
+  }
+}
+
+.membrane-tf-cell {
+  animation: tf-pulse 5s ease-in-out infinite;
+}
+
+/* TF anchor point pulse */
+@keyframes tf-anchor-pulse {
+  0%, 100% {
+    r: 15;
+    opacity: 0.3;
+  }
+  50% {
+    r: 20;
+    opacity: 0.5;
+  }
+}
+
+.tf-anchor-pulse {
+  animation: tf-anchor-pulse 2s ease-in-out infinite;
+}
+
+/* Scramblase flip animation (PS exposure during platelet activation) */
+@keyframes scramblase-flip {
+  0% {
+    transform: perspective(400px) rotateX(0deg) scaleY(1);
+    filter: hue-rotate(0deg);
+  }
+  25% {
+    transform: perspective(400px) rotateX(90deg) scaleY(0.8);
+    filter: hue-rotate(120deg);
+  }
+  50% {
+    transform: perspective(400px) rotateX(180deg) scaleY(0.1);
+    filter: hue-rotate(240deg);
+  }
+  75% {
+    transform: perspective(400px) rotateX(270deg) scaleY(0.8);
+    filter: hue-rotate(300deg);
+  }
+  100% {
+    transform: perspective(400px) rotateX(360deg) scaleY(1);
+    filter: hue-rotate(0deg);
+  }
+}
+
+.membrane-scramblase {
+  animation: scramblase-flip 1.5s ease-in-out forwards;
+  transform-style: preserve-3d;
+}
+
+.membrane-scramblase-flip {
+  animation: scramblase-flip 1.5s ease-in-out;
+}
+
+/* Electric charge arc animation for activated platelet */
+@keyframes charge-arc {
+  0%, 100% {
+    stroke-dasharray: 0 100;
+    opacity: 0.3;
+  }
+  50% {
+    stroke-dasharray: 50 50;
+    opacity: 0.8;
+  }
+}
+
+.charge-arc {
+  animation: charge-arc 2s ease-in-out infinite;
+}
+
+/* Spiky edge pulse for activated platelet */
+@keyframes spike-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.9;
+  }
+}
+
+.membrane-activated-platelet polygon {
+  animation: spike-pulse 1.5s ease-in-out infinite;
+  transform-origin: center center;
+}
+
+/* Fibrin strand appearance animation for clot zone */
+@keyframes fibrin-strand-appear {
+  0% {
+    stroke-dasharray: 0 1000;
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    stroke-dasharray: 1000 0;
+    opacity: 1;
+  }
+}
+
+.fibrin-strand-new {
+  animation: fibrin-strand-appear 0.8s ease-out forwards;
+}
+
+/* Clot zone mesh shimmer */
+@keyframes mesh-shimmer {
+  0%, 100% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+
+.membrane-clot-zone pattern line {
+  animation: mesh-shimmer 3s ease-in-out infinite;
+}
+
+/* Glow pulse for clot zone corner hints */
+@keyframes clot-glow-pulse {
+  0%, 100% {
+    opacity: 0.1;
+    r: 30;
+  }
+  50% {
+    opacity: 0.2;
+    r: 35;
+  }
+}
+
+.membrane-clot-zone circle {
+  animation: clot-glow-pulse 2.5s ease-in-out infinite;
+}

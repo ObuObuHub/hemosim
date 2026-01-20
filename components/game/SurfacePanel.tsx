@@ -1,13 +1,14 @@
 // components/game/SurfacePanel.tsx
 'use client';
 
-import { useRef } from 'react';
-import type { Slot, ComplexSlot } from '@/types/game';
+import { useRef, useState, useEffect } from 'react';
+import type { Slot, ComplexSlot, GamePhase } from '@/types/game';
 import type { PanelConfig } from '@/engine/game/game-config';
 import { COLORS, SLOT_POSITIONS, PREPLACED_POSITIONS, COMPLEX_SLOT_POSITIONS, COMPLEX_LABELS } from '@/engine/game/game-config';
 import { PREPLACED_ELEMENTS, getFactorDefinition } from '@/engine/game/factor-definitions';
 import { getValidSlotsForFactor, isTenaseComplete } from '@/engine/game/validation-rules';
 import { FactorToken } from './FactorToken';
+import { MembraneBackground } from './MembraneBackground';
 import { useAnimationTarget } from '@/hooks/useAnimationTarget';
 import type { GameState } from '@/types/game';
 
@@ -297,6 +298,32 @@ export function SurfacePanel({
     ? getValidSlotsForFactor(gameState, gameState.selectedFactorId)
     : [];
 
+  // Track scramblase animation for activated platelet
+  const [prevPhase, setPrevPhase] = useState<GamePhase>(gameState.phase);
+  const [isActivating, setIsActivating] = useState(false);
+
+  useEffect(() => {
+    // Trigger scramblase animation when transitioning to propagation phase
+    if (
+      config.surface === 'activated-platelet' &&
+      prevPhase !== 'propagation' &&
+      gameState.phase === 'propagation'
+    ) {
+      setIsActivating(true);
+      // Reset after animation completes
+      const timer = setTimeout(() => {
+        setIsActivating(false);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+    setPrevPhase(gameState.phase);
+  }, [gameState.phase, prevPhase, config.surface]);
+
+  // Determine membrane surface type for background
+  const membraneSurfaceType = config.surface === 'activated-platelet' && isActivating
+    ? 'activated-platelet'
+    : config.surface;
+
   return (
     <div
       ref={panelRef}
@@ -312,8 +339,18 @@ export function SurfacePanel({
         flexDirection: 'column',
         alignItems: 'center',
         padding: 16,
+        overflow: 'hidden',
       }}
     >
+      {/* Membrane Background - renders biological texture for each surface */}
+      {!config.isComingSoon && (
+        <MembraneBackground
+          surfaceType={membraneSurfaceType}
+          isActivating={isActivating}
+          width={config.width}
+          height={config.height}
+        />
+      )}
       {/* Panel Title */}
       <div
         style={{
@@ -322,6 +359,8 @@ export function SurfacePanel({
           color: COLORS.textPrimary,
           textAlign: 'center',
           marginBottom: 4,
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         {config.title}
@@ -331,6 +370,8 @@ export function SurfacePanel({
           fontSize: 11,
           color: COLORS.textSecondary,
           marginBottom: 8,
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         {config.subtitle}
@@ -348,6 +389,8 @@ export function SurfacePanel({
             borderRadius: 4,
             marginBottom: 12,
             letterSpacing: '0.5px',
+            position: 'relative',
+            zIndex: 1,
           }}
         >
           {panelStatus.label}
@@ -366,6 +409,7 @@ export function SurfacePanel({
             fontWeight: 600,
             color: COLORS.textDim,
             textAlign: 'center',
+            zIndex: 2,
           }}
         >
           COMING IN v2
@@ -385,6 +429,7 @@ export function SurfacePanel({
             color: COLORS.textDim,
             textAlign: 'center',
             whiteSpace: 'nowrap',
+            zIndex: 2,
           }}
         >
           {config.lockedMessage}
@@ -428,6 +473,7 @@ export function SurfacePanel({
               fontSize: 12,
               fontWeight: 700,
               color: COLORS.textSecondary,
+              zIndex: 2,
             }}
           >
             {COMPLEX_LABELS.tenase.name}
@@ -442,6 +488,7 @@ export function SurfacePanel({
               fontSize: 12,
               fontWeight: 700,
               color: COLORS.textSecondary,
+              zIndex: 2,
             }}
           >
             {COMPLEX_LABELS.prothrombinase.name}
