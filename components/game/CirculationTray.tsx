@@ -45,16 +45,18 @@ export function CirculationTray({
     <div
       style={{
         position: 'absolute',
-        top: 80,
-        right: 16,
+        bottom: 160,
+        right: 20,
         display: 'flex',
         flexDirection: 'column',
         gap: 12,
         backgroundColor: COLORS.panelBackground,
         border: `2px solid ${COLORS.panelBorder}`,
-        borderRadius: 8,
+        borderRadius: 12,
         padding: 16,
-        minWidth: 180,
+        minWidth: 140,
+        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+        zIndex: 10,
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
