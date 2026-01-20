@@ -1,5 +1,17 @@
 // engine/game/game-config.ts
-import type { Slot, Surface } from '@/types/game';
+import type { Slot, Surface, ComplexSlot } from '@/types/game';
+
+// =============================================================================
+// COMPLEX SLOT TYPES
+// =============================================================================
+
+export interface ComplexSlotPosition {
+  slotId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 // =============================================================================
 // CANVAS DIMENSIONS
@@ -82,7 +94,7 @@ export const PANEL_CONFIGS: PanelConfig[] = [
     width: LAYOUT.panelWidth,
     height: LAYOUT.panels.height,
     lockedMessage: null,
-    isComingSoon: true, // v2
+    isComingSoon: false,
   },
 ];
 
@@ -97,6 +109,14 @@ export function createInitialSlots(): Slot[] {
       id: 'tf-cell-fx',
       surface: 'tf-cell',
       acceptsFactorId: 'FX',
+      isLocked: false,
+      placedFactorId: null,
+      isActive: false,
+    },
+    {
+      id: 'tf-cell-fix',
+      surface: 'tf-cell',
+      acceptsFactorId: 'FIX',
       isLocked: false,
       placedFactorId: null,
       isActive: false,
@@ -130,6 +150,69 @@ export function createInitialSlots(): Slot[] {
 }
 
 // =============================================================================
+// INITIAL COMPLEX SLOTS (Activated Platelet - Propagation)
+// =============================================================================
+
+export function createInitialComplexSlots(): ComplexSlot[] {
+  return [
+    // Tenase complex
+    {
+      id: 'tenase-enzyme',
+      complexType: 'tenase',
+      role: 'enzyme',
+      acceptsFactorId: 'FIXa',
+      placedFactorId: null,
+      isAutoFilled: false,
+    },
+    {
+      id: 'tenase-cofactor',
+      complexType: 'tenase',
+      role: 'cofactor',
+      acceptsFactorId: 'FVIIIa',
+      placedFactorId: null,
+      isAutoFilled: true,
+    },
+    // Prothrombinase complex
+    {
+      id: 'prothrombinase-enzyme',
+      complexType: 'prothrombinase',
+      role: 'enzyme',
+      acceptsFactorId: 'FXa-tenase',
+      placedFactorId: null,
+      isAutoFilled: false,
+    },
+    {
+      id: 'prothrombinase-cofactor',
+      complexType: 'prothrombinase',
+      role: 'cofactor',
+      acceptsFactorId: 'FVa',
+      placedFactorId: null,
+      isAutoFilled: true,
+    },
+  ];
+}
+
+// =============================================================================
+// COMPLEX SLOT POSITIONS (Activated Platelet panel)
+// =============================================================================
+
+export const COMPLEX_SLOT_POSITIONS: Record<string, ComplexSlotPosition> = {
+  'tenase-cofactor': { slotId: 'tenase-cofactor', x: 30, y: 100, width: 100, height: 60 },
+  'tenase-enzyme': { slotId: 'tenase-enzyme', x: 140, y: 100, width: 100, height: 60 },
+  'prothrombinase-cofactor': { slotId: 'prothrombinase-cofactor', x: 30, y: 220, width: 100, height: 60 },
+  'prothrombinase-enzyme': { slotId: 'prothrombinase-enzyme', x: 140, y: 220, width: 100, height: 60 },
+} as const;
+
+// =============================================================================
+// COMPLEX LABELS
+// =============================================================================
+
+export const COMPLEX_LABELS = {
+  tenase: { name: 'TENASE', output: 'FXa' },
+  prothrombinase: { name: 'PROTHROMBINASE', output: 'Thrombin Burst' },
+} as const;
+
+// =============================================================================
 // SLOT POSITIONS WITHIN PANELS
 // =============================================================================
 
@@ -142,8 +225,9 @@ export interface SlotPosition {
 }
 
 export const SLOT_POSITIONS: Record<string, SlotPosition> = {
-  'tf-cell-fx': { slotId: 'tf-cell-fx', x: 40, y: 200, width: 120, height: 80 },
-  'tf-cell-fii': { slotId: 'tf-cell-fii', x: 180, y: 200, width: 120, height: 80 },
+  'tf-cell-fx': { slotId: 'tf-cell-fx', x: 40, y: 180, width: 100, height: 70 },
+  'tf-cell-fix': { slotId: 'tf-cell-fix', x: 160, y: 180, width: 100, height: 70 },
+  'tf-cell-fii': { slotId: 'tf-cell-fii', x: 100, y: 280, width: 100, height: 70 },
   'platelet-fv': { slotId: 'platelet-fv', x: 60, y: 180, width: 120, height: 80 },
   'platelet-fviii': { slotId: 'platelet-fviii', x: 60, y: 280, width: 140, height: 80 },
 } as const;
