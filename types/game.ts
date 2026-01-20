@@ -1,6 +1,8 @@
 // types/game.ts
 'use strict';
 
+import type { GameEvent } from './game-events';
+
 // =============================================================================
 // SURFACE & CATEGORY TYPES
 // =============================================================================
@@ -40,6 +42,19 @@ export interface Slot {
   placedFactorId: string | null;
   isActive: boolean; // has factor been converted to active form
   transferredToCirculation: boolean; // factor moved to circulation (e.g., FIXa)
+}
+
+/**
+ * Runtime state for a slot - used by animation system
+ */
+export interface SlotState {
+  slotId: string;
+  acceptsFactorIds: string[];
+  placedFactorId: string | null;
+  isLocked: boolean;
+  isActive: boolean;
+  isHighlighted: boolean;
+  isError: boolean;
 }
 
 // =============================================================================
@@ -107,4 +122,144 @@ export type GameAction =
 export interface ValidationResult {
   isValid: boolean;
   errorMessage: string | null;
+}
+
+// =============================================================================
+// REDUCER RESULT (State + Events)
+// =============================================================================
+
+/**
+ * Return type for game reducer - includes both new state and emitted events
+ */
+export interface ReducerResult {
+  state: GameState;
+  events: GameEvent[];
+}
+
+// =============================================================================
+// COMPLEX STATE
+// =============================================================================
+
+/**
+ * Runtime state for a complex (tenase or prothrombinase)
+ */
+export interface ComplexState {
+  complexType: ComplexType;
+  enzymeSlotId: string;
+  cofactorSlotId: string;
+  enzymeFactorId: string | null;
+  cofactorFactorId: string | null;
+  isComplete: boolean;
+  efficiency: number; // 0-100, affects output rate
+}
+
+// =============================================================================
+// INHIBITOR STATE (Future use)
+// =============================================================================
+
+export type InhibitorType =
+  | 'antithrombin'
+  | 'protein_c'
+  | 'protein_s'
+  | 'tfpi'
+  | 'plasmin';
+
+/**
+ * State for natural anticoagulant inhibitors (future expansion)
+ */
+export interface InhibitorState {
+  type: InhibitorType;
+  isActive: boolean;
+  targetFactorIds: string[];
+  inhibitionStrength: number; // 0-100
+}
+
+// =============================================================================
+// ANIMATION STATE
+// =============================================================================
+
+/**
+ * Visual state for animations - separate from game logic state
+ */
+export interface AnimationState {
+  /** Currently animating factor movement */
+  movingFactor: {
+    factorId: string;
+    fromPosition: { x: number; y: number };
+    toPosition: { x: number; y: number };
+    progress: number; // 0-1
+  } | null;
+
+  /** Slots that should pulse/highlight */
+  highlightedSlots: string[];
+
+  /** Active particle effects */
+  activeEffects: Array<{
+    id: string;
+    type: 'sparkle' | 'pulse' | 'glow' | 'shake';
+    targetId: string;
+    startTime: number;
+    duration: number;
+  }>;
+
+  /** Arrows currently pulsing */
+  pulsingArrows: Array<{
+    fromNode: string;
+    toNode: string;
+    style: 'solid' | 'dotted';
+    label?: string;
+  }>;
+
+  /** Currently playing toast/message */
+  activeToast: {
+    message: string;
+    type: 'success' | 'error' | 'info' | 'phase';
+    expiresAt: number;
+  } | null;
+}
+
+// =============================================================================
+// VISUAL STATE (Interpolated values for smooth animations)
+// =============================================================================
+
+/**
+ * Interpolated meter values for smooth visual transitions
+ */
+export interface MeterVisualState {
+  current: number; // interpolated display value
+  target: number; // actual game state value
+  velocity: number; // for spring animations
+}
+
+/**
+ * Complete visual state for rendering - combines game state with animations
+ */
+export interface VisualState {
+  /** Interpolated meter values for smooth animations */
+  thrombinMeter: MeterVisualState;
+  fibrinMeter: MeterVisualState;
+  clotIntegrityMeter: MeterVisualState;
+
+  /** Surface panel states */
+  panelStates: Record<
+    Surface,
+    {
+      state: 'locked' | 'active' | 'completed';
+      opacity: number; // for fade transitions
+    }
+  >;
+
+  /** Factor positions (for drag/drop animations) */
+  factorPositions: Record<
+    string,
+    {
+      x: number;
+      y: number;
+      scale: number;
+      opacity: number;
+    }
+  >;
+
+  /** Animation controller state */
+  animation: AnimationState;
 }
