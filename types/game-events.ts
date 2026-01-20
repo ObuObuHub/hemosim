@@ -120,6 +120,44 @@ export interface ArrowPulseEvent {
 }
 
 // =============================================================================
+// STABILIZATION PHASE EVENTS
+// =============================================================================
+
+export interface FibrinogenDockedEvent {
+  type: 'FIBRINOGEN_DOCKED';
+  slotId: string;
+}
+
+export interface FibrinogenConvertedEvent {
+  type: 'FIBRINOGEN_CONVERTED';
+  slotId: string;
+  integrityDelta: number; // +25
+  totalIntegrity: number;
+}
+
+export interface FXIIIDockedEvent {
+  type: 'FXIII_DOCKED';
+  slotId: string;
+}
+
+export interface FXIIIActivatedEvent {
+  type: 'FXIII_ACTIVATED';
+  slotId: string;
+  integrityDelta: number; // +25
+  totalIntegrity: number;
+}
+
+export interface CrossLinkFormedEvent {
+  type: 'CROSS_LINK_FORMED';
+  fibrinSlotIds: string[];
+}
+
+export interface ClotStabilizedEvent {
+  type: 'CLOT_STABILIZED';
+  finalIntegrity: number; // 100
+}
+
+// =============================================================================
 // UNION TYPE
 // =============================================================================
 
@@ -128,6 +166,7 @@ export type GameEvent =
   | PhaseUnlockedEvent
   | VictoryEvent
   | GameOverEvent
+  | ClotStabilizedEvent
   // Standard priority
   | FactorSelectedEvent
   | FactorPlacedEvent
@@ -138,9 +177,14 @@ export type GameEvent =
   | ComplexOutputEvent
   | SignalFlowEvent
   | PanelStateChangedEvent
+  | FibrinogenConvertedEvent
+  | FXIIIActivatedEvent
+  | CrossLinkFormedEvent
   // Low priority
   | MeterChangedEvent
-  | ArrowPulseEvent;
+  | ArrowPulseEvent
+  | FibrinogenDockedEvent
+  | FXIIIDockedEvent;
 
 // =============================================================================
 // EVENT UTILITIES
@@ -154,6 +198,8 @@ export function getEventPriority(event: GameEvent): EventPriority {
     case 'PHASE_UNLOCKED':
     case 'VICTORY':
     case 'GAME_OVER':
+    case 'CLOT_STABILIZED':
+    case 'FXIII_ACTIVATED':
       return 'critical';
 
     case 'FACTOR_SELECTED':
@@ -165,10 +211,14 @@ export function getEventPriority(event: GameEvent): EventPriority {
     case 'COMPLEX_OUTPUT':
     case 'SIGNAL_FLOW':
     case 'PANEL_STATE_CHANGED':
+    case 'FIBRINOGEN_CONVERTED':
+    case 'CROSS_LINK_FORMED':
       return 'standard';
 
     case 'METER_CHANGED':
     case 'ARROW_PULSE':
+    case 'FIBRINOGEN_DOCKED':
+    case 'FXIII_DOCKED':
       return 'low';
   }
 }
@@ -179,7 +229,7 @@ export function getEventPriority(event: GameEvent): EventPriority {
 
 export function isCriticalEvent(
   event: GameEvent
-): event is PhaseUnlockedEvent | VictoryEvent | GameOverEvent {
+): event is PhaseUnlockedEvent | VictoryEvent | GameOverEvent | ClotStabilizedEvent | FXIIIActivatedEvent {
   return getEventPriority(event) === 'critical';
 }
 
@@ -189,6 +239,6 @@ export function isStandardEvent(event: GameEvent): boolean {
 
 export function isLowPriorityEvent(
   event: GameEvent
-): event is MeterChangedEvent | ArrowPulseEvent {
+): event is MeterChangedEvent | ArrowPulseEvent | FibrinogenDockedEvent | FXIIIDockedEvent {
   return getEventPriority(event) === 'low';
 }

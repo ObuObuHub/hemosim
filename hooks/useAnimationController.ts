@@ -63,6 +63,7 @@ function createInitialVisualState(gameState: GameState): VisualState {
       'tf-cell': { state: 'active', opacity: 1 },
       platelet: { state: 'locked', opacity: 0.5 },
       'activated-platelet': { state: 'locked', opacity: 0.3 },
+      'clot-zone': { state: 'locked', opacity: 0.3 },
     },
     factorPositions: {},
     animation: initialAnimationState,
@@ -405,12 +406,20 @@ export function useAnimationController(gameState: GameState): AnimationControlle
           newPanelStates.platelet = { state: 'locked', opacity: 0.5 };
         }
 
-        if (currentGameState.phase === 'propagation') {
+        if (currentGameState.phase === 'propagation' || currentGameState.phase === 'stabilization') {
           newPanelStates['activated-platelet'] = { state: 'active', opacity: 1 };
         } else if (currentGameState.phase === 'complete') {
           newPanelStates['activated-platelet'] = { state: 'completed', opacity: 1 };
         } else {
           newPanelStates['activated-platelet'] = { state: 'locked', opacity: 0.3 };
+        }
+
+        if (currentGameState.phase === 'stabilization') {
+          newPanelStates['clot-zone'] = { state: 'active', opacity: 1 };
+        } else if (currentGameState.phase === 'complete') {
+          newPanelStates['clot-zone'] = { state: 'completed', opacity: 1 };
+        } else {
+          newPanelStates['clot-zone'] = { state: 'locked', opacity: 0.3 };
         }
 
         // Check if any meters need interpolation
@@ -434,7 +443,8 @@ export function useAnimationController(gameState: GameState): AnimationControlle
         const panelStatesChanged =
           prev.panelStates['tf-cell'].state !== newPanelStates['tf-cell'].state ||
           prev.panelStates.platelet.state !== newPanelStates.platelet.state ||
-          prev.panelStates['activated-platelet'].state !== newPanelStates['activated-platelet'].state;
+          prev.panelStates['activated-platelet'].state !== newPanelStates['activated-platelet'].state ||
+          prev.panelStates['clot-zone'].state !== newPanelStates['clot-zone'].state;
 
         // Skip update if nothing needs interpolation and panels unchanged
         if (!thrombinNeedsUpdate && !fibrinNeedsUpdate && !clotNeedsUpdate && !panelStatesChanged) {

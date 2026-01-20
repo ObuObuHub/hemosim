@@ -7,7 +7,7 @@ import type { GameEvent } from './game-events';
 // SURFACE & CATEGORY TYPES
 // =============================================================================
 
-export type Surface = 'tf-cell' | 'platelet' | 'activated-platelet';
+export type Surface = 'tf-cell' | 'platelet' | 'activated-platelet' | 'clot-zone';
 
 export type FactorCategory = 'zymogen' | 'procofactor' | 'enzyme' | 'cofactor';
 
@@ -86,7 +86,7 @@ export interface PreplacedElement {
 // GAME PHASE
 // =============================================================================
 
-export type GamePhase = 'initiation' | 'amplification' | 'propagation' | 'complete';
+export type GamePhase = 'initiation' | 'amplification' | 'propagation' | 'stabilization' | 'complete';
 
 // =============================================================================
 // GAME STATE
@@ -95,6 +95,7 @@ export type GamePhase = 'initiation' | 'amplification' | 'propagation' | 'comple
 export interface GameState {
   phase: GamePhase;
   thrombinMeter: number; // 0-100, threshold at 30
+  clotIntegrity: number; // 0-100, stabilization phase meter
   slots: Slot[];
   complexSlots: ComplexSlot[]; // activated platelet complex slots (propagation)
   circulationFactors: string[]; // factors "in circulation" (e.g., FIXa held here)

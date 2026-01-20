@@ -94,6 +94,7 @@ function createInitialState(): GameState {
   return {
     phase: 'initiation',
     thrombinMeter: 0,
+    clotIntegrity: 0,
     slots: createInitialSlots(),
     complexSlots: createInitialComplexSlots(),
     circulationFactors: [],
