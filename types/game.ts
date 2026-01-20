@@ -9,6 +9,8 @@ export type Surface = 'tf-cell' | 'platelet' | 'activated-platelet';
 
 export type FactorCategory = 'zymogen' | 'procofactor' | 'enzyme' | 'cofactor';
 
+export type ComplexType = 'tenase' | 'prothrombinase';
+
 // =============================================================================
 // FACTOR DEFINITION
 // =============================================================================
@@ -40,6 +42,19 @@ export interface Slot {
 }
 
 // =============================================================================
+// COMPLEX SLOT (Propagation phase - Tenase/Prothrombinase on activated platelets)
+// =============================================================================
+
+export interface ComplexSlot {
+  id: string;
+  complexType: ComplexType;
+  role: 'enzyme' | 'cofactor';
+  acceptsFactorId: string;
+  placedFactorId: string | null;
+  isAutoFilled: boolean; // cofactors auto-fill on phase transition
+}
+
+// =============================================================================
 // PRE-PLACED ELEMENT (TF+VIIa, trace Va)
 // =============================================================================
 
@@ -55,7 +70,7 @@ export interface PreplacedElement {
 // GAME PHASE
 // =============================================================================
 
-export type GamePhase = 'initiation' | 'amplification' | 'complete';
+export type GamePhase = 'initiation' | 'amplification' | 'propagation' | 'complete';
 
 // =============================================================================
 // GAME STATE
@@ -65,6 +80,8 @@ export interface GameState {
   phase: GamePhase;
   thrombinMeter: number; // 0-100, threshold at 30
   slots: Slot[];
+  complexSlots: ComplexSlot[]; // activated platelet complex slots (propagation)
+  circulationFactors: string[]; // factors "in circulation" (e.g., FIXa held here)
   availableFactors: string[]; // factor IDs still in palette
   selectedFactorId: string | null;
   currentMessage: string;
@@ -79,6 +96,7 @@ export type GameAction =
   | { type: 'SELECT_FACTOR'; factorId: string }
   | { type: 'DESELECT_FACTOR' }
   | { type: 'ATTEMPT_PLACE'; slotId: string }
+  | { type: 'ATTEMPT_COMPLEX_PLACE'; complexSlotId: string }
   | { type: 'RESET_GAME' };
 
 // =============================================================================
