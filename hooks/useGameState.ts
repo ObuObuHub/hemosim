@@ -168,9 +168,9 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       // Remove factor from available palette
       const newAvailableFactors = state.availableFactors.filter((f) => f !== factorId);
 
-      // Track circulation factors - FIX placed adds FIXa to circulation
+      // Track circulation factors - FIX placed adds it to circulation (as FIX, not FIXa)
       const newCirculationFactors = factorId === 'FIX'
-        ? [...state.circulationFactors, 'FIXa']
+        ? [...state.circulationFactors, 'FIX']
         : [...state.circulationFactors];
 
       // Determine message

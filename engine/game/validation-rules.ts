@@ -136,8 +136,13 @@ export function validateComplexPlacement(
   }
 
   // Check if factor matches what slot accepts
+  // Accept either the exact factorId or if the factor's activeLabel matches
   const expectedFactor = complexSlot.acceptsFactorId;
-  if (factorId !== expectedFactor) {
+  const factor = getFactorDefinition(factorId);
+  const matchesDirectly = factorId === expectedFactor;
+  const matchesViaActiveLabel = factor?.activeLabel === expectedFactor;
+
+  if (!matchesDirectly && !matchesViaActiveLabel) {
     return {
       isValid: false,
       errorMessage: `This slot requires ${expectedFactor}.`
