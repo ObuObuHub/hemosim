@@ -1,8 +1,9 @@
 // hooks/useGameState.ts
 'use client';
 
-import { useReducer, useCallback } from 'react';
-import type { GameState, GameAction, Slot, ComplexSlot } from '@/types/game';
+import { useReducer, useCallback, useRef } from 'react';
+import type { GameState, GameAction, Slot, ComplexSlot, ReducerResult } from '@/types/game';
+import type { GameEvent } from '@/types/game-events';
 import { createInitialSlots, createInitialComplexSlots } from '@/engine/game/game-config';
 import { getAllFactorIds, getFactorDefinition } from '@/engine/game/factor-definitions';
 import {
@@ -13,6 +14,75 @@ import {
   isAmplificationComplete,
   isTenaseComplete,
 } from '@/engine/game/validation-rules';
+
+// =============================================================================
+// CONVERSION RULES
+// =============================================================================
+
+interface ConversionRule {
+  fromId: string;
+  toLabel: string;
+  mechanism: 'proteolysis' | 'activation' | 'dissociation';
+  catalyst: string;
+}
+
+/**
+ * Returns the conversion rule for a factor placed on a surface
+ */
+function getConversionRule(
+  factorId: string,
+  surface: string,
+  _state: GameState
+): ConversionRule | null {
+  // TF-CELL conversions (proteolysis)
+  if (surface === 'tf-cell') {
+    switch (factorId) {
+      case 'FX':
+        return {
+          fromId: 'FX',
+          toLabel: 'FXa',
+          mechanism: 'proteolysis',
+          catalyst: 'TF+VIIa',
+        };
+      case 'FIX':
+        return {
+          fromId: 'FIX',
+          toLabel: 'FIXa',
+          mechanism: 'proteolysis',
+          catalyst: 'TF+VIIa',
+        };
+      case 'FII':
+        return {
+          fromId: 'FII',
+          toLabel: 'Starter THR',
+          mechanism: 'proteolysis',
+          catalyst: 'FXa+Va',
+        };
+    }
+  }
+
+  // PLATELET conversions (activation/dissociation via THR)
+  if (surface === 'platelet') {
+    switch (factorId) {
+      case 'FV':
+        return {
+          fromId: 'FV',
+          toLabel: 'FVa',
+          mechanism: 'activation',
+          catalyst: 'THR',
+        };
+      case 'FVIII':
+        return {
+          fromId: 'FVIII',
+          toLabel: 'FVIIIa',
+          mechanism: 'dissociation',
+          catalyst: 'THR',
+        };
+    }
+  }
+
+  return null;
+}
 
 // =============================================================================
 // INITIAL STATE
@@ -84,61 +154,141 @@ function autoFillCofactorSlots(complexSlots: ComplexSlot[]): ComplexSlot[] {
 // REDUCER
 // =============================================================================
 
-function gameReducer(state: GameState, action: GameAction): GameState {
+function gameReducer(state: GameState, action: GameAction): ReducerResult {
   switch (action.type) {
     case 'SELECT_FACTOR': {
+      const events: GameEvent[] = [];
+
       // Toggle selection if clicking same factor
       if (state.selectedFactorId === action.factorId) {
         return {
-          ...state,
-          selectedFactorId: null,
-          currentMessage: 'Click a factor in the palette, then click a slot to place it.',
-          isError: false,
+          state: {
+            ...state,
+            selectedFactorId: null,
+            currentMessage: 'Click a factor in the palette, then click a slot to place it.',
+            isError: false,
+          },
+          events,
         };
       }
 
       // Check if factor is selectable (palette, circulation, or Tenase-spawned)
       if (!isFactorSelectable(state, action.factorId)) {
-        return state;
+        return { state, events };
       }
+
+      // Emit FACTOR_SELECTED event
+      const fromLocation = state.circulationFactors.includes(action.factorId)
+        ? 'circulation'
+        : 'palette';
+      events.push({
+        type: 'FACTOR_SELECTED',
+        factorId: action.factorId,
+        fromLocation,
+      });
 
       const factor = getFactorDefinition(action.factorId);
       return {
-        ...state,
-        selectedFactorId: action.factorId,
-        currentMessage: `${factor?.inactiveLabel} selected. Click a valid slot to place.`,
-        isError: false,
+        state: {
+          ...state,
+          selectedFactorId: action.factorId,
+          currentMessage: `${factor?.inactiveLabel} selected. Click a valid slot to place.`,
+          isError: false,
+        },
+        events,
       };
     }
 
     case 'DESELECT_FACTOR': {
       return {
-        ...state,
-        selectedFactorId: null,
-        currentMessage: 'Click a factor in the palette, then click a slot to place it.',
-        isError: false,
+        state: {
+          ...state,
+          selectedFactorId: null,
+          currentMessage: 'Click a factor in the palette, then click a slot to place it.',
+          isError: false,
+        },
+        events: [],
       };
     }
 
     case 'ATTEMPT_PLACE': {
+      const events: GameEvent[] = [];
+
       // Must have a factor selected
       if (!state.selectedFactorId) {
         return {
-          ...state,
-          currentMessage: 'Select a factor first.',
-          isError: true,
+          state: {
+            ...state,
+            currentMessage: 'Select a factor first.',
+            isError: true,
+          },
+          events,
         };
       }
 
       const factorId = state.selectedFactorId;
       const validation = validatePlacement(state, factorId, action.slotId);
+      const targetSlot = state.slots.find((s) => s.id === action.slotId);
+      const surface = targetSlot?.surface ?? 'tf-cell';
 
       if (!validation.isValid) {
+        // Emit failed placement event
+        events.push({
+          type: 'FACTOR_PLACED',
+          factorId,
+          slotId: action.slotId,
+          surface,
+          success: false,
+          errorReason: validation.errorMessage ?? 'Invalid placement.',
+        });
+
         return {
-          ...state,
-          currentMessage: validation.errorMessage ?? 'Invalid placement.',
-          isError: true,
+          state: {
+            ...state,
+            currentMessage: validation.errorMessage ?? 'Invalid placement.',
+            isError: true,
+          },
+          events,
         };
+      }
+
+      // Valid placement - emit success event
+      events.push({
+        type: 'FACTOR_PLACED',
+        factorId,
+        slotId: action.slotId,
+        surface,
+        success: true,
+      });
+
+      // Emit ARROW_PULSE from catalyst to factor
+      const conversionRule = getConversionRule(factorId, surface, state);
+      if (conversionRule) {
+        // Determine source node for arrow
+        let fromNode = 'tf-viia'; // default for TF+VIIa
+        if (conversionRule.catalyst === 'FXa+Va') {
+          fromNode = 'fxa-slot'; // FXa on TF-cell
+        } else if (conversionRule.catalyst === 'THR') {
+          fromNode = 'thrombin-signal';
+        }
+
+        events.push({
+          type: 'ARROW_PULSE',
+          fromNode,
+          toNode: action.slotId,
+          style: 'solid',
+          label: conversionRule.catalyst,
+        });
+
+        // Emit FACTOR_CONVERTED event
+        events.push({
+          type: 'FACTOR_CONVERTED',
+          fromId: conversionRule.fromId,
+          toLabel: conversionRule.toLabel,
+          surface,
+          mechanism: conversionRule.mechanism,
+          catalyst: conversionRule.catalyst,
+        });
       }
 
       // Valid placement - update state
@@ -158,27 +308,82 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           : slot
       );
 
+      // Emit FACTOR_TRANSFERRED for FIX (to circulation) or FII (as signal)
+      if (factorId === 'FIX') {
+        events.push({
+          type: 'FACTOR_TRANSFERRED',
+          factorId: 'FIX',
+          fromSurface: surface,
+          toDestination: 'circulation',
+        });
+      } else if (factorId === 'FII') {
+        events.push({
+          type: 'FACTOR_TRANSFERRED',
+          factorId: 'FII',
+          fromSurface: surface,
+          toDestination: 'signal',
+        });
+      }
+
       // Calculate new thrombin meter
       const newThrombinMeter = Math.min(
         100,
         state.thrombinMeter + factor.thrombinContribution
       );
 
+      // Emit METER_CHANGED if thrombin increases
+      if (factor.thrombinContribution > 0) {
+        events.push({
+          type: 'METER_CHANGED',
+          meter: 'thrombin',
+          target: newThrombinMeter,
+          delta: factor.thrombinContribution,
+        });
+
+        // Emit SIGNAL_FLOW when THR flows to platelet (FII placement)
+        if (factorId === 'FII') {
+          events.push({
+            type: 'SIGNAL_FLOW',
+            signal: 'THR',
+            fromSurface: 'tf-cell',
+            toSurface: 'platelet',
+            intensity: 'starter',
+          });
+        }
+      }
+
       // Check if platelet should unlock
-      if (shouldUnlockPlatelet(newThrombinMeter) && !shouldUnlockPlatelet(state.thrombinMeter)) {
+      const plateletUnlocking =
+        shouldUnlockPlatelet(newThrombinMeter) && !shouldUnlockPlatelet(state.thrombinMeter);
+      if (plateletUnlocking) {
         // Just crossed threshold - unlock platelet slots
         newSlots = newSlots.map((slot) =>
           slot.surface === 'platelet' ? { ...slot, isLocked: false } : slot
         );
+
+        // Emit PHASE_UNLOCKED event
+        events.push({
+          type: 'PHASE_UNLOCKED',
+          phase: 'amplification',
+          trigger: 'thrombin_threshold',
+        });
+
+        // Emit PANEL_STATE_CHANGED for platelet
+        events.push({
+          type: 'PANEL_STATE_CHANGED',
+          surface: 'platelet',
+          state: 'active',
+        });
       }
 
       // Remove factor from available palette
       const newAvailableFactors = state.availableFactors.filter((f) => f !== factorId);
 
       // Track circulation factors - FIX placed adds it to circulation (as FIX, not FIXa)
-      const newCirculationFactors = factorId === 'FIX'
-        ? [...state.circulationFactors, 'FIX']
-        : [...state.circulationFactors];
+      const newCirculationFactors =
+        factorId === 'FIX'
+          ? [...state.circulationFactors, 'FIX']
+          : [...state.circulationFactors];
 
       // Determine message
       let newMessage = factor.activationMessage;
@@ -186,7 +391,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       let newComplexSlots = state.complexSlots;
 
       // Check if we just hit thrombin threshold
-      if (shouldUnlockPlatelet(newThrombinMeter) && !shouldUnlockPlatelet(state.thrombinMeter)) {
+      if (plateletUnlocking) {
         newMessage = 'Starter thrombin activates platelet via PAR receptors';
         newPhase = 'amplification';
       }
@@ -212,52 +417,91 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         newPhase = 'propagation';
         newMessage = 'Cofactors positioned. Place FIXa from circulation into Tenase.';
 
+        // Emit PHASE_UNLOCKED for propagation
+        events.push({
+          type: 'PHASE_UNLOCKED',
+          phase: 'propagation',
+          trigger: 'amplification_complete',
+        });
+
+        // Emit PANEL_STATE_CHANGED for activated-platelet
+        events.push({
+          type: 'PANEL_STATE_CHANGED',
+          surface: 'activated-platelet',
+          state: 'active',
+        });
+
         return {
-          ...intermediateState,
-          phase: newPhase,
-          complexSlots: newComplexSlots,
-          currentMessage: newMessage,
+          state: {
+            ...intermediateState,
+            phase: newPhase,
+            complexSlots: newComplexSlots,
+            currentMessage: newMessage,
+          },
+          events,
         };
       }
 
       // Check victory condition
       if (checkVictoryCondition(intermediateState)) {
         return {
-          ...intermediateState,
-          phase: 'complete',
-          currentMessage: 'Platelet primed. Cofactors positioned for propagation.',
+          state: {
+            ...intermediateState,
+            phase: 'complete',
+            currentMessage: 'Platelet primed. Cofactors positioned for propagation.',
+          },
+          events,
         };
       }
 
-      return intermediateState;
+      return { state: intermediateState, events };
     }
 
     case 'ATTEMPT_COMPLEX_PLACE': {
+      const events: GameEvent[] = [];
+
       // Must have a factor selected
       if (!state.selectedFactorId) {
         return {
-          ...state,
-          currentMessage: 'Select a factor first.',
-          isError: true,
+          state: {
+            ...state,
+            currentMessage: 'Select a factor first.',
+            isError: true,
+          },
+          events,
         };
       }
 
       const factorId = state.selectedFactorId;
       const validation = validateComplexPlacement(state, factorId, action.complexSlotId);
+      const targetSlot = state.complexSlots.find((s) => s.id === action.complexSlotId);
 
       if (!validation.isValid) {
         return {
-          ...state,
-          currentMessage: validation.errorMessage ?? 'Invalid complex placement.',
-          isError: true,
+          state: {
+            ...state,
+            currentMessage: validation.errorMessage ?? 'Invalid complex placement.',
+            isError: true,
+          },
+          events,
         };
       }
 
+      // Determine complex type and role from slot
+      const complexType = targetSlot?.complexType ?? 'tenase';
+      const role = targetSlot?.role ?? 'enzyme';
+
+      // Emit COMPLEX_PART_DOCKED event
+      events.push({
+        type: 'COMPLEX_PART_DOCKED',
+        complexType,
+        role,
+        factorId,
+      });
+
       // Valid placement - update complex slot
       const newComplexSlots: ComplexSlot[] = state.complexSlots.map((slot) =>
-        slot.id === action.complexSlotId
-          ? { ...slot, placedFactorId: factorId }
-          : slot
+        slot.id === action.complexSlotId ? { ...slot, placedFactorId: factorId } : slot
       );
 
       // Remove placed factor from circulation (if it was there)
@@ -274,12 +518,64 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 
       // Check if Tenase is now complete (FIXa + FVIIIa) - enables FXa-tenase selection
       if (action.complexSlotId === 'tenase-enzyme' && isTenaseComplete(intermediateState)) {
+        // Emit COMPLEX_COMPLETED event
+        events.push({
+          type: 'COMPLEX_COMPLETED',
+          complexType: 'tenase',
+          efficiency: 100,
+        });
+
+        // Emit COMPLEX_OUTPUT for FXa-tenase
+        events.push({
+          type: 'COMPLEX_OUTPUT',
+          complexType: 'tenase',
+          outputFactorId: 'FXa-tenase',
+          quantity: 1,
+        });
+
         intermediateState = {
           ...intermediateState,
           currentMessage: 'Tenase complete! FXa generated. Place FXa into Prothrombinase.',
         };
       } else if (action.complexSlotId === 'prothrombinase-enzyme') {
-        // Prothrombinase enzyme filled - thrombin burst!
+        // Prothrombinase enzyme filled - check if both parts are present
+        const cofactorSlot = newComplexSlots.find((s) => s.id === 'prothrombinase-cofactor');
+        const isProthrombinaseComplete = cofactorSlot?.placedFactorId !== null;
+
+        if (isProthrombinaseComplete) {
+          // Emit COMPLEX_COMPLETED event
+          events.push({
+            type: 'COMPLEX_COMPLETED',
+            complexType: 'prothrombinase',
+            efficiency: 100,
+          });
+
+          // Emit COMPLEX_OUTPUT for thrombin burst
+          events.push({
+            type: 'COMPLEX_OUTPUT',
+            complexType: 'prothrombinase',
+            outputFactorId: 'THR',
+            quantity: 100,
+          });
+
+          // Emit METER_CHANGED for thrombin burst
+          events.push({
+            type: 'METER_CHANGED',
+            meter: 'thrombin',
+            target: 100,
+            delta: 100 - state.thrombinMeter,
+          });
+
+          // Emit SIGNAL_FLOW for thrombin burst
+          events.push({
+            type: 'SIGNAL_FLOW',
+            signal: 'THR',
+            fromSurface: 'activated-platelet',
+            toSurface: 'platelet',
+            intensity: 'burst',
+          });
+        }
+
         intermediateState = {
           ...intermediateState,
           thrombinMeter: 100,
@@ -295,23 +591,62 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 
       // Check victory condition
       if (checkVictoryCondition(intermediateState)) {
+        // Emit VICTORY event
+        const complexesBuilt: string[] = [];
+        if (isTenaseComplete(intermediateState)) {
+          complexesBuilt.push('tenase');
+        }
+        // Check if prothrombinase is complete
+        const prothEnzyme = newComplexSlots.find((s) => s.id === 'prothrombinase-enzyme');
+        const prothCofactor = newComplexSlots.find((s) => s.id === 'prothrombinase-cofactor');
+        if (prothEnzyme?.placedFactorId && prothCofactor?.placedFactorId) {
+          complexesBuilt.push('prothrombinase');
+        }
+
+        events.push({
+          type: 'VICTORY',
+          finalThrombin: 100,
+          complexesBuilt,
+        });
+
         return {
-          ...intermediateState,
-          phase: 'complete',
-          currentMessage: 'Coagulation cascade complete! Maximum thrombin generation achieved.',
+          state: {
+            ...intermediateState,
+            phase: 'complete',
+            currentMessage: 'Coagulation cascade complete! Maximum thrombin generation achieved.',
+          },
+          events,
         };
       }
 
-      return intermediateState;
+      return { state: intermediateState, events };
     }
 
     case 'RESET_GAME': {
-      return createInitialState();
+      return {
+        state: createInitialState(),
+        events: [],
+      };
     }
 
     default:
-      return state;
+      return { state, events: [] };
   }
+}
+
+// =============================================================================
+// STATE WRAPPER REDUCER
+// =============================================================================
+
+/**
+ * Wrapper reducer that extracts state from ReducerResult
+ * Events are captured via callback in the hook
+ */
+function stateReducer(
+  _prevState: GameState,
+  result: ReducerResult
+): GameState {
+  return result.state;
 }
 
 // =============================================================================
@@ -325,29 +660,70 @@ export interface UseGameStateReturn {
   attemptPlace: (slotId: string) => void;
   attemptComplexPlace: (complexSlotId: string) => void;
   resetGame: () => void;
+  /** Most recent events from last action - useful for animation controller */
+  lastEvents: GameEvent[];
+  /** Subscribe to events - returns unsubscribe function */
+  subscribeToEvents: (callback: (events: GameEvent[]) => void) => () => void;
 }
 
 export function useGameState(): UseGameStateReturn {
-  const [state, dispatch] = useReducer(gameReducer, null, createInitialState);
+  const [state, dispatchState] = useReducer(stateReducer, null, createInitialState);
+  const lastEventsRef = useRef<GameEvent[]>([]);
+  const subscribersRef = useRef<Set<(events: GameEvent[]) => void>>(new Set());
 
-  const selectFactor = useCallback((factorId: string) => {
-    dispatch({ type: 'SELECT_FACTOR', factorId });
-  }, []);
+  /**
+   * Dispatch action and handle events
+   */
+  const dispatch = useCallback((action: GameAction) => {
+    // Run the game reducer to get result with events
+    const result = gameReducer(state, action);
+
+    // Update state via wrapper reducer
+    dispatchState(result);
+
+    // Store events for access
+    lastEventsRef.current = result.events;
+
+    // Notify subscribers
+    if (result.events.length > 0) {
+      subscribersRef.current.forEach((callback) => callback(result.events));
+    }
+  }, [state]);
+
+  const selectFactor = useCallback(
+    (factorId: string) => {
+      dispatch({ type: 'SELECT_FACTOR', factorId });
+    },
+    [dispatch]
+  );
 
   const deselectFactor = useCallback(() => {
     dispatch({ type: 'DESELECT_FACTOR' });
-  }, []);
+  }, [dispatch]);
 
-  const attemptPlace = useCallback((slotId: string) => {
-    dispatch({ type: 'ATTEMPT_PLACE', slotId });
-  }, []);
+  const attemptPlace = useCallback(
+    (slotId: string) => {
+      dispatch({ type: 'ATTEMPT_PLACE', slotId });
+    },
+    [dispatch]
+  );
 
-  const attemptComplexPlace = useCallback((complexSlotId: string) => {
-    dispatch({ type: 'ATTEMPT_COMPLEX_PLACE', complexSlotId });
-  }, []);
+  const attemptComplexPlace = useCallback(
+    (complexSlotId: string) => {
+      dispatch({ type: 'ATTEMPT_COMPLEX_PLACE', complexSlotId });
+    },
+    [dispatch]
+  );
 
   const resetGame = useCallback(() => {
     dispatch({ type: 'RESET_GAME' });
+  }, [dispatch]);
+
+  const subscribeToEvents = useCallback((callback: (events: GameEvent[]) => void) => {
+    subscribersRef.current.add(callback);
+    return () => {
+      subscribersRef.current.delete(callback);
+    };
   }, []);
 
   return {
@@ -357,5 +733,7 @@ export function useGameState(): UseGameStateReturn {
     attemptPlace,
     attemptComplexPlace,
     resetGame,
+    lastEvents: lastEventsRef.current,
+    subscribeToEvents,
   };
 }
