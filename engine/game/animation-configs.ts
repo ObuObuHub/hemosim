@@ -9,6 +9,10 @@ import type {
   SignalFlowEvent,
   VictoryEvent,
   GameOverEvent,
+  FibrinogenConvertedEvent,
+  FXIIIActivatedEvent,
+  CrossLinkFormedEvent,
+  ClotStabilizedEvent,
   EventPriority,
 } from '@/types/game-events';
 
@@ -51,6 +55,8 @@ export const ANIMATION_DURATIONS = {
   PHASE_UNLOCKED: 2000,
   VICTORY: 2500,
   GAME_OVER: 2000,
+  FXIII_ACTIVATED: 1500,
+  CLOT_STABILIZED: 2000,
 
   // Standard priority
   FACTOR_SELECTED: 100,
@@ -62,10 +68,14 @@ export const ANIMATION_DURATIONS = {
   COMPLEX_OUTPUT: 500,
   SIGNAL_FLOW: 1200,
   PANEL_STATE_CHANGED: 300,
+  FIBRINOGEN_CONVERTED: 800,
+  CROSS_LINK_FORMED: 1000,
 
   // Low priority
   METER_CHANGED: 0, // Instant, lerped by controller
   ARROW_PULSE: 300,
+  FIBRINOGEN_DOCKED: 200,
+  FXIII_DOCKED: 200,
 } as const;
 
 // =============================================================================
@@ -469,6 +479,203 @@ function arrowPulseAnimation(): AnimationConfig {
 }
 
 // =============================================================================
+// STABILIZATION PHASE ANIMATIONS
+// =============================================================================
+
+function fibrinogenDockedAnimation(): AnimationConfig {
+  return {
+    duration: ANIMATION_DURATIONS.FIBRINOGEN_DOCKED,
+    priority: 'low',
+    steps: [
+      {
+        target: 'slot',
+        delay: 0,
+        duration: 200,
+        animation: {
+          scale: [1, 1.05, 1],
+          borderColor: ['#334155', '#F97316', '#334155'],
+        },
+      },
+    ],
+  };
+}
+
+function fibrinogenConvertedAnimation(_event: FibrinogenConvertedEvent): AnimationConfig {
+  return {
+    duration: ANIMATION_DURATIONS.FIBRINOGEN_CONVERTED,
+    priority: 'standard',
+    steps: [
+      {
+        target: 'factor-token',
+        delay: 0,
+        duration: 400,
+        animation: {
+          rotateY: [0, 90],
+          scale: [1, 0.9],
+        },
+        label: 'Fibrinogen',
+      },
+      {
+        target: 'factor-token',
+        delay: 400,
+        duration: 400,
+        animation: {
+          rotateY: [90, 0],
+          scale: [0.9, 1],
+        },
+        label: 'Fibrin',
+      },
+      {
+        target: 'fibrin-strand',
+        delay: 600,
+        duration: 200,
+        animation: {
+          opacity: [0, 1],
+          pathLength: [0, 1],
+        },
+      },
+    ],
+  };
+}
+
+function fxiiiDockedAnimation(): AnimationConfig {
+  return {
+    duration: ANIMATION_DURATIONS.FXIII_DOCKED,
+    priority: 'low',
+    steps: [
+      {
+        target: 'slot',
+        delay: 0,
+        duration: 200,
+        animation: {
+          scale: [1, 1.05, 1],
+          borderColor: ['#334155', '#FBBF24', '#334155'],
+        },
+      },
+    ],
+  };
+}
+
+function fxiiiActivatedAnimation(_event: FXIIIActivatedEvent): AnimationConfig {
+  return {
+    duration: ANIMATION_DURATIONS.FXIII_ACTIVATED,
+    priority: 'critical',
+    steps: [
+      {
+        target: 'factor-token',
+        delay: 0,
+        duration: 400,
+        animation: {
+          rotateY: [0, 90],
+          scale: [1, 0.9],
+        },
+        label: 'FXIII',
+      },
+      {
+        target: 'factor-token',
+        delay: 400,
+        duration: 400,
+        animation: {
+          rotateY: [90, 0],
+          scale: [0.9, 1.1, 1],
+          boxShadow: [
+            '0 0 0 rgba(251,191,36,0)',
+            '0 0 20px rgba(251,191,36,0.8)',
+            '0 0 10px rgba(251,191,36,0.5)',
+          ],
+        },
+        label: 'FXIIIa',
+      },
+      {
+        target: 'cross-link-flash',
+        delay: 800,
+        duration: 700,
+        animation: {
+          opacity: [0, 1, 1, 0],
+          filter: ['brightness(1)', 'brightness(2)', 'brightness(1.5)', 'brightness(1)'],
+        },
+      },
+    ],
+  };
+}
+
+function crossLinkFormedAnimation(_event: CrossLinkFormedEvent): AnimationConfig {
+  return {
+    duration: ANIMATION_DURATIONS.CROSS_LINK_FORMED,
+    priority: 'standard',
+    steps: [
+      // Flash all fibrin strands
+      {
+        target: 'all-fibrin-strands',
+        delay: 0,
+        duration: 300,
+        animation: {
+          filter: ['brightness(1)', 'brightness(2)'],
+        },
+      },
+      // Transform color from gray to gold
+      {
+        target: 'all-fibrin-strands',
+        delay: 300,
+        duration: 500,
+        animation: {
+          stroke: ['#9CA3AF', '#FBBF24'],
+          strokeWidth: [2, 4],
+          filter: ['brightness(2)', 'brightness(1)'],
+        },
+      },
+      // Add glow effect
+      {
+        target: 'all-fibrin-strands',
+        delay: 800,
+        duration: 200,
+        animation: {
+          filter: ['brightness(1)', 'drop-shadow(0 0 4px rgba(251,191,36,0.5))'],
+        },
+      },
+    ],
+  };
+}
+
+function clotStabilizedAnimation(_event: ClotStabilizedEvent): AnimationConfig {
+  return {
+    duration: ANIMATION_DURATIONS.CLOT_STABILIZED,
+    priority: 'critical',
+    steps: [
+      {
+        target: 'clot-zone-panel',
+        delay: 0,
+        duration: 500,
+        animation: {
+          filter: ['brightness(1)', 'brightness(1.5)', 'brightness(1)'],
+          borderColor: ['#334155', '#22C55E'],
+        },
+      },
+      {
+        target: 'clot-integrity-meter',
+        delay: 200,
+        duration: 500,
+        animation: {
+          backgroundColor: ['#F97316', '#22C55E'],
+          boxShadow: ['0 0 0 rgba(34,197,94,0)', '0 0 20px rgba(34,197,94,0.8)'],
+        },
+      },
+      {
+        target: 'toast',
+        delay: 700,
+        duration: 1300,
+        label: 'CLOT STABILIZED!',
+        animation: {
+          opacity: [0, 1, 1, 0],
+          scale: [0.8, 1.1, 1, 1],
+          y: [50, 0, 0, -20],
+        },
+      },
+    ],
+  };
+}
+
+// =============================================================================
 // DEFAULT ANIMATION
 // =============================================================================
 
@@ -497,6 +704,10 @@ export function getAnimationConfig(event: GameEvent): AnimationConfig {
       return victoryAnimation(event);
     case 'GAME_OVER':
       return gameOverAnimation(event);
+    case 'FXIII_ACTIVATED':
+      return fxiiiActivatedAnimation(event);
+    case 'CLOT_STABILIZED':
+      return clotStabilizedAnimation(event);
 
     // Standard priority
     case 'FACTOR_SELECTED':
@@ -517,12 +728,20 @@ export function getAnimationConfig(event: GameEvent): AnimationConfig {
       return signalFlowAnimation(event);
     case 'PANEL_STATE_CHANGED':
       return panelStateChangedAnimation();
+    case 'FIBRINOGEN_CONVERTED':
+      return fibrinogenConvertedAnimation(event);
+    case 'CROSS_LINK_FORMED':
+      return crossLinkFormedAnimation(event);
 
     // Low priority
     case 'METER_CHANGED':
       return meterChangedAnimation();
     case 'ARROW_PULSE':
       return arrowPulseAnimation();
+    case 'FIBRINOGEN_DOCKED':
+      return fibrinogenDockedAnimation();
+    case 'FXIII_DOCKED':
+      return fxiiiDockedAnimation();
 
     default:
       // This should never happen if all event types are handled
