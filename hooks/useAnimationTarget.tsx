@@ -23,11 +23,11 @@ import {
  */
 interface AnimationTargetRegistry {
   /** Register a ref for a target ID */
-  register: (targetId: string, ref: RefObject<HTMLElement | null>) => void;
+  register: (targetId: string, ref: RefObject<Element | null>) => void;
   /** Unregister a target ID */
   unregister: (targetId: string) => void;
   /** Get the ref for a target ID */
-  getRef: (targetId: string) => RefObject<HTMLElement | null> | undefined;
+  getRef: (targetId: string) => RefObject<Element | null> | undefined;
   /** Get all registered target IDs */
   getTargetIds: () => string[];
 }
@@ -47,10 +47,10 @@ const AnimationTargetContext = createContext<AnimationTargetRegistry | null>(nul
  * Used by AnimationTargetProvider to create the context value.
  */
 export function useAnimationTargetRegistry(): AnimationTargetRegistry {
-  const registryRef = useRef<Map<string, RefObject<HTMLElement | null>>>(new Map());
+  const registryRef = useRef<Map<string, RefObject<Element | null>>>(new Map());
 
   const register = useCallback(
-    (targetId: string, ref: RefObject<HTMLElement | null>): void => {
+    (targetId: string, ref: RefObject<Element | null>): void => {
       registryRef.current.set(targetId, ref);
     },
     []
@@ -61,7 +61,7 @@ export function useAnimationTargetRegistry(): AnimationTargetRegistry {
   }, []);
 
   const getRef = useCallback(
-    (targetId: string): RefObject<HTMLElement | null> | undefined => {
+    (targetId: string): RefObject<Element | null> | undefined => {
       return registryRef.current.get(targetId);
     },
     []
@@ -130,7 +130,7 @@ export function AnimationTargetProvider({
  */
 export function useAnimationTarget(
   targetId: string,
-  ref: RefObject<HTMLElement | null>
+  ref: RefObject<Element | null>
 ): void {
   const registry = useContext(AnimationTargetContext);
 
