@@ -120,6 +120,9 @@ export interface GameState {
   phase: GamePhase;
   thrombinMeter: number; // 0-100, threshold at 30
   clotIntegrity: number; // 0-100, stabilization phase meter
+  bleedingMeter: number; // 0-100, player loses at 100
+  gameResult: GameResult; // current game outcome
+  gameStats: GameStats; // statistics tracking
   slots: Slot[];
   complexSlots: ComplexSlot[]; // activated platelet complex slots (propagation)
   circulationFactors: string[]; // factors "in circulation" (e.g., FIXa held here)
@@ -150,7 +153,11 @@ export type GameAction =
   | { type: 'DROP_FACTOR' }
   | { type: 'SPAWN_ANTAGONIST'; antagonist: Antagonist }
   | { type: 'TICK_ANTAGONISTS'; updatedAntagonists: Antagonist[]; destroyedFactorIds: string[] }
-  | { type: 'DESTROY_FACTOR'; factorId: string; antagonistId: string };
+  | { type: 'DESTROY_FACTOR'; factorId: string; antagonistId: string }
+  | { type: 'INCREMENT_BLEEDING'; amount: number; reason: 'escape' | 'antithrombin' | 'apc' | 'plasmin' }
+  | { type: 'SET_GAME_RESULT'; result: GameResult }
+  | { type: 'INCREMENT_FACTORS_CAUGHT' }
+  | { type: 'SET_TIME_TAKEN'; time: number };
 
 // =============================================================================
 // VALIDATION RESULT
@@ -206,6 +213,17 @@ export type InhibitorType =
 // =============================================================================
 
 export type AntagonistType = 'antithrombin' | 'apc' | 'plasmin';
+
+export type GameResult = 'playing' | 'victory' | 'defeat' | null;
+
+export interface GameStats {
+  factorsCaught: number;
+  factorsLostToEscape: number;
+  factorsLostToAntithrombin: number;
+  factorsLostToAPC: number;
+  factorsLostToPlasmin: number;
+  timeTaken: number; // seconds
+}
 
 export type AntagonistState = 'patrol' | 'hunting' | 'attacking';
 

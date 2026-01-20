@@ -11,6 +11,8 @@ import { SurfacePanel } from './SurfacePanel';
 import { ClotZonePanel } from './ClotZonePanel';
 import { CirculationTray } from './CirculationTray';
 import { AnimationLayer } from './AnimationLayer';
+import { GameOverScreen } from './GameOverScreen';
+import { VictoryScreen } from './VictoryScreen';
 
 interface GameCanvasProps {
   gameState: GameState;
@@ -23,6 +25,10 @@ interface GameCanvasProps {
   onFactorDragStart?: (floatingFactorId: string, event: React.MouseEvent | React.TouchEvent) => void;
   /** Position for held factor display (interpolated for smooth drag) */
   heldFactorDisplayPosition?: { x: number; y: number } | null;
+  /** Callback for play again button */
+  onPlayAgain?: () => void;
+  /** Callback for main menu button */
+  onMainMenu?: () => void;
 }
 
 export const GameCanvas = forwardRef<HTMLDivElement, GameCanvasProps>(function GameCanvas(
@@ -34,6 +40,8 @@ export const GameCanvas = forwardRef<HTMLDivElement, GameCanvasProps>(function G
     onComplexSlotClick,
     onFactorDragStart,
     heldFactorDisplayPosition,
+    onPlayAgain,
+    onMainMenu,
   },
   ref
 ): React.ReactElement {
@@ -62,12 +70,13 @@ export const GameCanvas = forwardRef<HTMLDivElement, GameCanvasProps>(function G
         onFactorDragStart={onFactorDragStart}
       />
 
-      {/* HUD (thrombin meter + clot integrity meter + message) */}
+      {/* HUD (thrombin meter + clot integrity meter + bleeding meter + message) */}
       <GameHUD
         thrombinMeter={gameState.thrombinMeter}
         thrombinDisplayValue={visualState?.thrombinMeter.current}
         clotIntegrity={gameState.clotIntegrity}
         clotIntegrityDisplayValue={visualState?.clotIntegrityMeter.current}
+        bleedingMeter={gameState.bleedingMeter}
         currentMessage={gameState.currentMessage}
         isError={gameState.isError}
         phase={gameState.phase}
@@ -159,6 +168,40 @@ export const GameCanvas = forwardRef<HTMLDivElement, GameCanvasProps>(function G
             {heldFactorDef.category}
           </span>
         </div>
+      )}
+
+      {/* Critical bleeding vignette effect */}
+      {gameState.bleedingMeter > 75 && gameState.gameResult !== 'defeat' && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            boxShadow: `inset 0 0 100px 30px rgba(220, 38, 38, ${0.2 + (gameState.bleedingMeter - 75) / 100})`,
+            pointerEvents: 'none',
+            zIndex: 50,
+          }}
+        />
+      )}
+
+      {/* Game Over Screen */}
+      {gameState.gameResult === 'defeat' && onPlayAgain && onMainMenu && (
+        <GameOverScreen
+          stats={gameState.gameStats}
+          onPlayAgain={onPlayAgain}
+          onMainMenu={onMainMenu}
+        />
+      )}
+
+      {/* Victory Screen */}
+      {gameState.gameResult === 'victory' && onPlayAgain && onMainMenu && (
+        <VictoryScreen
+          stats={gameState.gameStats}
+          onPlayAgain={onPlayAgain}
+          onMainMenu={onMainMenu}
+        />
       )}
     </div>
   );

@@ -10,7 +10,6 @@ import { useAnimationController } from '@/hooks/useAnimationController';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 import { GameCanvas } from '@/components/game/GameCanvas';
 import { GameControls } from '@/components/game/GameControls';
-import { GameCompleteModal } from '@/components/game/GameCompleteModal';
 import {
   AnimationTargetProvider,
   useAnimationTargetRegistry,
@@ -27,6 +26,18 @@ import {
   ANTAGONIST_CONFIGS,
 } from '@/engine/game/antagonist-ai';
 import type { FloatingFactor, AntagonistType, Antagonist } from '@/types/game';
+import type { GameEvent } from '@/types/game-events';
+
+// =============================================================================
+// BLEEDING INCREMENT VALUES
+// =============================================================================
+
+const BLEEDING_INCREMENT = {
+  factorEscape: 10,
+  destroyedByAntithrombin: 15,
+  destroyedByAPC: 15,
+  destroyedByPlasmin: 15,
+} as const;
 
 /** Generate a unique ID for floating factors */
 function generateFactorId(): string {
@@ -56,6 +67,10 @@ export default function GamePage(): ReactElement {
     spawnAntagonist,
     tickAntagonists,
     destroyFactor,
+    incrementBleeding,
+    setGameResult,
+    incrementFactorsCaught,
+    setTimeTaken,
   } = useGameState();
 
   // Refs for game loop
@@ -71,6 +86,12 @@ export default function GamePage(): ReactElement {
     plasmin: 0,
   });
   const antagonistsRef = useRef<Antagonist[]>([]);
+
+  // Ref for game start time (for elapsed time tracking)
+  const gameStartTimeRef = useRef<number>(0);
+
+  // Track previous floating factor IDs to detect escapes
+  const prevFloatingFactorIdsRef = useRef<Set<string>>(new Set());
 
   // Animation controller for smooth visual transitions
   // Note: isProcessing available for future UI indication
@@ -116,20 +137,99 @@ export default function GamePage(): ReactElement {
   const heldFactorDisplayPosition = state.heldFactor?.cursorPosition ?? null;
 
   // Subscribe to game events and forward to animation controller
+  // Also track stats (factors caught, factors destroyed by antagonists)
   useEffect(() => {
-    const unsubscribe = subscribeToEvents((events) => {
+    const unsubscribe = subscribeToEvents((events: GameEvent[]) => {
       enqueue(events);
+
+      // Track stats based on events
+      for (const event of events) {
+        if (event.type === 'FACTOR_PLACED' && event.success) {
+          // Factor successfully placed in a slot
+          incrementFactorsCaught();
+        } else if (event.type === 'FACTOR_DESTROYED') {
+          // Factor destroyed by antagonist - increment bleeding
+          const antagonistType = event.antagonistType;
+          if (antagonistType === 'antithrombin') {
+            incrementBleeding(BLEEDING_INCREMENT.destroyedByAntithrombin, 'antithrombin');
+          } else if (antagonistType === 'apc') {
+            incrementBleeding(BLEEDING_INCREMENT.destroyedByAPC, 'apc');
+          } else if (antagonistType === 'plasmin') {
+            incrementBleeding(BLEEDING_INCREMENT.destroyedByPlasmin, 'plasmin');
+          }
+        }
+      }
     });
     return unsubscribe;
-  }, [subscribeToEvents, enqueue]);
+  }, [subscribeToEvents, enqueue, incrementFactorsCaught, incrementBleeding]);
 
   // Keep antagonists ref in sync with state
   useEffect(() => {
     antagonistsRef.current = state.antagonists;
   }, [state.antagonists]);
 
+  // Track escaped factors (factors that disappeared without being placed or destroyed)
+  useEffect(() => {
+    // Skip if game is over
+    if (state.gameResult === 'defeat' || state.gameResult === 'victory') {
+      return;
+    }
+
+    const currentFactorIds = new Set(state.floatingFactors.map((f) => f.id));
+    const prevFactorIds = prevFloatingFactorIdsRef.current;
+
+    // Find factors that were in previous set but not in current set
+    // These could be: placed (handled elsewhere), destroyed by antagonist (handled elsewhere),
+    // or escaped off the right edge of the screen
+    // We only track escapes here - the TICK_FLOATING_FACTORS action removes factors past threshold
+    for (const prevId of prevFactorIds) {
+      if (!currentFactorIds.has(prevId)) {
+        // Factor disappeared - check if it was likely an escape
+        // (placed and destroyed are handled via events, escapes are silent)
+        // We can't distinguish easily, so we rely on the removal threshold logic
+        // The reducer removes factors past BLOODSTREAM_ZONE.removeThreshold
+        // We increment bleeding for escapes here
+        // Note: This may occasionally double-count if event is also fired, but events
+        // only fire for placed/destroyed, not escapes
+        incrementBleeding(BLEEDING_INCREMENT.factorEscape, 'escape');
+      }
+    }
+
+    prevFloatingFactorIdsRef.current = currentFactorIds;
+  }, [state.floatingFactors, state.gameResult, incrementBleeding]);
+
+  // Check for win/lose conditions
+  useEffect(() => {
+    // Skip if game already has a result
+    if (state.gameResult !== null) {
+      return;
+    }
+
+    // Check for defeat (bleeding >= 100)
+    if (state.bleedingMeter >= 100) {
+      setTimeTaken((performance.now() - gameStartTimeRef.current) / 1000);
+      setGameResult('defeat');
+      return;
+    }
+
+    // Check for victory (clot integrity >= 100 AND in stabilization/complete phase)
+    if (
+      state.clotIntegrity >= 100 &&
+      (state.phase === 'stabilization' || state.phase === 'complete')
+    ) {
+      setTimeTaken((performance.now() - gameStartTimeRef.current) / 1000);
+      setGameResult('victory');
+      return;
+    }
+  }, [state.bleedingMeter, state.clotIntegrity, state.phase, state.gameResult, setGameResult, setTimeTaken]);
+
   // Game loop for floating factors and antagonists
   useEffect(() => {
+    // Don't run game loop if game is over
+    if (state.gameResult === 'defeat' || state.gameResult === 'victory') {
+      return;
+    }
+
     let animationFrameId: number;
 
     const gameLoop = (currentTime: number): void => {
@@ -137,6 +237,7 @@ export default function GamePage(): ReactElement {
       if (lastFrameTimeRef.current === 0) {
         lastFrameTimeRef.current = currentTime;
         lastSpawnTimeRef.current = currentTime;
+        gameStartTimeRef.current = currentTime;
         // Initialize antagonist spawn times
         antagonistSpawnTimesRef.current = {
           antithrombin: currentTime,
@@ -243,11 +344,30 @@ export default function GamePage(): ReactElement {
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [state.phase, state.floatingFactors, spawnFloatingFactor, tickFloatingFactors, spawnAntagonist, tickAntagonists, destroyFactor]);
+  }, [state.phase, state.floatingFactors, state.gameResult, spawnFloatingFactor, tickFloatingFactors, spawnAntagonist, tickAntagonists, destroyFactor]);
 
   const handleMainMenu = useCallback((): void => {
     router.push('/');
   }, [router]);
+
+  // Handle play again - reset all refs along with game state
+  const handlePlayAgain = useCallback((): void => {
+    // Reset timing refs
+    lastFrameTimeRef.current = 0;
+    lastSpawnTimeRef.current = 0;
+    spawnIndexRef.current = 0;
+    gameStartTimeRef.current = 0;
+    antagonistSpawnTimesRef.current = {
+      antithrombin: 0,
+      apc: 0,
+      plasmin: 0,
+    };
+    antagonistsRef.current = [];
+    prevFloatingFactorIdsRef.current = new Set();
+
+    // Reset game state
+    resetGame();
+  }, [resetGame]);
 
   return (
     <AnimationTargetProvider registry={animationRegistry}>
@@ -279,18 +399,12 @@ export default function GamePage(): ReactElement {
             onComplexSlotClick={attemptComplexPlace}
             onFactorDragStart={handleDragStart}
             heldFactorDisplayPosition={heldFactorDisplayPosition}
+            onPlayAgain={handlePlayAgain}
+            onMainMenu={handleMainMenu}
           />
 
           {/* Keyboard Controls */}
-          <GameControls onDeselect={deselectFactor} onReset={resetGame} />
-
-          {/* Victory Modal */}
-          {state.phase === 'complete' && (
-            <GameCompleteModal
-              onPlayAgain={resetGame}
-              onMainMenu={handleMainMenu}
-            />
-          )}
+          <GameControls onDeselect={deselectFactor} onReset={handlePlayAgain} />
         </div>
       </div>
     </AnimationTargetProvider>

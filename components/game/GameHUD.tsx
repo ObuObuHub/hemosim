@@ -3,6 +3,7 @@
 
 import { COLORS, LAYOUT, GAME_CANVAS } from '@/engine/game/game-config';
 import { THROMBIN_STARTER_THRESHOLD } from '@/engine/game/validation-rules';
+import { BleedingMeter } from './BleedingMeter';
 
 interface GameHUDProps {
   /** Logical thrombin value (instant) - used for threshold checks and display percentage */
@@ -13,6 +14,10 @@ interface GameHUDProps {
   clotIntegrity: number;
   /** Optional interpolated display value (lerped) */
   clotIntegrityDisplayValue?: number;
+  /** Logical bleeding value (instant) */
+  bleedingMeter: number;
+  /** Optional interpolated display value (lerped) */
+  bleedingDisplayValue?: number;
   currentMessage: string;
   isError: boolean;
   phase: string;
@@ -23,6 +28,8 @@ export function GameHUD({
   thrombinDisplayValue,
   clotIntegrity,
   clotIntegrityDisplayValue,
+  bleedingMeter,
+  bleedingDisplayValue,
   currentMessage,
   isError,
   phase,
@@ -226,6 +233,12 @@ export function GameHUD({
             </span>
           </div>
         )}
+
+        {/* Bleeding meter */}
+        <BleedingMeter
+          bleedingMeter={bleedingMeter}
+          bleedingDisplayValue={bleedingDisplayValue}
+        />
 
         {/* Phase indicator */}
         <span

@@ -2,7 +2,7 @@
 'use client';
 
 import { useReducer, useCallback, useRef, useEffect } from 'react';
-import type { GameState, GameAction, Slot, ComplexSlot, ReducerResult, FloatingFactor, HeldFactor, Antagonist } from '@/types/game';
+import type { GameState, GameAction, Slot, ComplexSlot, ReducerResult, FloatingFactor, HeldFactor, Antagonist, GameResult, GameStats } from '@/types/game';
 import type { GameEvent } from '@/types/game-events';
 import { createInitialSlots, createInitialComplexSlots, BLOODSTREAM_ZONE } from '@/engine/game/game-config';
 import { getAllFactorIds, getFactorDefinition } from '@/engine/game/factor-definitions';
@@ -110,6 +110,17 @@ function getConversionRule(
 // INITIAL STATE
 // =============================================================================
 
+function createInitialStats(): GameStats {
+  return {
+    factorsCaught: 0,
+    factorsLostToEscape: 0,
+    factorsLostToAntithrombin: 0,
+    factorsLostToAPC: 0,
+    factorsLostToPlasmin: 0,
+    timeTaken: 0,
+  };
+}
+
 function createInitialState(): GameState {
   // Filter out FXa-tenase (spawned by Tenase) and Stabilization factors (added when phase unlocks)
   const paletteFactors = getAllFactorIds().filter(
@@ -120,6 +131,9 @@ function createInitialState(): GameState {
     phase: 'initiation',
     thrombinMeter: 0,
     clotIntegrity: 0,
+    bleedingMeter: 0,
+    gameResult: null,
+    gameStats: createInitialStats(),
     slots: createInitialSlots(),
     complexSlots: createInitialComplexSlots(),
     circulationFactors: [],
@@ -927,6 +941,72 @@ function gameReducer(state: GameState, action: GameAction): ReducerResult {
       };
     }
 
+    case 'INCREMENT_BLEEDING': {
+      const newBleeding = Math.min(100, state.bleedingMeter + action.amount);
+
+      // Update stats based on reason
+      const newStats = { ...state.gameStats };
+      switch (action.reason) {
+        case 'escape':
+          newStats.factorsLostToEscape += 1;
+          break;
+        case 'antithrombin':
+          newStats.factorsLostToAntithrombin += 1;
+          break;
+        case 'apc':
+          newStats.factorsLostToAPC += 1;
+          break;
+        case 'plasmin':
+          newStats.factorsLostToPlasmin += 1;
+          break;
+      }
+
+      return {
+        state: {
+          ...state,
+          bleedingMeter: newBleeding,
+          gameStats: newStats,
+        },
+        events: [],
+      };
+    }
+
+    case 'SET_GAME_RESULT': {
+      return {
+        state: {
+          ...state,
+          gameResult: action.result,
+        },
+        events: [],
+      };
+    }
+
+    case 'INCREMENT_FACTORS_CAUGHT': {
+      return {
+        state: {
+          ...state,
+          gameStats: {
+            ...state.gameStats,
+            factorsCaught: state.gameStats.factorsCaught + 1,
+          },
+        },
+        events: [],
+      };
+    }
+
+    case 'SET_TIME_TAKEN': {
+      return {
+        state: {
+          ...state,
+          gameStats: {
+            ...state.gameStats,
+            timeTaken: action.time,
+          },
+        },
+        events: [],
+      };
+    }
+
     default:
       return { state, events: [] };
   }
@@ -963,6 +1043,14 @@ export interface UseGameStateReturn {
   tickAntagonists: (updatedAntagonists: Antagonist[], destroyedFactorIds: string[]) => void;
   /** Destroy a factor (called when antagonist catches it) */
   destroyFactor: (factorId: string, antagonistId: string) => void;
+  /** Increment bleeding meter */
+  incrementBleeding: (amount: number, reason: 'escape' | 'antithrombin' | 'apc' | 'plasmin') => void;
+  /** Set game result */
+  setGameResult: (result: GameResult) => void;
+  /** Increment factors caught counter */
+  incrementFactorsCaught: () => void;
+  /** Set elapsed time */
+  setTimeTaken: (time: number) => void;
 }
 
 /**
@@ -1077,6 +1165,25 @@ export function useGameState(): UseGameStateReturn {
     []
   );
 
+  const incrementBleeding = useCallback(
+    (amount: number, reason: 'escape' | 'antithrombin' | 'apc' | 'plasmin') => {
+      dispatch({ type: 'INCREMENT_BLEEDING', amount, reason });
+    },
+    []
+  );
+
+  const setGameResult = useCallback((result: GameResult) => {
+    dispatch({ type: 'SET_GAME_RESULT', result });
+  }, []);
+
+  const incrementFactorsCaught = useCallback(() => {
+    dispatch({ type: 'INCREMENT_FACTORS_CAUGHT' });
+  }, []);
+
+  const setTimeTaken = useCallback((time: number) => {
+    dispatch({ type: 'SET_TIME_TAKEN', time });
+  }, []);
+
   return {
     state,
     selectFactor,
@@ -1094,5 +1201,9 @@ export function useGameState(): UseGameStateReturn {
     spawnAntagonist,
     tickAntagonists,
     destroyFactor,
+    incrementBleeding,
+    setGameResult,
+    incrementFactorsCaught,
+    setTimeTaken,
   };
 }
