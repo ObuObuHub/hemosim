@@ -1,7 +1,7 @@
 // components/game/SurfacePanel.tsx
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import type { Slot, ComplexSlot, GamePhase } from '@/types/game';
 import type { PanelConfig } from '@/engine/game/game-config';
 import { COLORS, SLOT_POSITIONS, PREPLACED_POSITIONS, COMPLEX_SLOT_POSITIONS, COMPLEX_LABELS } from '@/engine/game/game-config';
@@ -11,6 +11,116 @@ import { FactorToken } from './FactorToken';
 import { MembraneBackground } from './MembraneBackground';
 import { useAnimationTarget } from '@/hooks/useAnimationTarget';
 import type { GameState } from '@/types/game';
+
+// =============================================================================
+// DOCKING ANIMATION COMPONENTS
+// =============================================================================
+
+interface RippleEffectProps {
+  color: string;
+  onComplete: () => void;
+}
+
+function RippleEffect({ color, onComplete }: RippleEffectProps): React.ReactElement {
+  useEffect(() => {
+    const timer = setTimeout(onComplete, 400);
+    return () => clearTimeout(timer);
+  }, [onComplete]);
+
+  return (
+    <div
+      className="docking-ripple"
+      style={{
+        top: '50%',
+        left: '50%',
+        marginTop: -30,
+        marginLeft: -30,
+        border: `3px solid ${color}`,
+        backgroundColor: `${color}20`,
+      }}
+    />
+  );
+}
+
+interface CalciumSparklesProps {
+  color: string;
+  onComplete: () => void;
+}
+
+function CalciumSparkles({ color, onComplete }: CalciumSparklesProps): React.ReactElement {
+  useEffect(() => {
+    const timer = setTimeout(onComplete, 500);
+    return () => clearTimeout(timer);
+  }, [onComplete]);
+
+  // 6 sparkles at different angles
+  const sparkleAngles = [0, 60, 120, 180, 240, 300];
+  const sparkleDistance = 25;
+
+  return (
+    <>
+      {sparkleAngles.map((angle, i) => {
+        const radians = (angle * Math.PI) / 180;
+        const dx = Math.cos(radians) * sparkleDistance;
+        const dy = Math.sin(radians) * sparkleDistance;
+        return (
+          <div
+            key={i}
+            className="calcium-sparkle"
+            style={{
+              top: '50%',
+              left: '50%',
+              marginTop: -3,
+              marginLeft: -3,
+              '--dx': `${dx}px`,
+              '--dy': `${dy}px`,
+              animationDelay: `${i * 30}ms`,
+            } as React.CSSProperties}
+          />
+        );
+      })}
+    </>
+  );
+}
+
+interface GhostOutlineProps {
+  factorId: string;
+  isPulsing: boolean;
+  width: number;
+  height: number;
+}
+
+function GhostOutline({ factorId, isPulsing, width, height }: GhostOutlineProps): React.ReactElement {
+  const factor = getFactorDefinition(factorId);
+  if (!factor) return <></>;
+
+  return (
+    <div
+      className={`ghost-outline ${isPulsing ? 'ghost-outline-pulsing' : ''}`}
+      style={{
+        width: width - 16,
+        height: height - 16,
+        borderRadius: 10,
+        border: `2px dashed ${factor.color}`,
+        backgroundColor: `${factor.color}10`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <span
+        style={{
+          fontSize: 14,
+          fontWeight: 600,
+          color: factor.color,
+          opacity: 0.4,
+        }}
+      >
+        {factor.inactiveLabel}
+      </span>
+    </div>
+  );
+}
 
 interface SurfacePanelProps {
   config: PanelConfig;
@@ -68,12 +178,46 @@ function SlotComponent({ slot, isValidTarget, placedFactor, onSlotClick }: SlotC
   const slotRef = useRef<HTMLDivElement>(null);
   useAnimationTarget(`slot-${slot.id}`, slotRef);
 
+  // Track previous placed state to detect new placements
+  const prevPlacedRef = useRef<string | null>(null);
+  const [showDockingEffects, setShowDockingEffects] = useState(false);
+  const [showRipple, setShowRipple] = useState(false);
+  const [showSparkles, setShowSparkles] = useState(false);
+
+  // Detect when a factor is newly placed
+  useEffect(() => {
+    const wasEmpty = prevPlacedRef.current === null;
+    const isNowFilled = slot.placedFactorId !== null;
+
+    if (wasEmpty && isNowFilled) {
+      // Factor just placed - trigger animations
+      setShowDockingEffects(true);
+      setShowRipple(true);
+      setShowSparkles(true);
+
+      // Clear docking animation after completion
+      const dockingTimer = setTimeout(() => {
+        setShowDockingEffects(false);
+      }, 350);
+
+      return () => clearTimeout(dockingTimer);
+    }
+
+    prevPlacedRef.current = slot.placedFactorId;
+  }, [slot.placedFactorId]);
+
+  const handleRippleComplete = useCallback(() => setShowRipple(false), []);
+  const handleSparklesComplete = useCallback(() => setShowSparkles(false), []);
+
   const pos = SLOT_POSITIONS[slot.id];
   if (!pos) return null;
 
   // Build className for CSS animations
   const classNames = ['game-interactive'];
   if (isValidTarget) classNames.push('slot-valid-target');
+
+  // Get factor color for effects
+  const factorColor = placedFactor?.color || getFactorDefinition(slot.acceptsFactorId)?.color || COLORS.panelBorder;
 
   return (
     <div
@@ -104,8 +248,25 @@ function SlotComponent({ slot, isValidTarget, placedFactor, onSlotClick }: SlotC
         justifyContent: 'center',
         cursor: slot.isLocked ? 'not-allowed' : 'pointer',
         transition: slot.isLocked ? 'none' : 'background-color 0.2s ease',
+        overflow: 'visible',
       }}
     >
+      {/* Ghost outline for empty slots */}
+      {!placedFactor && !slot.isLocked && !slot.transferredToCirculation && (
+        <GhostOutline
+          factorId={slot.acceptsFactorId}
+          isPulsing={isValidTarget}
+          width={pos.width}
+          height={pos.height}
+        />
+      )}
+
+      {/* Ripple effect on placement */}
+      {showRipple && <RippleEffect color={factorColor} onComplete={handleRippleComplete} />}
+
+      {/* Ca²⁺ sparkles on placement */}
+      {showSparkles && <CalciumSparkles color={factorColor} onComplete={handleSparklesComplete} />}
+
       {slot.transferredToCirculation ? (
         <div
           style={{
@@ -123,20 +284,10 @@ function SlotComponent({ slot, isValidTarget, placedFactor, onSlotClick }: SlotC
           </span>
         </div>
       ) : placedFactor ? (
-        <div className="factor-placed">
+        <div className={showDockingEffects ? 'factor-docking' : 'factor-placed'}>
           <FactorToken factor={placedFactor} isActive={slot.isActive} />
         </div>
-      ) : (
-        <span
-          style={{
-            fontSize: 11,
-            color: isValidTarget ? COLORS.slotBorderValid : COLORS.textDim,
-            fontWeight: isValidTarget ? 600 : 400,
-          }}
-        >
-          {slot.acceptsFactorId}
-        </span>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -203,6 +354,37 @@ function ComplexSlotComponent({ complexSlot, gameState, onComplexSlotClick }: Co
   // Register as complex-{complexType}-{role} (e.g., complex-tenase-enzyme)
   useAnimationTarget(`complex-${complexSlot.complexType}-${complexSlot.role}`, slotRef);
 
+  // Track previous placed state to detect new placements
+  const prevPlacedRef = useRef<string | null>(null);
+  const [showDockingEffects, setShowDockingEffects] = useState(false);
+  const [showRipple, setShowRipple] = useState(false);
+  const [showSparkles, setShowSparkles] = useState(false);
+
+  // Detect when a factor is newly placed
+  useEffect(() => {
+    const wasEmpty = prevPlacedRef.current === null;
+    const isNowFilled = complexSlot.placedFactorId !== null;
+
+    if (wasEmpty && isNowFilled) {
+      // Factor just placed - trigger animations
+      setShowDockingEffects(true);
+      setShowRipple(true);
+      setShowSparkles(true);
+
+      // Clear docking animation after completion
+      const dockingTimer = setTimeout(() => {
+        setShowDockingEffects(false);
+      }, 350);
+
+      return () => clearTimeout(dockingTimer);
+    }
+
+    prevPlacedRef.current = complexSlot.placedFactorId;
+  }, [complexSlot.placedFactorId]);
+
+  const handleRippleComplete = useCallback(() => setShowRipple(false), []);
+  const handleSparklesComplete = useCallback(() => setShowSparkles(false), []);
+
   const pos = COMPLEX_SLOT_POSITIONS[complexSlot.id];
   if (!pos) return null;
 
@@ -222,6 +404,9 @@ function ComplexSlotComponent({ complexSlot, gameState, onComplexSlotClick }: Co
   const isLocked = gameState.phase !== 'propagation' && gameState.phase !== 'complete';
   const needsTenase = complexSlot.id === 'prothrombinase-enzyme' && !isTenaseComplete(gameState);
   const isDimmed = isLocked || needsTenase;
+
+  // Get factor color for effects
+  const factorColor = placedFactor?.color || previewFactor?.color || COLORS.panelBorder;
 
   return (
     <div
@@ -246,10 +431,19 @@ function ComplexSlotComponent({ complexSlot, gameState, onComplexSlotClick }: Co
         cursor: isClickable && !needsTenase ? 'pointer' : 'default',
         opacity: isDimmed ? 0.5 : 1,
         transition: 'all 0.2s ease',
+        overflow: 'visible',
       }}
     >
+      {/* Ripple effect on placement */}
+      {showRipple && <RippleEffect color={factorColor} onComplete={handleRippleComplete} />}
+
+      {/* Ca²⁺ sparkles on placement */}
+      {showSparkles && <CalciumSparkles color={factorColor} onComplete={handleSparklesComplete} />}
+
       {placedFactor ? (
-        <FactorToken factor={placedFactor} isActive={true} />
+        <div className={showDockingEffects ? 'factor-docking' : undefined}>
+          <FactorToken factor={placedFactor} isActive={true} />
+        </div>
       ) : previewFactor ? (
         <FactorToken
           factor={previewFactor}

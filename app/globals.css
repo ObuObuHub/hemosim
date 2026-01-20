@@ -957,3 +957,120 @@ input[type="number"] {
 .membrane-clot-zone circle {
   animation: clot-glow-pulse 2.5s ease-in-out infinite;
 }
+
+/* =============================================================================
+   DOCKING POLISH ANIMATIONS
+   Educational: Gla domain + Ca²⁺ binding to phospholipid membranes
+   ============================================================================= */
+
+/* Sink Animation - Gla domain embedding into membrane */
+@keyframes factor-sink {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  60% {
+    transform: translateY(4px) scale(0.98);
+  }
+  100% {
+    transform: translateY(2px) scale(1);
+  }
+}
+
+.factor-sinking {
+  animation: factor-sink 200ms ease-out forwards;
+}
+
+/* Ripple Effect - emanates from placement point */
+@keyframes docking-ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+.docking-ripple {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: docking-ripple 400ms ease-out forwards;
+  z-index: 10;
+}
+
+/* Ca²⁺ Sparkle Animation - represents calcium ions */
+@keyframes calcium-sparkle {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx, 20px), var(--dy, -20px)) scale(0);
+    opacity: 0;
+  }
+}
+
+.calcium-sparkle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: radial-gradient(circle, #FBBF24 0%, #F59E0B 50%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: calcium-sparkle 500ms ease-out forwards;
+  z-index: 11;
+  box-shadow: 0 0 6px #FBBF24, 0 0 12px #F59E0B;
+}
+
+/* Ghost Outline Pulse - for empty slots when valid target */
+@keyframes ghost-outline-pulse {
+  0%, 100% {
+    opacity: 0.15;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(1.02);
+  }
+}
+
+.ghost-outline {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  opacity: 0.2;
+  z-index: 0;
+}
+
+.ghost-outline-pulsing {
+  animation: ghost-outline-pulse 1.2s ease-in-out infinite;
+}
+
+/* Combined sink + pop-in for newly placed factors */
+@keyframes factor-dock {
+  0% {
+    transform: scale(0.5) translateY(0);
+    opacity: 0;
+  }
+  40% {
+    transform: scale(1.1) translateY(2px);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(0.95) translateY(4px);
+  }
+  100% {
+    transform: scale(1) translateY(2px);
+    opacity: 1;
+  }
+}
+
+.factor-docking {
+  animation: factor-dock 350ms ease-out forwards;
+}
