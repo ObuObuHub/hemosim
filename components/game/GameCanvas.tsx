@@ -4,6 +4,7 @@
 import type { GameState, VisualState } from '@/types/game';
 import { GAME_CANVAS, PANEL_CONFIGS, COLORS } from '@/engine/game/game-config';
 import { GameHUD } from './GameHUD';
+import { BloodstreamZone } from './BloodstreamZone';
 import { SurfacePanel } from './SurfacePanel';
 import { ClotZonePanel } from './ClotZonePanel';
 import { FactorPalette } from './FactorPalette';
@@ -37,6 +38,9 @@ export function GameCanvas({
         fontFamily: 'system-ui, -apple-system, sans-serif',
       }}
     >
+      {/* Bloodstream Zone (floating factors) */}
+      <BloodstreamZone floatingFactors={gameState.floatingFactors} />
+
       {/* HUD (thrombin meter + clot integrity meter + message) */}
       <GameHUD
         thrombinMeter={gameState.thrombinMeter}

@@ -2,9 +2,9 @@
 'use client';
 
 import { useReducer, useCallback, useRef, useEffect } from 'react';
-import type { GameState, GameAction, Slot, ComplexSlot, ReducerResult } from '@/types/game';
+import type { GameState, GameAction, Slot, ComplexSlot, ReducerResult, FloatingFactor } from '@/types/game';
 import type { GameEvent } from '@/types/game-events';
-import { createInitialSlots, createInitialComplexSlots } from '@/engine/game/game-config';
+import { createInitialSlots, createInitialComplexSlots, BLOODSTREAM_ZONE } from '@/engine/game/game-config';
 import { getAllFactorIds, getFactorDefinition } from '@/engine/game/factor-definitions';
 import {
   validatePlacement,
@@ -127,6 +127,7 @@ function createInitialState(): GameState {
     selectedFactorId: null,
     currentMessage: 'Click a factor in the palette, then click a slot to place it.',
     isError: false,
+    floatingFactors: [],
   };
 }
 
@@ -736,6 +737,52 @@ function gameReducer(state: GameState, action: GameAction): ReducerResult {
       };
     }
 
+    case 'SPAWN_FLOATING_FACTOR': {
+      return {
+        state: {
+          ...state,
+          floatingFactors: [...state.floatingFactors, action.factor],
+        },
+        events: [],
+      };
+    }
+
+    case 'TICK_FLOATING_FACTORS': {
+      // Move all floating factors by their velocity * deltaTime
+      const updatedFactors = state.floatingFactors.map((factor) => ({
+        ...factor,
+        position: {
+          x: factor.position.x + factor.velocity.x * action.deltaTime,
+          y: factor.position.y + factor.velocity.y * action.deltaTime,
+        },
+      }));
+
+      // Remove factors that have moved past the removal threshold
+      const filteredFactors = updatedFactors.filter(
+        (factor) => factor.position.x <= BLOODSTREAM_ZONE.removeThreshold
+      );
+
+      return {
+        state: {
+          ...state,
+          floatingFactors: filteredFactors,
+        },
+        events: [],
+      };
+    }
+
+    case 'REMOVE_FLOATING_FACTOR': {
+      return {
+        state: {
+          ...state,
+          floatingFactors: state.floatingFactors.filter(
+            (factor) => factor.id !== action.factorId
+          ),
+        },
+        events: [],
+      };
+    }
+
     default:
       return { state, events: [] };
   }
@@ -754,6 +801,12 @@ export interface UseGameStateReturn {
   resetGame: () => void;
   /** Subscribe to events - returns unsubscribe function */
   subscribeToEvents: (callback: (events: GameEvent[]) => void) => () => void;
+  /** Spawn a floating factor in the bloodstream */
+  spawnFloatingFactor: (factor: FloatingFactor) => void;
+  /** Update floating factor positions by deltaTime (in seconds) */
+  tickFloatingFactors: (deltaTime: number) => void;
+  /** Remove a specific floating factor by ID */
+  removeFloatingFactor: (factorId: string) => void;
 }
 
 /**
@@ -820,6 +873,18 @@ export function useGameState(): UseGameStateReturn {
     };
   }, []);
 
+  const spawnFloatingFactor = useCallback((factor: FloatingFactor) => {
+    dispatch({ type: 'SPAWN_FLOATING_FACTOR', factor });
+  }, []);
+
+  const tickFloatingFactors = useCallback((deltaTime: number) => {
+    dispatch({ type: 'TICK_FLOATING_FACTORS', deltaTime });
+  }, []);
+
+  const removeFloatingFactor = useCallback((factorId: string) => {
+    dispatch({ type: 'REMOVE_FLOATING_FACTOR', factorId });
+  }, []);
+
   return {
     state,
     selectFactor,
@@ -828,5 +893,8 @@ export function useGameState(): UseGameStateReturn {
     attemptComplexPlace,
     resetGame,
     subscribeToEvents,
+    spawnFloatingFactor,
+    tickFloatingFactors,
+    removeFloatingFactor,
   };
 }

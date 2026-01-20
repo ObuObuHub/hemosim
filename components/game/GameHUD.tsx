@@ -61,7 +61,7 @@ export function GameHUD({
     <div
       style={{
         position: 'absolute',
-        top: 0,
+        top: LAYOUT.header.y,
         left: 0,
         width: GAME_CANVAS.width,
         height: LAYOUT.header.height,

@@ -19,7 +19,23 @@ export interface ComplexSlotPosition {
 
 export const GAME_CANVAS = {
   width: 1200,
-  height: 700,
+  height: 820, // 120 (bloodstream) + 80 (header) + 480 (panels) + 140 (palette)
+} as const;
+
+// =============================================================================
+// BLOODSTREAM ZONE DIMENSIONS
+// =============================================================================
+
+export const BLOODSTREAM_ZONE = {
+  height: 120,
+  y: 0, // positioned at top of canvas
+  /** Spawn position (off-screen left) */
+  spawnX: -60,
+  /** Y range for random spawn position (relative to zone) */
+  spawnYMin: 30,
+  spawnYMax: 90,
+  /** Remove threshold (off-screen right) */
+  removeThreshold: 1200,
 } as const;
 
 // =============================================================================
@@ -27,19 +43,24 @@ export const GAME_CANVAS = {
 // =============================================================================
 
 export const LAYOUT = {
+  // Bloodstream zone (floating factors)
+  bloodstream: {
+    y: 0,
+    height: BLOODSTREAM_ZONE.height,
+  },
   // Header area (thrombin meter + message)
   header: {
-    y: 0,
+    y: BLOODSTREAM_ZONE.height,
     height: 80,
   },
   // Surface panels area
   panels: {
-    y: 80,
+    y: BLOODSTREAM_ZONE.height + 80,
     height: 480,
   },
   // Factor palette area
   palette: {
-    y: 560,
+    y: BLOODSTREAM_ZONE.height + 80 + 480,
     height: 140,
   },
   // Panel widths (4 equal panels)

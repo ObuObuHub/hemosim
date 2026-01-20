@@ -89,6 +89,20 @@ export interface PreplacedElement {
 export type GamePhase = 'initiation' | 'amplification' | 'propagation' | 'stabilization' | 'complete';
 
 // =============================================================================
+// FLOATING FACTOR (Bloodstream)
+// =============================================================================
+
+export type InhibitorVulnerability = 'antithrombin' | 'apc' | 'plasmin';
+
+export interface FloatingFactor {
+  id: string;
+  factorId: string;
+  position: { x: number; y: number };
+  velocity: { x: number; y: number };
+  isVulnerableTo: InhibitorVulnerability[];
+}
+
+// =============================================================================
 // GAME STATE
 // =============================================================================
 
@@ -103,6 +117,7 @@ export interface GameState {
   selectedFactorId: string | null;
   currentMessage: string;
   isError: boolean; // for error vs success message styling
+  floatingFactors: FloatingFactor[]; // factors floating in bloodstream zone
 }
 
 // =============================================================================
@@ -114,7 +129,10 @@ export type GameAction =
   | { type: 'DESELECT_FACTOR' }
   | { type: 'ATTEMPT_PLACE'; slotId: string }
   | { type: 'ATTEMPT_COMPLEX_PLACE'; complexSlotId: string }
-  | { type: 'RESET_GAME' };
+  | { type: 'RESET_GAME' }
+  | { type: 'SPAWN_FLOATING_FACTOR'; factor: FloatingFactor }
+  | { type: 'TICK_FLOATING_FACTORS'; deltaTime: number }
+  | { type: 'REMOVE_FLOATING_FACTOR'; factorId: string };
 
 // =============================================================================
 // VALIDATION RESULT
