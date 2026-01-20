@@ -79,6 +79,35 @@ export const FACTOR_DEFINITIONS: Record<string, FactorDefinition> = {
     thrombinContribution: 0,
     color: '#3B82F6',
   },
+
+  // =============================================================================
+  // STABILIZATION PHASE FACTORS
+  // =============================================================================
+
+  Fibrinogen: {
+    id: 'Fibrinogen',
+    inactiveLabel: 'Fibrinogen',
+    activeLabel: 'Fibrin',
+    category: 'zymogen',
+    targetSurface: 'clot-zone',
+    activationMessage: 'Fibrinogen cleaved to Fibrin monomer (thrombin catalyzes)',
+    errorMessageWrongSlot: 'Fibrinogen must be placed in Clot Zone where thrombin can cleave it.',
+    prerequisites: [], // needs stabilization phase to be active (phase gating)
+    thrombinContribution: 0,
+    color: '#F97316', // orange
+  },
+  FXIII: {
+    id: 'FXIII',
+    inactiveLabel: 'FXIII',
+    activeLabel: 'FXIIIa',
+    category: 'zymogen',
+    targetSurface: 'clot-zone',
+    activationMessage: 'FXIIIa activated, cross-links fibrin strands (thrombin catalyzes)',
+    errorMessageWrongSlot: 'FXIII must be placed in Clot Zone where thrombin can activate it.',
+    prerequisites: [], // needs stabilization phase to be active (phase gating)
+    thrombinContribution: 0,
+    color: '#FBBF24', // amber/gold
+  },
 } as const;
 
 // =============================================================================
