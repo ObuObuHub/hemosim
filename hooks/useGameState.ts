@@ -145,9 +145,16 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const factor = getFactorDefinition(factorId)!;
 
       // Update slot with placed factor
+      // FIX is special: it transfers to circulation after activation
+      const transfersToCirculation = factorId === 'FIX';
       let newSlots: Slot[] = state.slots.map((slot) =>
         slot.id === action.slotId
-          ? { ...slot, placedFactorId: factorId, isActive: true }
+          ? {
+              ...slot,
+              placedFactorId: factorId,
+              isActive: true,
+              transferredToCirculation: transfersToCirculation,
+            }
           : slot
       );
 

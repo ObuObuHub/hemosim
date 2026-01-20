@@ -39,6 +39,7 @@ export interface Slot {
   isLocked: boolean;
   placedFactorId: string | null;
   isActive: boolean; // has factor been converted to active form
+  transferredToCirculation: boolean; // factor moved to circulation (e.g., FIXa)
 }
 
 // =============================================================================

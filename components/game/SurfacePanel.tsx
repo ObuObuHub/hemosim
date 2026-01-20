@@ -18,6 +18,38 @@ interface SurfacePanelProps {
   onComplexSlotClick: (complexSlotId: string) => void;
 }
 
+// Determine panel status badge
+function getPanelStatus(
+  surface: string,
+  slots: Slot[],
+  gameState: GameState
+): { label: string; color: string } | null {
+  const panelSlots = slots.filter((s) => s.surface === surface);
+  const allPlaced = panelSlots.every((s) => s.placedFactorId !== null);
+  const anyLocked = panelSlots.some((s) => s.isLocked);
+
+  if (surface === 'tf-cell') {
+    if (allPlaced) return { label: 'COMPLETED', color: '#22C55E' };
+    return { label: 'ACTIVE', color: '#3B82F6' };
+  }
+
+  if (surface === 'platelet') {
+    if (anyLocked) return { label: 'LOCKED', color: '#6B7280' };
+    if (allPlaced) return { label: 'COMPLETED', color: '#22C55E' };
+    return { label: 'ACTIVE', color: '#3B82F6' };
+  }
+
+  if (surface === 'activated-platelet') {
+    if (gameState.phase === 'initiation' || gameState.phase === 'amplification') {
+      return { label: 'LOCKED', color: '#6B7280' };
+    }
+    if (gameState.phase === 'complete') return { label: 'COMPLETED', color: '#22C55E' };
+    return { label: 'ACTIVE', color: '#3B82F6' };
+  }
+
+  return null;
+}
+
 export function SurfacePanel({
   config,
   slots,
@@ -29,6 +61,9 @@ export function SurfacePanel({
   const panelSlots = slots.filter((s) => s.surface === config.surface);
   const isLocked = panelSlots.some((s) => s.isLocked);
   const preplacedElements = PREPLACED_ELEMENTS.filter((e) => e.surface === config.surface);
+
+  // Get panel status badge
+  const panelStatus = getPanelStatus(config.surface, slots, gameState);
 
   // Get valid slots for currently selected factor
   const validSlotIds = gameState.selectedFactorId
@@ -67,11 +102,29 @@ export function SurfacePanel({
         style={{
           fontSize: 11,
           color: COLORS.textSecondary,
-          marginBottom: 16,
+          marginBottom: 8,
         }}
       >
         {config.subtitle}
       </div>
+
+      {/* Status Badge */}
+      {panelStatus && (
+        <div
+          style={{
+            fontSize: 9,
+            fontWeight: 600,
+            color: panelStatus.color,
+            backgroundColor: `${panelStatus.color}20`,
+            padding: '2px 8px',
+            borderRadius: 4,
+            marginBottom: 12,
+            letterSpacing: '0.5px',
+          }}
+        >
+          {panelStatus.label}
+        </div>
+      )}
 
       {/* Coming Soon overlay for v2 */}
       {config.isComingSoon && (
@@ -183,7 +236,23 @@ export function SurfacePanel({
                 boxShadow: isValidTarget ? `0 0 10px ${COLORS.slotBorderValid}50` : 'none',
               }}
             >
-              {placedFactor ? (
+              {slot.transferredToCirculation ? (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 2,
+                  }}
+                >
+                  <span style={{ fontSize: 10, color: COLORS.textDim }}>
+                    {placedFactor?.activeLabel}
+                  </span>
+                  <span style={{ fontSize: 9, color: '#06B6D4' }}>
+                    → circulation
+                  </span>
+                </div>
+              ) : placedFactor ? (
                 <FactorToken factor={placedFactor} isActive={slot.isActive} />
               ) : (
                 <span
@@ -236,20 +305,26 @@ export function SurfacePanel({
             if (!pos) return null;
 
             const isEnzymeSlot = !complexSlot.isAutoFilled;
-            const isClickable = isEnzymeSlot;
+            const isClickable = isEnzymeSlot && gameState.phase === 'propagation';
             const placedFactor = complexSlot.placedFactorId
               ? getFactorDefinition(complexSlot.placedFactorId)
               : null;
 
-            // Prothrombinase-enzyme slot is dimmed if Tenase not complete
-            const isDimmed =
-              complexSlot.id === 'prothrombinase-enzyme' &&
-              !isTenaseComplete(gameState);
+            // For cofactor slots, show expected factor even before placed (greyed)
+            const previewFactorId = complexSlot.isAutoFilled
+              ? (complexSlot.id === 'tenase-cofactor' ? 'FVIII' : 'FV')
+              : null;
+            const previewFactor = previewFactorId ? getFactorDefinition(previewFactorId) : null;
+
+            // Determine if slot should be dimmed
+            const isLocked = gameState.phase !== 'propagation' && gameState.phase !== 'complete';
+            const needsTenase = complexSlot.id === 'prothrombinase-enzyme' && !isTenaseComplete(gameState);
+            const isDimmed = isLocked || needsTenase;
 
             return (
               <div
                 key={complexSlot.id}
-                onClick={() => isClickable && onComplexSlotClick(complexSlot.id)}
+                onClick={() => isClickable && !needsTenase && onComplexSlotClick(complexSlot.id)}
                 style={{
                   position: 'absolute',
                   left: pos.x,
@@ -260,19 +335,25 @@ export function SurfacePanel({
                     ? `${COLORS.slotBackground}30`
                     : COLORS.slotBackground,
                   border: complexSlot.isAutoFilled
-                    ? `2px solid ${COLORS.panelBorder}`
-                    : `2px dashed ${COLORS.panelBorder}`,
+                    ? `2px solid ${isDimmed ? COLORS.textDim : COLORS.panelBorder}`
+                    : `2px dashed ${isDimmed ? COLORS.textDim : COLORS.panelBorder}`,
                   borderRadius: 8,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  cursor: isClickable ? 'pointer' : 'default',
+                  cursor: isClickable && !needsTenase ? 'pointer' : 'default',
                   opacity: isDimmed ? 0.5 : 1,
                   transition: 'all 0.2s ease',
                 }}
               >
                 {placedFactor ? (
                   <FactorToken factor={placedFactor} isActive={true} />
+                ) : previewFactor ? (
+                  <FactorToken
+                    factor={previewFactor}
+                    isActive={true}
+                    style={{ opacity: 0.4 }}
+                  />
                 ) : (
                   <span
                     style={{

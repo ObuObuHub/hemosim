@@ -33,7 +33,7 @@ export const FACTOR_DEFINITIONS: Record<string, FactorDefinition> = {
   FII: {
     id: 'FII',
     inactiveLabel: 'FII',
-    activeLabel: 'THR',
+    activeLabel: 'Starter THR',
     category: 'zymogen',
     targetSurface: 'tf-cell',
     activationMessage: 'Starter thrombin via Xa + trace Va (initiation scaffold)',

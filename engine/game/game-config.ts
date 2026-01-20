@@ -112,6 +112,7 @@ export function createInitialSlots(): Slot[] {
       isLocked: false,
       placedFactorId: null,
       isActive: false,
+      transferredToCirculation: false,
     },
     {
       id: 'tf-cell-fix',
@@ -120,6 +121,7 @@ export function createInitialSlots(): Slot[] {
       isLocked: false,
       placedFactorId: null,
       isActive: false,
+      transferredToCirculation: false,
     },
     {
       id: 'tf-cell-fii',
@@ -128,6 +130,7 @@ export function createInitialSlots(): Slot[] {
       isLocked: false,
       placedFactorId: null,
       isActive: false,
+      transferredToCirculation: false,
     },
     // Platelet slots (Amplification) - locked until thrombin threshold
     {
@@ -137,6 +140,7 @@ export function createInitialSlots(): Slot[] {
       isLocked: true,
       placedFactorId: null,
       isActive: false,
+      transferredToCirculation: false,
     },
     {
       id: 'platelet-fviii',
@@ -145,6 +149,7 @@ export function createInitialSlots(): Slot[] {
       isLocked: true,
       placedFactorId: null,
       isActive: false,
+      transferredToCirculation: false,
     },
   ];
 }
