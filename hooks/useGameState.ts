@@ -1,7 +1,7 @@
 // hooks/useGameState.ts
 'use client';
 
-import { useReducer, useCallback, useRef } from 'react';
+import { useReducer, useCallback, useRef, useEffect } from 'react';
 import type { GameState, GameAction, Slot, ComplexSlot, ReducerResult } from '@/types/game';
 import type { GameEvent } from '@/types/game-events';
 import { createInitialSlots, createInitialComplexSlots } from '@/engine/game/game-config';
@@ -31,8 +31,7 @@ interface ConversionRule {
  */
 function getConversionRule(
   factorId: string,
-  surface: string,
-  _state: GameState
+  surface: string
 ): ConversionRule | null {
   // TF-CELL conversions (proteolysis)
   if (surface === 'tf-cell') {
@@ -262,7 +261,7 @@ function gameReducer(state: GameState, action: GameAction): ReducerResult {
       });
 
       // Emit ARROW_PULSE from catalyst to factor
-      const conversionRule = getConversionRule(factorId, surface, state);
+      const conversionRule = getConversionRule(factorId, surface);
       if (conversionRule) {
         // Determine source node for arrow
         let fromNode = 'tf-viia'; // default for TF+VIIa
@@ -635,21 +634,6 @@ function gameReducer(state: GameState, action: GameAction): ReducerResult {
 }
 
 // =============================================================================
-// STATE WRAPPER REDUCER
-// =============================================================================
-
-/**
- * Wrapper reducer that extracts state from ReducerResult
- * Events are captured via callback in the hook
- */
-function stateReducer(
-  _prevState: GameState,
-  result: ReducerResult
-): GameState {
-  return result.state;
-}
-
-// =============================================================================
 // HOOK
 // =============================================================================
 
@@ -660,64 +644,66 @@ export interface UseGameStateReturn {
   attemptPlace: (slotId: string) => void;
   attemptComplexPlace: (complexSlotId: string) => void;
   resetGame: () => void;
-  /** Most recent events from last action - useful for animation controller */
-  lastEvents: GameEvent[];
   /** Subscribe to events - returns unsubscribe function */
   subscribeToEvents: (callback: (events: GameEvent[]) => void) => () => void;
 }
 
+/**
+ * Wrapper reducer that extracts state from ReducerResult.
+ * Events are stored in an array that is passed by reference.
+ */
+function stateReducer(state: GameState, action: GameAction): GameState {
+  const result = gameReducer(state, action);
+  // Store events in a closure-captured variable for post-render broadcast
+  // The events will be read by useEffect after this reducer returns
+  stateReducer.pendingEvents = result.events;
+  return result.state;
+}
+// Module-level storage for pending events (avoids ref access during render)
+stateReducer.pendingEvents = [] as GameEvent[];
+
 export function useGameState(): UseGameStateReturn {
-  const [state, dispatchState] = useReducer(stateReducer, null, createInitialState);
-  const lastEventsRef = useRef<GameEvent[]>([]);
   const subscribersRef = useRef<Set<(events: GameEvent[]) => void>>(new Set());
 
-  /**
-   * Dispatch action and handle events
-   */
-  const dispatch = useCallback((action: GameAction) => {
-    // Run the game reducer to get result with events
-    const result = gameReducer(state, action);
+  const [state, dispatch] = useReducer(stateReducer, null, createInitialState);
 
-    // Update state via wrapper reducer
-    dispatchState(result);
-
-    // Store events for access
-    lastEventsRef.current = result.events;
-
-    // Notify subscribers
-    if (result.events.length > 0) {
-      subscribersRef.current.forEach((callback) => callback(result.events));
+  // Broadcast events after render to avoid stale closure issues
+  useEffect(() => {
+    if (stateReducer.pendingEvents.length > 0) {
+      const events = stateReducer.pendingEvents;
+      stateReducer.pendingEvents = [];
+      subscribersRef.current.forEach((cb) => cb(events));
     }
-  }, [state]);
+  });
 
   const selectFactor = useCallback(
     (factorId: string) => {
       dispatch({ type: 'SELECT_FACTOR', factorId });
     },
-    [dispatch]
+    []
   );
 
   const deselectFactor = useCallback(() => {
     dispatch({ type: 'DESELECT_FACTOR' });
-  }, [dispatch]);
+  }, []);
 
   const attemptPlace = useCallback(
     (slotId: string) => {
       dispatch({ type: 'ATTEMPT_PLACE', slotId });
     },
-    [dispatch]
+    []
   );
 
   const attemptComplexPlace = useCallback(
     (complexSlotId: string) => {
       dispatch({ type: 'ATTEMPT_COMPLEX_PLACE', complexSlotId });
     },
-    [dispatch]
+    []
   );
 
   const resetGame = useCallback(() => {
     dispatch({ type: 'RESET_GAME' });
-  }, [dispatch]);
+  }, []);
 
   const subscribeToEvents = useCallback((callback: (events: GameEvent[]) => void) => {
     subscribersRef.current.add(callback);
@@ -733,7 +719,6 @@ export function useGameState(): UseGameStateReturn {
     attemptPlace,
     attemptComplexPlace,
     resetGame,
-    lastEvents: lastEventsRef.current,
     subscribeToEvents,
   };
 }
