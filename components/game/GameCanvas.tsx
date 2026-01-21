@@ -130,6 +130,7 @@ export const GameCanvas = forwardRef<HTMLDivElement, GameCanvasProps>(function G
         clotIntegrity={gameState.clotIntegrity}
         clotIntegrityDisplayValue={visualState?.clotIntegrityMeter.current}
         bleedingMeter={gameState.bleedingMeter}
+        plateletActivation={gameState.plateletActivation}
         currentMessage={gameState.currentMessage}
         isError={gameState.isError}
         phase={gameState.phase}

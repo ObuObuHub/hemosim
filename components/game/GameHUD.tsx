@@ -18,6 +18,10 @@ interface GameHUDProps {
   bleedingMeter: number;
   /** Optional interpolated display value (lerped) */
   bleedingDisplayValue?: number;
+  /** Logical platelet activation value (0-100) */
+  plateletActivation: number;
+  /** Optional interpolated display value (lerped) */
+  plateletActivationDisplayValue?: number;
   currentMessage: string;
   isError: boolean;
   phase: string;
@@ -30,6 +34,8 @@ export function GameHUD({
   clotIntegrityDisplayValue,
   bleedingMeter,
   bleedingDisplayValue,
+  plateletActivation,
+  plateletActivationDisplayValue,
   currentMessage,
   isError,
   phase,
@@ -63,6 +69,22 @@ export function GameHUD({
 
   // Only show during stabilization phase or after
   const showIntegrityMeter = phase === 'stabilization' || phase === 'complete';
+
+  // Platelet Activation meter calculations
+  const activationMeterWidth = 200;
+  const activationVisualValue = plateletActivationDisplayValue ?? plateletActivation;
+  const activationFillWidth = (activationVisualValue / 100) * activationMeterWidth;
+
+  // Color changes from yellow to green as it fills
+  const activationFillColor =
+    plateletActivation >= 100
+      ? '#22C55E' // Green - platelet unlocked
+      : plateletActivation >= 66
+      ? '#FBBF24' // Gold - almost there
+      : '#F59E0B'; // Amber - building up
+
+  // Only show during initiation phase (before platelet unlocks)
+  const showActivationMeter = phase === 'initiation';
 
   return (
     <div
@@ -166,6 +188,73 @@ export function GameHUD({
             Starter: {THROMBIN_STARTER_THRESHOLD}%
           </span>
         </div>
+
+        {/* Platelet Activation meter - shown during Initiation */}
+        {showActivationMeter && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: COLORS.textSecondary,
+                textTransform: 'uppercase',
+              }}
+            >
+              Platelet:
+            </span>
+
+            {/* Meter bar */}
+            <div
+              style={{
+                position: 'relative',
+                width: activationMeterWidth,
+                height: 20,
+                backgroundColor: COLORS.thrombinMeterBackground,
+                borderRadius: 4,
+                border: `1px solid ${COLORS.panelBorder}`,
+                overflow: 'hidden',
+              }}
+            >
+              {/* Fill */}
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  width: activationFillWidth,
+                  height: '100%',
+                  backgroundColor: activationFillColor,
+                  transition: 'width 0.3s ease, background-color 0.3s ease',
+                }}
+              />
+
+              {/* Percentage text */}
+              <span
+                style={{
+                  position: 'absolute',
+                  left: '50%',
+                  top: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: COLORS.textPrimary,
+                }}
+              >
+                {plateletActivation}%
+              </span>
+            </div>
+
+            {/* Target label */}
+            <span
+              style={{
+                fontSize: 10,
+                color: COLORS.textDim,
+              }}
+            >
+              Target: 100%
+            </span>
+          </div>
+        )}
 
         {/* Clot Integrity meter - conditionally shown */}
         {showIntegrityMeter && (
