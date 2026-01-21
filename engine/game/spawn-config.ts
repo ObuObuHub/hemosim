@@ -12,13 +12,16 @@ export interface PhaseSpawnConfig {
 
 export const PHASE_SPAWN_CONFIG: Record<GamePhase, PhaseSpawnConfig> = {
   initiation: {
-    // FX becomes FXa (catalyst), FII generates starter thrombin (30%) to unlock platelet
-    factorIds: ['FX', 'FII'],
-    spawnIntervalMs: 4000,
+    // FX generates local FXa (stays on TF-cell, triggers TFPI after 3)
+    // FIX generates FIXa "Messenger" (travels to platelet)
+    // FII generates Spark Thrombin (fills Platelet Activation meter)
+    factorIds: ['FX', 'FIX', 'FII'],
+    spawnIntervalMs: 3500,
   },
   amplification: {
-    // FV and FVIII are cofactors needed for complexes
-    factorIds: ['FV', 'FVIII'],
+    // FV and FVIII are cofactors activated by Spark Thrombin
+    // FXI is reinforcement (generates local FIXa)
+    factorIds: ['FV', 'FVIII', 'FXI'],
     spawnIntervalMs: 3000,
   },
   propagation: {
@@ -42,16 +45,17 @@ export const PHASE_SPAWN_CONFIG: Record<GamePhase, PhaseSpawnConfig> = {
 
 export const FACTOR_VULNERABILITIES: Record<string, InhibitorVulnerability[]> = {
   // Initiation - zymogens are NOT vulnerable to Antithrombin
-  // AT targets activated serine proteases (IIa, Xa, IXa), not zymogens (FII, FX)
-  FX: [],
-  FII: [], // prothrombin is a zymogen - AT only targets thrombin (IIa)
+  FX: [], // zymogen
+  FIX: [], // zymogen
+  FII: [], // zymogen (prothrombin)
 
   // Amplification
   FV: ['apc'], // procofactor - targeted by APC
   FVIII: ['apc'], // procofactor - targeted by APC
+  FXI: [], // zymogen until activated
 
-  // Propagation
-  FIXa: ['antithrombin'],
+  // Propagation (activated enzymes ARE vulnerable)
+  FIXa: ['antithrombin'], // serine protease - AT target
 
   // Stabilization
   Fibrinogen: ['plasmin'],
