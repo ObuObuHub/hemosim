@@ -25,7 +25,7 @@ import {
   getActiveAntagonistTypes,
   ANTAGONIST_CONFIGS,
 } from '@/engine/game/antagonist-ai';
-import type { FloatingFactor, AntagonistType, Antagonist } from '@/types/game';
+import type { FloatingFactor, AntagonistType, Antagonist, MessengerFactor } from '@/types/game';
 import type { GameEvent } from '@/types/game-events';
 
 // =============================================================================
@@ -71,6 +71,10 @@ export default function GamePage(): ReactElement {
     setGameResult,
     incrementFactorsCaught,
     setTimeTaken,
+    spawnMessenger,
+    tickMessengers,
+    messengerArrived,
+    destroyMessenger,
   } = useGameState();
 
   // Refs for game loop
@@ -295,6 +299,39 @@ export default function GamePage(): ReactElement {
         lastSpawnTimeRef.current = currentTime;
       }
 
+      // === MESSENGER SPAWNING (when FIX is placed on TF-cell) ===
+      // Check if FIX was just placed and spawn messenger
+      const fixSlot = state.slots.find((s) => s.id === 'tf-cell-fix');
+      if (fixSlot?.isActive && fixSlot?.transferredToCirculation) {
+        // Check if messenger already exists for this placement
+        const messengerExists = state.messengerFactors.some(
+          (m) => m.origin === 'tf-cell'
+        );
+        if (!messengerExists && !state.circulationFactors.includes('FIXa')) {
+          const messenger: MessengerFactor = {
+            id: `messenger-${Date.now()}`,
+            factorId: 'FIXa',
+            position: { x: 150, y: 60 }, // Start near TF-cell
+            velocity: { x: 50, y: 0 }, // Move right toward platelet
+            origin: 'tf-cell',
+            isVulnerableTo: ['antithrombin'],
+          };
+          spawnMessenger(messenger);
+        }
+      }
+
+      // === MESSENGER MOVEMENT ===
+      if (state.messengerFactors.length > 0 && deltaTime > 0 && deltaTime < 1) {
+        tickMessengers(deltaTime);
+
+        // Check for messenger arrival at platelet zone (x > 400)
+        for (const messenger of state.messengerFactors) {
+          if (messenger.position.x >= 400) {
+            messengerArrived(messenger.id);
+          }
+        }
+      }
+
       // === ANTAGONIST SPAWNING ===
       const activeAntagonistTypes = getActiveAntagonistTypes(state.phase);
 
@@ -358,7 +395,22 @@ export default function GamePage(): ReactElement {
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [state.phase, state.floatingFactors, state.gameResult, spawnFloatingFactor, tickFloatingFactors, spawnAntagonist, tickAntagonists, destroyFactor]);
+  }, [
+    state.phase,
+    state.floatingFactors,
+    state.gameResult,
+    state.slots,
+    state.circulationFactors,
+    state.messengerFactors,
+    spawnFloatingFactor,
+    tickFloatingFactors,
+    spawnAntagonist,
+    tickAntagonists,
+    destroyFactor,
+    spawnMessenger,
+    tickMessengers,
+    messengerArrived,
+  ]);
 
   const handleMainMenu = useCallback((): void => {
     router.push('/');
