@@ -103,6 +103,41 @@ export interface FloatingFactor {
 }
 
 // =============================================================================
+// MESSENGER FACTOR (FIXa traveling from TF-cell to Platelet)
+// =============================================================================
+
+export interface MessengerFactor {
+  id: string;
+  factorId: string; // 'FIXa'
+  position: { x: number; y: number };
+  velocity: { x: number; y: number };
+  origin: 'tf-cell' | 'platelet'; // where it was generated
+  destination: 'platelet'; // always heading to platelet
+  isVulnerableTo: InhibitorVulnerability[];
+}
+
+// =============================================================================
+// SPILLOVER PARTICLE (Thrombin drifting to vessel wall)
+// =============================================================================
+
+export interface SpilloverParticle {
+  id: string;
+  position: { x: number; y: number };
+  velocity: { x: number; y: number };
+  lifetime: number; // seconds remaining
+}
+
+// =============================================================================
+// THROMBOMODULIN ZONE (Vessel wall edges)
+// =============================================================================
+
+export interface ThrombomodulinZone {
+  id: string;
+  bounds: { minX: number; maxX: number; minY: number; maxY: number };
+  isActive: boolean;
+}
+
+// =============================================================================
 // HELD FACTOR (Drag & Drop)
 // =============================================================================
 
@@ -118,14 +153,19 @@ export interface HeldFactor {
 
 export interface GameState {
   phase: GamePhase;
-  thrombinMeter: number; // 0-100, threshold at 30
+  thrombinMeter: number; // 0-100, now represents actual thrombin level
+  plateletActivation: number; // NEW: 0-100, threshold at 100 to unlock platelet
   clotIntegrity: number; // 0-100, stabilization phase meter
   bleedingMeter: number; // 0-100, player loses at 100
+  tfpiActive: boolean; // NEW: true when TFPI has shut down TF-VIIa
+  localFXaCount: number; // NEW: count of FXa generated on TF-cell (triggers TFPI at 3)
   gameResult: GameResult; // current game outcome
   gameStats: GameStats; // statistics tracking
   slots: Slot[];
   complexSlots: ComplexSlot[]; // activated platelet complex slots (propagation)
   circulationFactors: string[]; // factors "in circulation" (e.g., FIXa held here)
+  messengerFactors: MessengerFactor[]; // NEW: FIXa traveling from TF-cell
+  spilloverParticles: SpilloverParticle[]; // NEW: thrombin drifting to edges
   availableFactors: string[]; // factor IDs still in palette
   selectedFactorId: string | null;
   currentMessage: string;
@@ -157,7 +197,18 @@ export type GameAction =
   | { type: 'INCREMENT_BLEEDING'; amount: number; reason: 'escape' | 'antithrombin' | 'apc' | 'plasmin' }
   | { type: 'SET_GAME_RESULT'; result: GameResult }
   | { type: 'INCREMENT_FACTORS_CAUGHT' }
-  | { type: 'SET_TIME_TAKEN'; time: number };
+  | { type: 'SET_TIME_TAKEN'; time: number }
+  | { type: 'SPAWN_MESSENGER'; messenger: MessengerFactor }
+  | { type: 'TICK_MESSENGERS'; deltaTime: number }
+  | { type: 'MESSENGER_ARRIVED'; messengerId: string }
+  | { type: 'DESTROY_MESSENGER'; messengerId: string; antagonistId: string }
+  | { type: 'INCREMENT_LOCAL_FXA' }
+  | { type: 'ACTIVATE_TFPI' }
+  | { type: 'SPAWN_SPILLOVER'; particle: SpilloverParticle }
+  | { type: 'TICK_SPILLOVER'; deltaTime: number }
+  | { type: 'SPILLOVER_HIT_EDGE'; particleId: string }
+  | { type: 'TRIGGER_PROTEIN_C' }
+  | { type: 'INCREMENT_PLATELET_ACTIVATION'; amount: number };
 
 // =============================================================================
 // VALIDATION RESULT
