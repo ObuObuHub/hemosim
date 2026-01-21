@@ -9,7 +9,6 @@ import { getAllFactorIds, getFactorDefinition } from '@/engine/game/factor-defin
 import {
   validatePlacement,
   validateComplexPlacement,
-  checkVictoryCondition,
   isAmplificationComplete,
   isTenaseComplete,
   isStabilizationComplete,
@@ -603,18 +602,6 @@ function gameReducer(state: GameState, action: GameAction): ReducerResult {
           complexesBuilt: ['tenase', 'prothrombinase', 'fibrin-mesh'],
         });
 
-        return {
-          state: {
-            ...intermediateState,
-            phase: 'complete',
-            currentMessage: 'Clot stabilized! Cross-linked fibrin mesh formed. Hemostasis achieved!',
-          },
-          events,
-        };
-      }
-
-      // Check victory condition (legacy - now requires Stabilization)
-      if (checkVictoryCondition(intermediateState)) {
         return {
           state: {
             ...intermediateState,
