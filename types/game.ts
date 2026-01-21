@@ -103,7 +103,7 @@ export interface FloatingFactor {
 }
 
 // =============================================================================
-// MESSENGER FACTOR (FIXa traveling from TF-cell to Platelet)
+// MESSENGER FACTOR (FIXa traveling to Platelet)
 // =============================================================================
 
 export interface MessengerFactor {
@@ -111,8 +111,7 @@ export interface MessengerFactor {
   factorId: string; // 'FIXa'
   position: { x: number; y: number };
   velocity: { x: number; y: number };
-  origin: 'tf-cell' | 'platelet'; // where it was generated
-  destination: 'platelet'; // always heading to platelet
+  origin: 'tf-cell' | 'platelet'; // tf-cell (from FIX) or platelet (from FXI loop)
   isVulnerableTo: InhibitorVulnerability[];
 }
 
@@ -128,13 +127,13 @@ export interface SpilloverParticle {
 }
 
 // =============================================================================
-// THROMBOMODULIN ZONE (Vessel wall edges)
+// THROMBOMODULIN ZONE (Vessel wall edges - static config in game-config.ts)
 // =============================================================================
 
 export interface ThrombomodulinZone {
   id: string;
   bounds: { minX: number; maxX: number; minY: number; maxY: number };
-  isActive: boolean;
+  color: string;
 }
 
 // =============================================================================
