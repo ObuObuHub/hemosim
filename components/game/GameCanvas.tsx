@@ -119,6 +119,8 @@ export const GameCanvas = forwardRef<HTMLDivElement, GameCanvasProps>(function G
       {/* Bloodstream Zone (floating factors and antagonists) */}
       <BloodstreamZone
         floatingFactors={gameState.floatingFactors}
+        messengerFactors={gameState.messengerFactors}
+        spilloverParticles={gameState.spilloverParticles}
         antagonists={gameState.antagonists}
         onFactorDragStart={onFactorDragStart}
       />
