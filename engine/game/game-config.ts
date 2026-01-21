@@ -39,6 +39,23 @@ export const BLOODSTREAM_ZONE = {
 } as const;
 
 // =============================================================================
+// THROMBOMODULIN ZONES (Vessel Wall Edges)
+// =============================================================================
+
+export const THROMBOMODULIN_ZONES = {
+  top: {
+    id: 'thrombomodulin-top',
+    bounds: { minX: 0, maxX: 1200, minY: 0, maxY: 20 },
+    color: '#9333EA40', // purple tint
+  },
+  bottom: {
+    id: 'thrombomodulin-bottom',
+    bounds: { minX: 0, maxX: 1200, minY: 100, maxY: 120 },
+    color: '#9333EA40',
+  },
+} as const;
+
+// =============================================================================
 // LAYOUT CONFIGURATION
 // =============================================================================
 
@@ -136,8 +153,7 @@ export const PANEL_CONFIGS: PanelConfig[] = [
 
 export function createInitialSlots(): Slot[] {
   return [
-    // TF-cell slots (Initiation) - FX and FII only
-    // FIX removed since FIXa spawns directly in Propagation
+    // TF-cell slots (Initiation) - FX, FII, and FIX
     {
       id: 'tf-cell-fx',
       surface: 'tf-cell',
@@ -151,6 +167,16 @@ export function createInitialSlots(): Slot[] {
       id: 'tf-cell-fii',
       surface: 'tf-cell',
       acceptsFactorId: 'FII',
+      isLocked: false,
+      placedFactorId: null,
+      isActive: false,
+      transferredToCirculation: false,
+    },
+    // FIX slot - generates FIXa "Messenger" that travels to platelet
+    {
+      id: 'tf-cell-fix',
+      surface: 'tf-cell',
+      acceptsFactorId: 'FIX',
       isLocked: false,
       placedFactorId: null,
       isActive: false,
@@ -170,6 +196,16 @@ export function createInitialSlots(): Slot[] {
       id: 'platelet-fviii',
       surface: 'platelet',
       acceptsFactorId: 'FVIII',
+      isLocked: true,
+      placedFactorId: null,
+      isActive: false,
+      transferredToCirculation: false,
+    },
+    // FXI slot - reinforcement loop (produces local FIXa)
+    {
+      id: 'platelet-fxi',
+      surface: 'platelet',
+      acceptsFactorId: 'FXI',
       isLocked: true,
       placedFactorId: null,
       isActive: false,
@@ -293,8 +329,10 @@ export interface SlotPosition {
 export const SLOT_POSITIONS: Record<string, SlotPosition> = {
   'tf-cell-fx': { slotId: 'tf-cell-fx', x: 40, y: 200, width: 110, height: 70 },
   'tf-cell-fii': { slotId: 'tf-cell-fii', x: 150, y: 200, width: 110, height: 70 },
+  'tf-cell-fix': { slotId: 'tf-cell-fix', x: 40, y: 300, width: 110, height: 70 },
   'platelet-fv': { slotId: 'platelet-fv', x: 60, y: 180, width: 120, height: 80 },
   'platelet-fviii': { slotId: 'platelet-fviii', x: 60, y: 280, width: 140, height: 80 },
+  'platelet-fxi': { slotId: 'platelet-fxi', x: 60, y: 380, width: 140, height: 80 },
   // Clot Zone slots (Stabilization)
   'clot-zone-fibrin-1': { slotId: 'clot-zone-fibrin-1', x: 30, y: 100, width: 100, height: 70 },
   'clot-zone-fibrin-2': { slotId: 'clot-zone-fibrin-2', x: 170, y: 100, width: 100, height: 70 },
