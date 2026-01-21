@@ -93,6 +93,9 @@ export default function GamePage(): ReactElement {
   // Track previous floating factor IDs to detect escapes
   const prevFloatingFactorIdsRef = useRef<Set<string>>(new Set());
 
+  // Track IDs of factors that were grabbed (not escaped)
+  const grabbedFactorIdsRef = useRef<Set<string>>(new Set());
+
   // Animation controller for smooth visual transitions
   // Note: isProcessing available for future UI indication
   const { visualState, enqueue } = useAnimationController(state);
@@ -120,13 +123,22 @@ export default function GamePage(): ReactElement {
     [attemptComplexPlace, dropFactor]
   );
 
+  // Wrap grabFactor to track grabbed IDs (prevents false escape detection)
+  const handleGrabFactor = useCallback(
+    (floatingFactorId: string, cursorPosition: { x: number; y: number }) => {
+      grabbedFactorIdsRef.current.add(floatingFactorId);
+      grabFactor(floatingFactorId, cursorPosition);
+    },
+    [grabFactor]
+  );
+
   // Drag and drop hook
   const { handleDragStart } = useDragAndDrop({
     heldFactor: state.heldFactor,
     slots: state.slots,
     complexSlots: state.complexSlots,
     canvasRef,
-    onGrab: grabFactor,
+    onGrab: handleGrabFactor,
     onMove: updateHeldPosition,
     onDrop: dropFactor,
     onSlotDrop: handleSlotDrop,
@@ -179,18 +191,20 @@ export default function GamePage(): ReactElement {
     const prevFactorIds = prevFloatingFactorIdsRef.current;
 
     // Find factors that were in previous set but not in current set
-    // These could be: placed (handled elsewhere), destroyed by antagonist (handled elsewhere),
-    // or escaped off the right edge of the screen
-    // We only track escapes here - the TICK_FLOATING_FACTORS action removes factors past threshold
+    // These could be: grabbed by player, placed, destroyed by antagonist, or escaped
     for (const prevId of prevFactorIds) {
       if (!currentFactorIds.has(prevId)) {
-        // Factor disappeared - check if it was likely an escape
-        // (placed and destroyed are handled via events, escapes are silent)
-        // We can't distinguish easily, so we rely on the removal threshold logic
-        // The reducer removes factors past BLOODSTREAM_ZONE.removeThreshold
-        // We increment bleeding for escapes here
-        // Note: This may occasionally double-count if event is also fired, but events
-        // only fire for placed/destroyed, not escapes
+        // Check if this factor was grabbed (not an escape)
+        if (grabbedFactorIdsRef.current.has(prevId)) {
+          // Factor was grabbed by player - not an escape
+          continue;
+        }
+
+        // Factor disappeared without being grabbed - could be:
+        // - Destroyed by antagonist (handled via events)
+        // - Escaped off the right edge (this is what we want to track)
+        // The TICK_FLOATING_FACTORS action removes factors past removeThreshold
+        // Since we're tracking escapes here, increment bleeding
         incrementBleeding(BLEEDING_INCREMENT.factorEscape, 'escape');
       }
     }
@@ -364,6 +378,7 @@ export default function GamePage(): ReactElement {
     };
     antagonistsRef.current = [];
     prevFloatingFactorIdsRef.current = new Set();
+    grabbedFactorIdsRef.current = new Set();
 
     // Reset game state
     resetGame();

@@ -27,7 +27,9 @@ export const ANTAGONIST_CONFIGS: Record<AntagonistType, AntagonistConfig> = {
     speed: 100,
     targets: 'antithrombin',
     color: '#EF4444', // red
-    appearInPhases: ['initiation', 'amplification', 'propagation', 'stabilization'],
+    // Only appears from Amplification onward (FII is vulnerable to AT)
+    // In Initiation, only FX spawns which is not yet activated (zymogen)
+    appearInPhases: ['amplification', 'propagation', 'stabilization'],
     respawnDelayMs: 5000,
   },
   apc: {
