@@ -41,9 +41,10 @@ export const PHASE_SPAWN_CONFIG: Record<GamePhase, PhaseSpawnConfig> = {
 // =============================================================================
 
 export const FACTOR_VULNERABILITIES: Record<string, InhibitorVulnerability[]> = {
-  // Initiation
+  // Initiation - zymogens are NOT vulnerable to Antithrombin
+  // AT targets activated serine proteases (IIa, Xa, IXa), not zymogens (FII, FX)
   FX: [],
-  FII: ['antithrombin'], // prothrombin - targeted by antithrombin
+  FII: [], // prothrombin is a zymogen - AT only targets thrombin (IIa)
 
   // Amplification
   FV: ['apc'], // procofactor - targeted by APC

@@ -27,9 +27,10 @@ export const ANTAGONIST_CONFIGS: Record<AntagonistType, AntagonistConfig> = {
     speed: 60, // slower hunting speed
     targets: 'antithrombin',
     color: '#EF4444', // red
-    // Only appears from Amplification onward (FII is vulnerable to AT)
-    // In Initiation, only FX spawns which is not yet activated (zymogen)
-    appearInPhases: ['amplification', 'propagation', 'stabilization'],
+    // AT only targets activated serine proteases (IIa, Xa, IXa, XIa)
+    // Zymogens (FX, FII) and procofactors (FV, FVIII) are NOT AT targets
+    // Only FIXa (in Propagation) is vulnerable to AT in our game
+    appearInPhases: ['propagation'],
     respawnDelayMs: 8000, // longer delay between spawns
   },
   apc: {
