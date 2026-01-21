@@ -74,7 +74,7 @@ export default function GamePage(): ReactElement {
     spawnMessenger,
     tickMessengers,
     messengerArrived,
-    destroyMessenger,
+    // destroyMessenger available from useGameState when antagonist integration needed
     spawnSpillover,
     tickSpillover,
     spilloverHitEdge,
