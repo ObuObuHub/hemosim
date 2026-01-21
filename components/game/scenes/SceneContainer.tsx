@@ -21,6 +21,8 @@ export function SceneContainer({
 
   useEffect(() => {
     if (currentScene !== displayedScene) {
+      let fadeInTimer: ReturnType<typeof setTimeout> | null = null;
+
       // Fade out
       setOpacity(0);
 
@@ -29,14 +31,15 @@ export function SceneContainer({
         setDisplayedScene(currentScene);
 
         // Small delay before fade in for clean transition
-        const fadeInTimer = setTimeout(() => {
+        fadeInTimer = setTimeout(() => {
           setOpacity(1);
         }, 50);
-
-        return () => clearTimeout(fadeInTimer);
       }, 300);
 
-      return () => clearTimeout(fadeOutTimer);
+      return () => {
+        clearTimeout(fadeOutTimer);
+        if (fadeInTimer) clearTimeout(fadeInTimer);
+      };
     }
   }, [currentScene, displayedScene]);
 
