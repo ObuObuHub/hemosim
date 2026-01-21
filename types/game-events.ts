@@ -190,6 +190,37 @@ export interface ProteinCActivatedEvent {
 }
 
 // =============================================================================
+// MESSENGER EVENTS
+// =============================================================================
+
+export interface MessengerSpawnedEvent {
+  type: 'MESSENGER_SPAWNED';
+  messengerId: string;
+  fromSurface: 'tf-cell';
+}
+
+export interface MessengerArrivedEvent {
+  type: 'MESSENGER_ARRIVED';
+  messengerId: string;
+  atSurface: 'platelet';
+}
+
+export interface MessengerDestroyedEvent {
+  type: 'MESSENGER_DESTROYED';
+  messengerId: string;
+  antagonistType: 'antithrombin' | 'apc' | 'plasmin';
+}
+
+// =============================================================================
+// LOCAL FIXA EVENTS
+// =============================================================================
+
+export interface LocalFIXaGeneratedEvent {
+  type: 'LOCAL_FIXA_GENERATED';
+  source: 'fxi';
+}
+
+// =============================================================================
 // UNION TYPE
 // =============================================================================
 
@@ -216,6 +247,10 @@ export type GameEvent =
   | CrossLinkFormedEvent
   | FactorDestroyedEvent
   | SpilloverHitThrombomodulinEvent
+  | MessengerSpawnedEvent
+  | MessengerArrivedEvent
+  | MessengerDestroyedEvent
+  | LocalFIXaGeneratedEvent
   // Low priority
   | MeterChangedEvent
   | ArrowPulseEvent
@@ -253,6 +288,10 @@ export function getEventPriority(event: GameEvent): EventPriority {
     case 'CROSS_LINK_FORMED':
     case 'FACTOR_DESTROYED':
     case 'SPILLOVER_HIT_THROMBOMODULIN':
+    case 'MESSENGER_SPAWNED':
+    case 'MESSENGER_ARRIVED':
+    case 'MESSENGER_DESTROYED':
+    case 'LOCAL_FIXA_GENERATED':
       return 'standard';
 
     case 'METER_CHANGED':
