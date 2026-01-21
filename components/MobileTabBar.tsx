@@ -11,13 +11,13 @@ interface MobileTabBarProps {
 }
 
 const FlaskIcon = (): React.ReactElement => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M9 3h6M10 3v6.4a1 1 0 0 1-.2.6L4 18a2 2 0 0 0 1.6 3.2h12.8a2 2 0 0 0 1.6-3.2l-5.8-8a1 1 0 0 1-.2-.6V3" />
   </svg>
 );
 
 const CascadeIcon = (): React.ReactElement => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="6" cy="6" r="3" />
     <circle cx="18" cy="6" r="3" />
     <circle cx="12" cy="18" r="3" />
@@ -27,7 +27,7 @@ const CascadeIcon = (): React.ReactElement => (
 );
 
 const ResultsIcon = (): React.ReactElement => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
     <rect x="8" y="2" width="8" height="4" rx="1" />
     <path d="M9 12h6M9 16h6" />
@@ -41,20 +41,45 @@ const tabs: Array<{ id: TabId; label: string; Icon: () => React.ReactElement }> 
 ];
 
 export function MobileTabBar({ activeTab, onTabChange, hasAbnormalFindings }: MobileTabBarProps): React.ReactElement {
+  const handleKeyDown = (e: React.KeyboardEvent, currentIndex: number): void => {
+    const tabCount = tabs.length;
+    let newIndex = currentIndex;
+
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      newIndex = (currentIndex + 1) % tabCount;
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      newIndex = (currentIndex - 1 + tabCount) % tabCount;
+    } else if (e.key === 'Home') {
+      newIndex = 0;
+    } else if (e.key === 'End') {
+      newIndex = tabCount - 1;
+    } else {
+      return;
+    }
+
+    e.preventDefault();
+    onTabChange(tabs[newIndex].id);
+  };
+
   return (
-    <nav className="mobile-tab-bar">
-      {tabs.map(({ id, label, Icon }) => (
+    <nav className="mobile-tab-bar" role="tablist" aria-label="Navigare principală">
+      {tabs.map(({ id, label, Icon }, index) => (
         <button
           key={id}
+          id={`tab-${id}`}
           type="button"
+          role="tab"
+          aria-selected={activeTab === id}
+          aria-controls={`tabpanel-${id}`}
+          tabIndex={activeTab === id ? 0 : -1}
           className={`mobile-tab ${activeTab === id ? 'active' : ''}`}
           onClick={() => onTabChange(id)}
-          aria-current={activeTab === id ? 'page' : undefined}
+          onKeyDown={(e) => handleKeyDown(e, index)}
         >
           <Icon />
           <span className="mobile-tab-label">{label}</span>
           {id === 'results' && hasAbnormalFindings && (
-            <span className="mobile-tab-badge" aria-label="Valori anormale detectate" />
+            <span className="mobile-tab-badge" aria-label="Există rezultate anormale" />
           )}
         </button>
       ))}

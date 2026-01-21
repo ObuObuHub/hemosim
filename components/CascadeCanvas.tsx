@@ -213,9 +213,8 @@ function drawMembraneSurface(
     ctx.stroke();
   }
 
-  // Optional label above the complex
+  // Optional label above the complex (font size will be scaled by caller)
   if (label) {
-    ctx.font = '600 9px Inter, system-ui, sans-serif';
     ctx.fillStyle = color;
     ctx.textAlign = 'center';
     ctx.fillText(label, x + width / 2, y - 8);
@@ -314,11 +313,25 @@ export function CascadeCanvas({
   const [selectedFactor, setSelectedFactor] = useState<string | null>(null);
   const [showPrimaryHemostasis, setShowPrimaryHemostasis] = useState(false);
 
-  // Pinch-to-zoom state for mobile
-  const [scale, setScale] = useState(1);
+  // Detect mobile for responsive adjustments
+  const isMobile = canvasSize.width < 768;
+
+  // Pinch-to-zoom state for mobile - start with better initial scale on mobile
+  const getInitialScale = (): number => {
+    if (canvasSize.width < 768) {
+      // Mobile: scale to fit comfortably with some padding
+      const scaleX = canvasSize.width / CANVAS_WIDTH;
+      const scaleY = canvasSize.height / CANVAS_HEIGHT;
+      return Math.min(scaleX, scaleY) * 1.1; // 10% larger for better initial view
+    }
+    return 1;
+  };
+
+  const [scale, setScale] = useState(() => getInitialScale());
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const lastTouchRef = useRef<{ x: number; y: number } | null>(null);
   const lastPinchDistRef = useRef<number | null>(null);
+  const [isVisible, setIsVisible] = useState(true);
 
   // Factor activ = selectat (click) sau hover
   const activeFactor = selectedFactor || hoveredFactor;
@@ -406,13 +419,36 @@ export function CascadeCanvas({
     const updateSize = (): void => {
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
-        setCanvasSize({ width: rect.width, height: rect.height });
+        const newSize = { width: rect.width, height: rect.height };
+        setCanvasSize(newSize);
+
+        // Reset scale on mobile when size changes significantly
+        if (rect.width < 768) {
+          const scaleX = rect.width / CANVAS_WIDTH;
+          const scaleY = rect.height / CANVAS_HEIGHT;
+          const newScale = Math.min(scaleX, scaleY) * 1.1;
+          setScale(newScale);
+          setPanOffset({ x: 0, y: 0 });
+        }
       }
     };
 
     updateSize();
     window.addEventListener('resize', updateSize);
     return () => window.removeEventListener('resize', updateSize);
+  }, []);
+
+  // Add IntersectionObserver to detect visibility
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(entry.isIntersecting),
+      { threshold: 0.1 }
+    );
+
+    observer.observe(canvasRef.current);
+    return () => observer.disconnect();
   }, []);
 
   // Initialize particles for active connections
@@ -444,6 +480,12 @@ export function CascadeCanvas({
 
   useEffect(() => {
     const draw = (timestamp: number): void => {
+      // Skip rendering if component is not visible
+      if (!isVisible) {
+        animationRef.current = requestAnimationFrame(draw);
+        return;
+      }
+
       const canvas = canvasRef.current;
       if (!canvas) return;
 
@@ -453,6 +495,9 @@ export function CascadeCanvas({
       // Calculate delta time for smooth animation
       const deltaTime = lastTimeRef.current ? (timestamp - lastTimeRef.current) / 1000 : 0;
       lastTimeRef.current = timestamp;
+
+      // Call Date.now() once per frame for all pulsation effects
+      const now = Date.now();
 
       const state = stateRef.current;
       const dpr = window.devicePixelRatio || 1;
@@ -466,6 +511,12 @@ export function CascadeCanvas({
 
       const scaleX = rect.width / CANVAS_WIDTH;
       const scaleY = rect.height / CANVAS_HEIGHT;
+      const minScale = Math.min(scaleX, scaleY);
+
+      // Responsive scaling factors for mobile
+      const isMobileView = rect.width < 768;
+      const fontScale = isMobileView ? Math.max(1.3, 1 / minScale * 0.8) : 1;
+      const nodeScale = isMobileView ? Math.max(1.2, 1 / minScale * 0.7) : 1;
 
       // Helper pentru a obține poziția bazată pe mod
       const getPos = (factor: Factor): { x: number; y: number } => {
@@ -521,7 +572,7 @@ export function CascadeCanvas({
         ctx.stroke();
 
         // Zone labels
-        ctx.font = '600 11px Inter, system-ui, sans-serif';
+        ctx.font = `600 ${Math.round(11 * fontScale)}px Inter, system-ui, sans-serif`;
 
         ctx.fillStyle = '#db2777';
         ctx.textAlign = 'left';
@@ -538,7 +589,7 @@ export function CascadeCanvas({
 
       // Draw pathway labels with colors (only in clinical/extended mode, NOT in isolation mode)
       if (state.mode === 'clinical' && !state.isolationFactors) {
-        ctx.font = '600 10px Inter, system-ui, sans-serif';
+        ctx.font = `600 ${Math.round(10 * fontScale)}px Inter, system-ui, sans-serif`;
         ctx.textAlign = 'left';
         ctx.fillStyle = PATHWAY_COLORS.intrinsic;
         ctx.fillText('CALEA INTRINSECĂ', 50 * scaleX, 30 * scaleY);
@@ -856,6 +907,9 @@ export function CascadeCanvas({
           const membraneType = factor.complexMembrane || 'platelet';
           const membraneColor = MEMBRANE_COLORS[membraneType];
 
+          // Set font for complex name label before drawing membrane
+          ctx.font = `600 ${Math.round(9 * fontScale)}px Inter, system-ui, sans-serif`;
+
           // Draw membrane surface - factors sit on top of the bilayer
           drawMembraneSurface(
             ctx,
@@ -868,13 +922,13 @@ export function CascadeCanvas({
           );
 
           // Draw Ca²⁺ + PL indicator below bracket
-          ctx.font = '500 8px Inter, system-ui, sans-serif';
+          ctx.font = `500 ${Math.round(8 * fontScale)}px Inter, system-ui, sans-serif`;
           ctx.fillStyle = membraneColor;
           ctx.textAlign = 'center';
           ctx.fillText('Ca²⁺ + PL', centerX, maxY + 12);
 
           // Draw phase label below Ca²⁺ + PL
-          ctx.font = '600 9px Inter, system-ui, sans-serif';
+          ctx.font = `600 ${Math.round(9 * fontScale)}px Inter, system-ui, sans-serif`;
           if (factor.complexName === 'TF-VIIa') {
             ctx.fillStyle = MEMBRANE_COLORS.tfCell;
             ctx.fillText('INIȚIERE', centerX, maxY + 26);
@@ -889,7 +943,7 @@ export function CascadeCanvas({
           // Draw "+" between enzyme and cofactor
           const plusX = (enzymeX + cofactorX) / 2;
           const plusY = (enzymeY + cofactorY) / 2;
-          ctx.font = '700 12px Inter, system-ui, sans-serif';
+          ctx.font = `700 ${Math.round(12 * fontScale)}px Inter, system-ui, sans-serif`;
           ctx.fillStyle = membraneColor;
           ctx.fillText('+', plusX, plusY);
         }
@@ -897,8 +951,9 @@ export function CascadeCanvas({
 
       // Draw nodes (on top of brackets)
       // NOUA LOGICĂ: Dimensiune variabilă bazată pe activitate
-      const BASE_RADIUS = 17;  // Radius la 100% activitate
-      const MIN_RADIUS = 8;    // Radius minim (aproape de 0%)
+      // Scale up node sizes on mobile for better touch targets
+      const BASE_RADIUS = 17 * nodeScale;  // Radius la 100% activitate
+      const MIN_RADIUS = 8 * nodeScale;    // Radius minim (aproape de 0%)
 
       for (const factor of Object.values(state.factors)) {
         if (!state.visibleFactors.includes(factor.id)) continue;
@@ -940,7 +995,7 @@ export function CascadeCanvas({
 
         // PULSATION EFFECT: Fibrin clot pulses red when D-Dimers elevated (active fibrinolysis)
         if (isFibrinPulsing) {
-          const pulse = Math.sin(Date.now() / 200) * 0.4 + 0.6; // 0.2 to 1.0
+          const pulse = Math.sin(now / 200) * 0.4 + 0.6; // 0.2 to 1.0
           ctx.save();
           ctx.beginPath();
           ctx.arc(x, y, radius + 8, 0, Math.PI * 2);
@@ -955,8 +1010,8 @@ export function CascadeCanvas({
         const isF13Related = factor.id === 'F13' || factor.id === 'F13a' || factor.id === 'FIBRIN_NET';
         if (isF13Deficiency && isF13Related) {
           // Pulsație rapidă + efect de "dezintegrare" (raze care radiază)
-          const pulseBase = Math.sin(Date.now() / 150) * 0.5 + 0.5; // 0-1, rapid
-          const pulseGlow = Math.sin(Date.now() / 300) * 0.3 + 0.7; // 0.4-1, mai lent
+          const pulseBase = Math.sin(now / 150) * 0.5 + 0.5; // 0-1, rapid
+          const pulseGlow = Math.sin(now / 300) * 0.3 + 0.7; // 0.4-1, mai lent
 
           ctx.save();
 
@@ -971,7 +1026,7 @@ export function CascadeCanvas({
             const rayCount = 8;
             const rayLength = 15 + 10 * pulseBase;
             for (let i = 0; i < rayCount; i++) {
-              const angle = (i / rayCount) * Math.PI * 2 + Date.now() / 2000;
+              const angle = (i / rayCount) * Math.PI * 2 + now / 2000;
               const startR = radius + 5;
               const endR = radius + rayLength;
               ctx.beginPath();
@@ -988,7 +1043,7 @@ export function CascadeCanvas({
 
         // PULSATION EFFECT: Lab value hover highlighting (pulsing glow instead of fill)
         if (isHighlighted && !isHovered) {
-          const pulse = Math.sin(Date.now() / 250) * 0.4 + 0.6; // Slightly slower pulse
+          const pulse = Math.sin(now / 250) * 0.4 + 0.6; // Slightly slower pulse
           ctx.save();
           ctx.beginPath();
           ctx.arc(x, y, radius + 6, 0, Math.PI * 2);
@@ -1061,8 +1116,8 @@ export function CascadeCanvas({
         }
 
         // Factor short name inside
-        // Font size proportional to radius
-        const fontSize = Math.max(7, Math.round(radius * 0.6));
+        // Font size proportional to radius with minimum for readability
+        const fontSize = Math.max(7 * fontScale, Math.round(radius * 0.6));
         ctx.font = `600 ${fontSize}px Inter, system-ui, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -1098,7 +1153,7 @@ export function CascadeCanvas({
         if (factor.vitKDependent && state.mode === 'clinical') {
           const badgeX = x + radius - 2;
           const badgeY = y - radius + 2;
-          const badgeRadius = 8;
+          const badgeRadius = 8 * nodeScale;
 
           // Badge background
           ctx.beginPath();
@@ -1112,7 +1167,7 @@ export function CascadeCanvas({
           ctx.stroke();
 
           // K letter
-          ctx.font = '700 9px Inter, system-ui, sans-serif';
+          ctx.font = `700 ${Math.round(9 * fontScale)}px Inter, system-ui, sans-serif`;
           ctx.fillStyle = '#ffffff';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
@@ -1125,7 +1180,7 @@ export function CascadeCanvas({
 
       // DIC phase indicator
       if (state.dicPhase && state.dicPhase !== 'normal') {
-        ctx.font = '600 12px Inter, system-ui, sans-serif';
+        ctx.font = `600 ${Math.round(12 * fontScale)}px Inter, system-ui, sans-serif`;
         ctx.textAlign = 'center';
         ctx.fillStyle = '#ef4444';
         const phaseText = state.dicPhase === 'activation'
@@ -1141,7 +1196,7 @@ export function CascadeCanvas({
 
     animationRef.current = requestAnimationFrame((timestamp) => draw(timestamp));
     return () => cancelAnimationFrame(animationRef.current);
-  }, []);
+  }, [isVisible]);
 
   const findFactorAtPosition = useCallback((clientX: number, clientY: number): string | null => {
     const canvas = canvasRef.current;
@@ -1152,9 +1207,13 @@ export function CascadeCanvas({
     const y = clientY - rect.top;
     const scaleX = rect.width / CANVAS_WIDTH;
     const scaleY = rect.height / CANVAS_HEIGHT;
+    const minScale = Math.min(scaleX, scaleY);
 
-    // Larger touch target on mobile (35px vs 25px)
-    const touchRadius = 'ontouchstart' in window ? 35 : 25;
+    // Responsive touch target - larger on mobile and scales with canvas
+    const isMobileView = rect.width < 768;
+    const nodeScale = isMobileView ? Math.max(1.2, 1 / minScale * 0.7) : 1;
+    const baseRadius = 17 * nodeScale;
+    const touchRadius = baseRadius + (isMobileView ? 18 : 8);
 
     for (const factor of Object.values(factors)) {
       if (!visibleFactors.includes(factor.id)) continue;
@@ -1240,7 +1299,9 @@ export function CascadeCanvas({
       const newDist = Math.sqrt(dx * dx + dy * dy);
       const scaleChange = newDist / lastPinchDistRef.current;
 
-      setScale(prev => Math.min(Math.max(prev * scaleChange, 0.5), 3));
+      // Allow scaling from initial mobile scale up to 3x
+      const minAllowedScale = isMobile ? getInitialScale() * 0.8 : 0.5;
+      setScale(prev => Math.min(Math.max(prev * scaleChange, minAllowedScale), 3));
       lastPinchDistRef.current = newDist;
 
       // Pan while zooming - capture ref value before setState
@@ -1278,20 +1339,21 @@ export function CascadeCanvas({
   const handleDoubleTap = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
     const now = Date.now();
     if (now - lastTapTimeRef.current < 300) {
-      // Double tap - reset zoom or zoom to 2x
-      if (scale > 1.1) {
-        setScale(1);
+      // Double tap - reset to initial scale or zoom to 2x
+      const initialScale = getInitialScale();
+      if (scale > initialScale * 1.2) {
+        setScale(initialScale);
         setPanOffset({ x: 0, y: 0 });
       } else {
-        setScale(2);
+        setScale(initialScale * 2);
       }
       e.preventDefault();
     }
     lastTapTimeRef.current = now;
   }, [scale]);
 
-  // Detectează desktop (width > 768px)
-  const isDesktop = canvasSize.width > 500;
+  // Detectează desktop (width >= 768px)
+  const isDesktop = canvasSize.width >= 768;
 
   // Generează conținutul info panel
   const renderFactorInfo = (): React.ReactNode => {
@@ -1367,6 +1429,7 @@ export function CascadeCanvas({
         style={{
           transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${scale})`,
           transformOrigin: 'center center',
+          willChange: 'transform',
           width: '100%',
           height: '100%',
           touchAction: scale > 1 ? 'none' : 'auto',
@@ -1375,6 +1438,7 @@ export function CascadeCanvas({
         <canvas
           ref={canvasRef}
           className="cascade-canvas"
+          style={{ willChange: 'transform' }}
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
           onClick={handleClick}
@@ -1383,8 +1447,14 @@ export function CascadeCanvas({
           onTouchEnd={handleTouchEnd}
         />
       </div>
-      {/* Zoom indicator for mobile */}
-      {scale !== 1 && (
+      {/* Zoom indicator for mobile - show relative to initial scale */}
+      {isMobile && Math.abs(scale - getInitialScale()) > 0.1 && (
+        <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+          {Math.round((scale / getInitialScale()) * 100)}%
+        </div>
+      )}
+      {/* Desktop zoom indicator */}
+      {!isMobile && scale !== 1 && (
         <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
           {Math.round(scale * 100)}%
         </div>

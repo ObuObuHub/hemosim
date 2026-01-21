@@ -160,7 +160,6 @@ export default function Home(): React.ReactElement {
         updateIsthManualCriteria={updateIsthManualCriteria}
         isthManualCriteria={isthManualCriteria}
         reset={reset}
-        setMode={setMode}
         setHoveredFactor={setHoveredFactor}
         setCurrentScenario={setCurrentScenario}
       />

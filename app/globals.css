@@ -351,6 +351,7 @@ input[type="number"] {
 
 .mobile-tab.active {
   color: var(--intrinsic);
+  background: rgb(241, 245, 249);
 }
 
 .mobile-tab svg {
@@ -359,8 +360,9 @@ input[type="number"] {
 }
 
 .mobile-tab-label {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
+  margin-top: 2px;
 }
 
 /* Badge for abnormal findings */

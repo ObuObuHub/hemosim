@@ -158,7 +158,8 @@ export function MobileLabInput({
   const handleChange = (key: NumericLabKey, val: string): void => {
     setEditingValues(prev => ({ ...prev, [key]: val }));
     const num = parseFloat(val);
-    if (!isNaN(num)) {
+    // Validate: finite, non-negative, reasonable bounds
+    if (!isNaN(num) && isFinite(num) && num >= 0 && num <= 100000) {
       onChange({ ...values, [key]: num });
       // Clear scenario when manually changing lab values
       onScenarioChange(null);
@@ -185,7 +186,8 @@ export function MobileLabInput({
   const handlePTChange = (value: string): void => {
     setEditingValues(prev => ({ ...prev, pt: value }));
     const numValue = parseFloat(value);
-    if (!isNaN(numValue)) {
+    // Validate: finite, non-negative, reasonable bounds
+    if (!isNaN(numValue) && isFinite(numValue) && numValue >= 0 && numValue <= 100000) {
       const newINR = calculateINRFromPT(numValue);
       onChange({ ...values, pt: numValue, inr: newINR });
       // Clear scenario when manually changing lab values
@@ -197,7 +199,8 @@ export function MobileLabInput({
   const handleINRChange = (value: string): void => {
     setEditingValues(prev => ({ ...prev, inr: value }));
     const numValue = parseFloat(value);
-    if (!isNaN(numValue)) {
+    // Validate: finite, non-negative, reasonable bounds
+    if (!isNaN(numValue) && isFinite(numValue) && numValue >= 0 && numValue <= 100000) {
       const newPT = calculatePTFromINR(numValue);
       onChange({ ...values, inr: numValue, pt: newPT });
       // Clear scenario when manually changing lab values
@@ -235,20 +238,22 @@ export function MobileLabInput({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Header with reset */}
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-slate-600">Valori Laborator</span>
+        <span className="text-sm font-semibold text-slate-700">Valori Laborator</span>
         <div className="flex gap-2">
           <button
+            type="button"
             onClick={onToggleScenarios}
-            className="text-[10px] text-blue-600 font-medium px-2 py-1 rounded bg-blue-50 active:bg-blue-100"
+            className="text-xs text-blue-600 font-medium px-4 py-2.5 rounded-lg bg-blue-50 active:bg-blue-100 transition-colors min-h-[44px]"
           >
             {showScenarios ? 'Închide' : 'Scenarii'}
           </button>
           <button
+            type="button"
             onClick={onReset}
-            className="text-[10px] text-slate-500 font-medium px-2 py-1 rounded bg-slate-100 active:bg-slate-200"
+            className="text-xs text-slate-600 font-medium px-4 py-2.5 rounded-lg bg-slate-100 active:bg-slate-200 transition-colors min-h-[44px]"
           >
             Reset
           </button>
@@ -257,25 +262,28 @@ export function MobileLabInput({
 
       {/* Categorized Scenarios Picker */}
       {showScenarios && (
-        <div className="bg-slate-50 rounded-lg p-2 space-y-2 max-h-[50vh] overflow-y-auto">
+        <div className="bg-slate-50 rounded-lg p-3 space-y-3 max-h-[50vh] overflow-y-auto">
           {/* Search bar */}
           <div className="relative">
             <input
               type="text"
+              aria-label="Caută scenariu"
               placeholder="Caută scenariu..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-2 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+              onChange={(e) => setSearchQuery(e.target.value.slice(0, 100))}
+              className="w-full pl-10 pr-12 py-3 text-base border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-400/50 min-h-[44px]"
             />
-            <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             {searchQuery && (
               <button
+                type="button"
+                aria-label="Șterge căutarea"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 active:text-slate-600 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -315,17 +323,21 @@ export function MobileLabInput({
               <div key={category.id} className="bg-white rounded-lg border border-slate-200 overflow-hidden">
                 {/* Category Header */}
                 <button
+                  type="button"
+                  aria-expanded={isExpanded}
+                  aria-controls={`category-${category.id}`}
                   onClick={toggleCategory}
-                  className="w-full px-3 py-2 flex items-center justify-between text-left bg-slate-50 hover:bg-slate-100 transition-colors"
+                  className="w-full px-4 py-3 flex items-center justify-between text-left bg-slate-50 active:bg-slate-100 transition-colors min-h-[44px]"
                 >
-                  <span className="text-xs font-semibold text-slate-700">
+                  <span className="text-sm font-semibold text-slate-700">
                     {category.name}
-                    <span className="ml-1.5 text-[10px] font-normal text-slate-400">
+                    <span className="ml-2 text-xs font-normal text-slate-500">
                       ({filteredPresets.length})
                     </span>
                   </span>
                   <svg
-                    className={`w-4 h-4 text-slate-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                    aria-hidden="true"
+                    className={`w-5 h-5 text-slate-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -336,12 +348,13 @@ export function MobileLabInput({
 
                 {/* Category Presets */}
                 {isExpanded && (
-                  <div className="grid grid-cols-2 gap-1.5 p-2">
+                  <div id={`category-${category.id}`} className="grid grid-cols-2 gap-2 p-3">
                     {filteredPresets.map(preset => (
                       <button
                         key={preset.id}
+                        type="button"
                         onClick={() => applyPreset(preset)}
-                        className="px-2 py-2 text-[11px] font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-lg active:bg-blue-50 active:border-blue-300 transition-colors text-left"
+                        className="px-3 py-3 text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg active:bg-blue-50 active:border-blue-300 transition-colors text-left min-h-[44px]"
                       >
                         {preset.name}
                       </button>
@@ -355,46 +368,48 @@ export function MobileLabInput({
       )}
 
       {/* PT / INR Row */}
-      <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+      <div className="grid grid-cols-2 gap-3">
         {/* PT */}
-        <div className="flex items-center gap-1.5">
-          <label className="text-xs font-medium text-slate-500 w-10 flex-shrink-0">PT</label>
-          <div className="relative flex-1">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="input-pt" className="text-xs font-semibold text-slate-600 uppercase tracking-wide">PT</label>
+          <div className="relative">
             <input
+              id="input-pt"
               type="number"
               inputMode="decimal"
               step={0.5}
               value={'pt' in editingValues ? editingValues.pt : values.pt}
               onChange={(e) => handlePTChange(e.target.value)}
               onBlur={() => handleBlur('pt')}
-              className={`w-full pl-2 pr-7 py-2 text-sm border rounded-lg text-right transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-400/50
+              className={`w-full pl-3 pr-8 py-3 text-base border-2 rounded-lg text-right transition-all focus:outline-none focus:ring-2 focus:ring-blue-400/50 min-h-[44px]
                 ${getStatus(values.pt, 'pt') === 'normal'
                   ? 'border-slate-300 bg-white'
                   : getStatus(values.pt, 'pt') === 'abnormal'
-                    ? 'border-orange-300 bg-orange-50'
-                    : 'border-red-400 bg-red-50'
+                    ? 'border-orange-400 bg-orange-50'
+                    : 'border-red-500 bg-red-50'
                 }`}
             />
-            <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] text-slate-400">s</span>
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 font-medium">s</span>
           </div>
         </div>
         {/* INR */}
-        <div className="flex items-center gap-1.5">
-          <label className="text-xs font-medium text-slate-500 w-10 flex-shrink-0">INR</label>
-          <div className="relative flex-1">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="input-inr" className="text-xs font-semibold text-slate-600 uppercase tracking-wide">INR</label>
+          <div className="relative">
             <input
+              id="input-inr"
               type="number"
               inputMode="decimal"
               step={0.01}
               value={'inr' in editingValues ? editingValues.inr : values.inr}
               onChange={(e) => handleINRChange(e.target.value)}
               onBlur={() => handleBlur('inr')}
-              className={`w-full pl-2 pr-3 py-2 text-sm border rounded-lg text-right transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-400/50
+              className={`w-full pl-3 pr-3 py-3 text-base border-2 rounded-lg text-right transition-all focus:outline-none focus:ring-2 focus:ring-blue-400/50 min-h-[44px]
                 ${getStatus(values.inr, 'inr') === 'normal'
                   ? 'border-slate-300 bg-white'
                   : getStatus(values.inr, 'inr') === 'abnormal'
-                    ? 'border-orange-300 bg-orange-50'
-                    : 'border-red-400 bg-red-50'
+                    ? 'border-orange-400 bg-orange-50'
+                    : 'border-red-500 bg-red-50'
                 }`}
             />
           </div>
@@ -402,33 +417,34 @@ export function MobileLabInput({
       </div>
 
       {/* Lab values - 2 column grid */}
-      <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+      <div className="grid grid-cols-2 gap-3">
         {LAB_FIELDS.map(({ key, short, step }) => {
           const range = LAB_RANGES[key];
           const status = getStatus(values[key], key);
 
           return (
-            <div key={key} className="flex items-center gap-1.5">
-              <label className="text-xs font-medium text-slate-500 w-10 flex-shrink-0">
+            <div key={key} className="flex flex-col gap-1.5">
+              <label htmlFor={`input-${key}`} className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
                 {short}
               </label>
-              <div className="relative flex-1">
+              <div className="relative">
                 <input
+                  id={`input-${key}`}
                   type="number"
                   inputMode="decimal"
                   step={step}
                   value={getValue(key)}
                   onChange={(e) => handleChange(key, e.target.value)}
                   onBlur={() => handleBlur(key)}
-                  className={`w-full pl-2 pr-7 py-2 text-sm border rounded-lg text-right transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-400/50
+                  className={`w-full pl-3 pr-14 py-3 text-base border-2 rounded-lg text-right transition-all focus:outline-none focus:ring-2 focus:ring-blue-400/50 min-h-[44px]
                     ${status === 'normal'
                       ? 'border-slate-300 bg-white'
                       : status === 'abnormal'
-                        ? 'border-orange-300 bg-orange-50'
-                        : 'border-red-400 bg-red-50'
+                        ? 'border-orange-400 bg-orange-50'
+                        : 'border-red-500 bg-red-50'
                     }`}
                 />
-                <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] text-slate-400">
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 font-medium">
                   {range.unit}
                 </span>
               </div>
@@ -437,16 +453,21 @@ export function MobileLabInput({
         })}
       </div>
       {/* Medications - horizontal chips */}
-      <div className="pt-2 border-t border-slate-100">
-        <div className="flex flex-wrap gap-1.5">
+      <div className="pt-3 border-t-2 border-slate-200">
+        <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2 block">
+          Medicație
+        </label>
+        <div className="flex flex-wrap gap-2">
           {MED_OPTIONS.map(({ key, short }) => (
             <button
               key={key}
+              type="button"
+              aria-pressed={medications[key]}
               onClick={() => toggleMed(key)}
-              className={`px-2.5 py-1.5 text-[10px] font-medium rounded-full border transition-colors
+              className={`px-4 py-2.5 text-xs font-semibold rounded-full border-2 transition-all min-h-[44px]
                 ${medications[key]
-                  ? 'bg-blue-500 text-white border-blue-500'
-                  : 'bg-white text-slate-600 border-slate-300 active:bg-slate-100'
+                  ? 'bg-blue-500 text-white border-blue-500 shadow-md'
+                  : 'bg-white text-slate-700 border-slate-300 active:bg-slate-100 active:border-slate-400'
                 }`}
             >
               {short}
@@ -457,36 +478,48 @@ export function MobileLabInput({
 
       {/* Testul de Amestec - subtle inline when aPTT isolated (aPTT elevated + PT normal) */}
       {values.aptt > LAB_RANGES.aptt.max && values.pt <= LAB_RANGES.pt.max && (
-        <div className="flex items-center gap-2 text-[10px] text-slate-500 mt-1">
-          <span>Mixaj:</span>
-          <input
-            type="number"
-            inputMode="decimal"
-            step={1}
-            placeholder="aPTT mix"
-            value={values.apttMix ?? ''}
-            onChange={(e) => {
-              const val = e.target.value;
-              onChange({
-                ...values,
-                apttMix: val ? parseFloat(val) : undefined,
-              });
-              onScenarioChange(null);
-            }}
-            className="w-16 px-1.5 py-1 text-xs border border-slate-300 rounded-lg text-right focus:outline-none focus:ring-2 focus:ring-blue-400/50"
-          />
-          {values.apttMix !== undefined && values.apttMix > 0 && (
-            <span className={`font-medium ${
-              (() => {
-                const result = interpretRosnerIndex(values.aptt, values.apttMix);
-                if (result.interpretation === 'deficiență') return 'text-green-600';
-                if (result.interpretation === 'inhibitor') return 'text-red-600';
-                return 'text-yellow-600';
-              })()
-            }`}>
-              Rosner: {interpretRosnerIndex(values.aptt, values.apttMix).index}%
-            </span>
-          )}
+        <div className="pt-3 border-t-2 border-slate-200">
+          <label htmlFor="input-mixingTest" className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2 block">
+            Test de Amestec
+          </label>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-slate-600 font-medium whitespace-nowrap">aPTT mix:</span>
+              <input
+                id="input-mixingTest"
+                type="number"
+                inputMode="decimal"
+                step={1}
+                placeholder="Valoare"
+                value={values.apttMix ?? ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const num = parseFloat(val);
+                  // Validate: finite, non-negative, reasonable bounds
+                  if (val === '' || (!isNaN(num) && isFinite(num) && num >= 0 && num <= 100000)) {
+                    onChange({
+                      ...values,
+                      apttMix: val ? num : undefined,
+                    });
+                    onScenarioChange(null);
+                  }
+                }}
+                className="flex-1 px-3 py-3 text-base border-2 border-slate-300 rounded-lg text-right focus:outline-none focus:ring-2 focus:ring-blue-400/50 min-h-[44px]"
+              />
+            </div>
+            {values.apttMix !== undefined && values.apttMix > 0 && (
+              <div className={`px-4 py-3 rounded-lg font-semibold text-sm ${
+                (() => {
+                  const result = interpretRosnerIndex(values.aptt, values.apttMix);
+                  if (result.interpretation === 'deficiență') return 'bg-green-50 text-green-700 border-2 border-green-300';
+                  if (result.interpretation === 'inhibitor') return 'bg-red-50 text-red-700 border-2 border-red-300';
+                  return 'bg-yellow-50 text-yellow-700 border-2 border-yellow-300';
+                })()
+              }`}>
+                Index Rosner: {interpretRosnerIndex(values.aptt, values.apttMix).index}%
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
