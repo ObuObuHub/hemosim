@@ -6,9 +6,10 @@ import { MobileLabInput } from './MobileLabInput';
 import { MobileInterpretation } from './MobileInterpretation';
 import { MobileTabBar } from './MobileTabBar';
 import { CascadeCanvas } from './CascadeCanvas';
+import { InteractiveGame } from './InteractiveGame';
 import { SCENARIO_AFFECTED_FACTORS, formatFactorsForDisplay } from '@/engine/interpreter';
 
-type TabId = 'labs' | 'cascade' | 'results';
+type TabId = 'labs' | 'cascade' | 'interactiv' | 'results';
 
 interface MobileLayoutProps {
   state: AppState;
@@ -155,6 +156,18 @@ export function MobileLayout({
                 currentScenario={state.currentScenario}
               />
             </div>
+          </div>
+        )}
+
+        {/* Interactiv Tab */}
+        {activeTab === 'interactiv' && (
+          <div
+            className="absolute inset-0"
+            role="tabpanel"
+            id="tabpanel-interactiv"
+            aria-labelledby="tab-interactiv"
+          >
+            <InteractiveGame className="h-full w-full" />
           </div>
         )}
 

@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-type TabId = 'labs' | 'cascade' | 'results';
+type TabId = 'labs' | 'cascade' | 'interactiv' | 'results';
 
 interface MobileTabBarProps {
   activeTab: TabId;
@@ -34,9 +34,16 @@ const ResultsIcon = (): React.ReactElement => (
   </svg>
 );
 
+const InteractivIcon = (): React.ReactElement => (
+  <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="5 3 19 12 5 21 5 3" />
+  </svg>
+);
+
 const tabs: Array<{ id: TabId; label: string; Icon: () => React.ReactElement }> = [
   { id: 'labs', label: 'Valori', Icon: FlaskIcon },
   { id: 'cascade', label: 'Cascadă', Icon: CascadeIcon },
+  { id: 'interactiv', label: 'Interactiv', Icon: InteractivIcon },
   { id: 'results', label: 'Rezultate', Icon: ResultsIcon },
 ];
 
