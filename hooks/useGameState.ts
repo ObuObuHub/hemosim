@@ -2,7 +2,7 @@
 'use client';
 
 import { useReducer, useCallback, useRef, useEffect } from 'react';
-import type { GameState, GameAction, Slot, ComplexSlot, ReducerResult, FloatingFactor, HeldFactor, Antagonist, GameResult, GameStats } from '@/types/game';
+import type { GameState, GameAction, Slot, ComplexSlot, ReducerResult, FloatingFactor, HeldFactor, Antagonist, GameResult, GameStats, MessengerFactor, SpilloverParticle } from '@/types/game';
 import type { GameEvent } from '@/types/game-events';
 import { createInitialSlots, createInitialComplexSlots, BLOODSTREAM_ZONE } from '@/engine/game/game-config';
 import { getAllFactorIds, getFactorDefinition } from '@/engine/game/factor-definitions';
@@ -122,24 +122,30 @@ function createInitialStats(): GameStats {
 }
 
 function createInitialState(): GameState {
-  // Filter out FXa-tenase (spawned by Tenase) and Stabilization factors (added when phase unlocks)
+  // Filter out FXa-tenase (spawned by Tenase), Stabilization factors (added when phase unlocks),
+  // and FIXa (spawned as messenger when FIX is placed)
   const paletteFactors = getAllFactorIds().filter(
-    (id) => id !== 'FXa-tenase' && id !== 'Fibrinogen' && id !== 'FXIII'
+    (id) => id !== 'FXa-tenase' && id !== 'Fibrinogen' && id !== 'FXIII' && id !== 'FIXa'
   );
 
   return {
     phase: 'initiation',
     thrombinMeter: 0,
+    plateletActivation: 0,
     clotIntegrity: 0,
     bleedingMeter: 0,
+    tfpiActive: false,
+    localFXaCount: 0,
     gameResult: null,
     gameStats: createInitialStats(),
     slots: createInitialSlots(),
     complexSlots: createInitialComplexSlots(),
     circulationFactors: [],
+    messengerFactors: [],
+    spilloverParticles: [],
     availableFactors: paletteFactors,
     selectedFactorId: null,
-    currentMessage: 'Drag a factor from the bloodstream onto a slot to place it.',
+    currentMessage: 'Drag factors from bloodstream. FIXa must travel to platelet!',
     isError: false,
     floatingFactors: [],
     heldFactor: null,
@@ -1004,6 +1010,84 @@ function gameReducer(state: GameState, action: GameAction): ReducerResult {
           },
         },
         events: [],
+      };
+    }
+
+    case 'SPAWN_MESSENGER': {
+      return {
+        state: {
+          ...state,
+          messengerFactors: [...state.messengerFactors, action.messenger],
+        },
+        events: [],
+      };
+    }
+
+    case 'TICK_MESSENGERS': {
+      // Move all messenger factors toward platelet
+      const updatedMessengers = state.messengerFactors.map((messenger) => ({
+        ...messenger,
+        position: {
+          x: messenger.position.x + messenger.velocity.x * action.deltaTime,
+          y: messenger.position.y + messenger.velocity.y * action.deltaTime,
+        },
+      }));
+
+      return {
+        state: {
+          ...state,
+          messengerFactors: updatedMessengers,
+        },
+        events: [],
+      };
+    }
+
+    case 'MESSENGER_ARRIVED': {
+      const events: GameEvent[] = [];
+
+      // Remove from messengers, add to circulation
+      const arrivedMessenger = state.messengerFactors.find((m) => m.id === action.messengerId);
+      if (!arrivedMessenger) {
+        return { state, events };
+      }
+
+      events.push({
+        type: 'FACTOR_TRANSFERRED',
+        factorId: 'FIXa',
+        fromSurface: 'tf-cell',
+        toDestination: 'circulation',
+      });
+
+      return {
+        state: {
+          ...state,
+          messengerFactors: state.messengerFactors.filter((m) => m.id !== action.messengerId),
+          circulationFactors: [...state.circulationFactors, 'FIXa'],
+          currentMessage: 'FIXa Messenger arrived at platelet! Ready to dock into Tenase.',
+        },
+        events,
+      };
+    }
+
+    case 'DESTROY_MESSENGER': {
+      const events: GameEvent[] = [];
+
+      const antagonist = state.antagonists.find((a) => a.id === action.antagonistId);
+      if (antagonist) {
+        events.push({
+          type: 'FACTOR_DESTROYED',
+          factorId: 'FIXa',
+          antagonistType: antagonist.type,
+          antagonistId: action.antagonistId,
+        });
+      }
+
+      return {
+        state: {
+          ...state,
+          messengerFactors: state.messengerFactors.filter((m) => m.id !== action.messengerId),
+        },
+        events,
       };
     }
 
