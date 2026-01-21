@@ -22,7 +22,8 @@ export const PHASE_SPAWN_CONFIG: Record<GamePhase, PhaseSpawnConfig> = {
     spawnIntervalMs: 3000,
   },
   propagation: {
-    factorIds: ['FIXa', 'FVIIIa', 'FXa'],
+    // Only FIXa needed - cofactors auto-fill, FXa-tenase produced by Tenase
+    factorIds: ['FIXa'],
     spawnIntervalMs: 2500,
   },
   stabilization: {
@@ -50,8 +51,6 @@ export const FACTOR_VULNERABILITIES: Record<string, InhibitorVulnerability[]> = 
 
   // Propagation
   FIXa: ['antithrombin'],
-  FVIIIa: ['apc'],
-  FXa: ['antithrombin'],
 
   // Stabilization
   Fibrinogen: ['plasmin'],

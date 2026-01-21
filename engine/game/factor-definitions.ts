@@ -66,6 +66,20 @@ export const FACTOR_DEFINITIONS: Record<string, FactorDefinition> = {
     thrombinContribution: 0,
     color: '#EC4899', // pink
   },
+  // Activated FIXa - spawns in Propagation, docks into Tenase enzyme slot
+  FIXa: {
+    id: 'FIXa',
+    inactiveLabel: 'FIXa',
+    activeLabel: 'FIXa',
+    category: 'enzyme',
+    targetSurface: 'activated-platelet',
+    activationMessage: 'FIXa docked into Tenase complex',
+    errorMessageWrongSlot: 'FIXa docks into Tenase enzyme slot on activated platelet.',
+    prerequisites: [],
+    thrombinContribution: 0,
+    color: '#06B6D4', // cyan (same as FIX)
+  },
+
   // Special FXa spawned by Tenase complex (not in player palette)
   'FXa-tenase': {
     id: 'FXa-tenase',
