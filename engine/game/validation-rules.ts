@@ -16,6 +16,7 @@ export const CLOT_INTEGRITY_VICTORY = 100;
 const MESSAGES = {
   PANEL_LOCKED: 'Platelet not yet activated. Need starter thrombin (≥30%).',
   CLOT_ZONE_LOCKED: 'Clot Zone locked. Complete Prothrombinase first.',
+  TFPI_LOCKED: 'TFPI has shut down TF+VIIa factory. No more factors can be activated here.',
   SLOT_OCCUPIED: 'This slot already has a factor placed.',
   WRONG_FACTOR_FOR_SLOT: (factorId: string) =>
     `${factorId} cannot bind to this slot. Check which surface accepts it.`,
@@ -49,6 +50,11 @@ export function validatePlacement(
       return { isValid: false, errorMessage: MESSAGES.CLOT_ZONE_LOCKED };
     }
     return { isValid: false, errorMessage: MESSAGES.PANEL_LOCKED };
+  }
+
+  // Check if TFPI has shut down TF-cell (for FIX and FX placements)
+  if (slot.surface === 'tf-cell' && state.tfpiActive) {
+    return { isValid: false, errorMessage: MESSAGES.TFPI_LOCKED };
   }
 
   // Check if slot already occupied
@@ -144,6 +150,15 @@ export function isStabilizationComplete(state: GameState): boolean {
   // All clot-zone slots must be filled and active
   const clotZoneSlots = state.slots.filter((s) => s.surface === 'clot-zone');
   return clotZoneSlots.length > 0 && clotZoneSlots.every((s) => s.placedFactorId !== null && s.isActive);
+}
+
+// =============================================================================
+// HELPER: CHECK IF ANY MESSENGER HAS ARRIVED AT PLATELET
+// =============================================================================
+
+export function hasMessengerArrived(state: GameState): boolean {
+  // Check if any FIXa is in circulation (arrived from TF-cell)
+  return state.circulationFactors.includes('FIXa');
 }
 
 // =============================================================================
