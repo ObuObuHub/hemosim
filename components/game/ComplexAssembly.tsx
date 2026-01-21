@@ -1,7 +1,7 @@
 // components/game/ComplexAssembly.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { FactorDefinition } from '@/types/game';
 import { MergedComplex } from './shapes';
 import { FactorToken } from './FactorToken';
@@ -31,21 +31,27 @@ export function ComplexAssembly({
   const [showMerged, setShowMerged] = useState(false);
   const [isAssembling, setIsAssembling] = useState(false);
 
-  // Handle assembly animation
+  // Handle assembly animation - use refs to track previous state
+  const prevCompleteRef = useRef(isComplete);
+
   useEffect(() => {
-    if (isComplete && !showMerged) {
+    // Trigger assembly when transitioning from incomplete to complete
+    if (isComplete && !prevCompleteRef.current) {
       setIsAssembling(true);
-      // Delay showing merged to allow assembly animation
       const timer = setTimeout(() => {
         setShowMerged(true);
         setIsAssembling(false);
       }, 300);
+      prevCompleteRef.current = isComplete;
       return () => clearTimeout(timer);
     }
-    if (!isComplete) {
+
+    // Reset when becoming incomplete
+    if (!isComplete && prevCompleteRef.current) {
       setShowMerged(false);
+      prevCompleteRef.current = isComplete;
     }
-  }, [isComplete, showMerged]);
+  }, [isComplete]);
 
   // Get expected factors for ghost outlines
   const expectedEnzyme = complexType === 'tenase' ? 'FIXa' : 'FXa';
