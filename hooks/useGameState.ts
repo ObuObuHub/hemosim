@@ -510,10 +510,24 @@ function gameReducer(state: GameState, action: GameAction): ReducerResult {
       const newAvailableFactors = state.availableFactors.filter((f) => f !== factorId);
 
       // Track circulation factors - FIX placed adds it to circulation (as FIX, not FIXa)
-      const newCirculationFactors =
+      let newCirculationFactors =
         factorId === 'FIX'
           ? [...state.circulationFactors, 'FIX']
           : [...state.circulationFactors];
+
+      // FXI generates local FIXa on platelet (reinforcement loop)
+      if (factorId === 'FXI' && surface === 'platelet') {
+        events.push({
+          type: 'LOCAL_FIXA_GENERATED' as const,
+          source: 'fxi' as const,
+        });
+
+        // Add FIXa to circulation (can dock into Tenase)
+        // Only add if not already present
+        if (!newCirculationFactors.includes('FIXa')) {
+          newCirculationFactors = [...newCirculationFactors, 'FIXa'];
+        }
+      }
 
       // Determine message
       let newMessage = factor.activationMessage;
