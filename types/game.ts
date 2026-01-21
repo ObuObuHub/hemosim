@@ -127,6 +127,42 @@ export interface ActivationArrow {
 }
 
 // =============================================================================
+// FACTOR SHAPE TYPES (Bio-Accurate)
+// =============================================================================
+
+/**
+ * Bio-accurate shape types based on biochemical role
+ * - zymogen: Rounded oval (inactive enzyme precursor)
+ * - enzyme: Pac-man with bite (active site visible)
+ * - cofactor: Rounded rectangle with side socket
+ * - fibrinogen: Elongated oval
+ * - fibrin: Rod with sticky ends
+ */
+export type BioShapeType = 'zymogen' | 'enzyme' | 'cofactor' | 'fibrinogen' | 'fibrin';
+
+export interface FactorVisual {
+  factorId: string;
+  inactiveShape: BioShapeType;
+  activeShape: BioShapeType;
+  inactiveColor: string;
+  activeColor: string;
+  width: number;
+  height: number;
+}
+
+/**
+ * Puzzle-dock configuration for enzyme-cofactor pairing
+ */
+export interface DockConfig {
+  enzymeFactorId: string;
+  cofactorFactorId: string;
+  /** Horizontal offset where enzyme bite meets cofactor socket */
+  dockOffset: { x: number; y: number };
+  /** Snap distance in pixels */
+  snapDistance: number;
+}
+
+// =============================================================================
 // FLOATING FACTOR (Bloodstream)
 // =============================================================================
 
