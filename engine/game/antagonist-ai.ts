@@ -239,21 +239,28 @@ export function tickAntagonist(
   };
 }
 
+/** Represents a factor destroyed by a specific antagonist */
+export interface DestroyedFactorInfo {
+  factorId: string;
+  antagonistId: string;
+  antagonistType: AntagonistType;
+}
+
 /**
  * Tick all antagonists and return updated state
  *
  * @param antagonists - Array of all antagonists
  * @param floatingFactors - All floating factors in the bloodstream
  * @param deltaTime - Time since last tick in seconds
- * @returns Updated antagonists array and IDs of destroyed factors
+ * @returns Updated antagonists array and destroyed factor info
  */
 export function tickAllAntagonists(
   antagonists: Antagonist[],
   floatingFactors: FloatingFactor[],
   deltaTime: number
-): { antagonists: Antagonist[]; destroyedFactorIds: string[] } {
+): { antagonists: Antagonist[]; destroyedFactors: DestroyedFactorInfo[] } {
   const updatedAntagonists: Antagonist[] = [];
-  const destroyedFactorIds: string[] = [];
+  const destroyedFactors: DestroyedFactorInfo[] = [];
 
   // Keep track of factors that have been claimed by other antagonists this tick
   let remainingFactors = [...floatingFactors];
@@ -263,7 +270,11 @@ export function tickAllAntagonists(
     updatedAntagonists.push(result.antagonist);
 
     if (result.destroyedFactorId) {
-      destroyedFactorIds.push(result.destroyedFactorId);
+      destroyedFactors.push({
+        factorId: result.destroyedFactorId,
+        antagonistId: antagonist.id,
+        antagonistType: antagonist.type,
+      });
       // Remove destroyed factor from remaining factors to prevent
       // multiple antagonists attacking the same factor
       remainingFactors = remainingFactors.filter(
@@ -274,7 +285,7 @@ export function tickAllAntagonists(
 
   return {
     antagonists: updatedAntagonists,
-    destroyedFactorIds,
+    destroyedFactors,
   };
 }
 

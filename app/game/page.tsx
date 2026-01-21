@@ -413,20 +413,15 @@ export default function GamePage(): ReactElement {
         antagonistsRef.current = aiResult.antagonists;
 
         // Dispatch destroy events for any factors that were caught
-        for (const destroyedId of aiResult.destroyedFactorIds) {
-          // Find which antagonist destroyed this factor
-          const attacker = aiResult.antagonists.find(
-            (a) => a.state === 'patrol' && a.targetFactorId === null
-          );
-          if (attacker) {
-            destroyFactor(destroyedId, attacker.id);
-            // Update respawn timer for this antagonist type
-            antagonistSpawnTimesRef.current[attacker.type] = currentTime;
-          }
+        for (const destroyed of aiResult.destroyedFactors) {
+          destroyFactor(destroyed.factorId, destroyed.antagonistId);
+          // Update respawn timer for this antagonist type
+          antagonistSpawnTimesRef.current[destroyed.antagonistType] = currentTime;
         }
 
         // Update game state with new antagonist positions and destroyed factors
-        tickAntagonists(aiResult.antagonists, aiResult.destroyedFactorIds);
+        const destroyedFactorIds = aiResult.destroyedFactors.map((d) => d.factorId);
+        tickAntagonists(aiResult.antagonists, destroyedFactorIds);
       }
 
       // Update floating factor positions

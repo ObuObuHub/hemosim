@@ -287,6 +287,9 @@ export function useAnimationController(gameState: GameState): AnimationControlle
   const processingRef = useRef<boolean>(false);
   const speedRef = useRef<number>(NORMAL_SPEED);
 
+  // Track if component is mounted to avoid state updates after unmount
+  const mountedRef = useRef<boolean>(true);
+
   // Processing state for render (synced with ref)
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
@@ -304,22 +307,30 @@ export function useAnimationController(gameState: GameState): AnimationControlle
     }
 
     processingRef.current = true;
-    setIsProcessing(true);
+    if (mountedRef.current) {
+      setIsProcessing(true);
+    }
 
-    while (queueRef.current.length > 0) {
+    while (queueRef.current.length > 0 && mountedRef.current) {
       const event = queueRef.current.shift()!;
-      setPendingCount(queueRef.current.length);
+      if (mountedRef.current) {
+        setPendingCount(queueRef.current.length);
+      }
 
       // Get animation duration for this event
       const baseDuration = getEventAnimationDuration(event);
       const duration = baseDuration / speedRef.current;
 
       // Apply event to visual state
-      setVisualState((prev) => applyEventToVisualState(prev, event));
+      if (mountedRef.current) {
+        setVisualState((prev) => applyEventToVisualState(prev, event));
+      }
 
       // Wait for animation duration (if any)
       if (duration > 0) {
         await new Promise((resolve) => setTimeout(resolve, duration));
+        // Check if still mounted after waiting
+        if (!mountedRef.current) break;
       }
 
       // Reset speed after processing a critical event
@@ -332,12 +343,16 @@ export function useAnimationController(gameState: GameState): AnimationControlle
       if (priority === 'standard' && queueRef.current.length > 0) {
         const staggerDelay = STANDARD_STAGGER_MS / speedRef.current;
         await new Promise((resolve) => setTimeout(resolve, staggerDelay));
+        // Check if still mounted after waiting
+        if (!mountedRef.current) break;
       }
     }
 
     processingRef.current = false;
-    setIsProcessing(false);
-    setPendingCount(0);
+    if (mountedRef.current) {
+      setIsProcessing(false);
+      setPendingCount(0);
+    }
   }, []);
 
   // ==========================================================================
@@ -380,6 +395,14 @@ export function useAnimationController(gameState: GameState): AnimationControlle
   useEffect(() => {
     gameStateRef.current = gameState;
   });
+
+  // Track mounted state for cleanup
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // ==========================================================================
   // 60FPS LERP EFFECT FOR METERS
