@@ -24,21 +24,21 @@ export interface AntagonistConfig {
 export const ANTAGONIST_CONFIGS: Record<AntagonistType, AntagonistConfig> = {
   antithrombin: {
     type: 'antithrombin',
-    speed: 100,
+    speed: 60, // slower hunting speed
     targets: 'antithrombin',
     color: '#EF4444', // red
     // Only appears from Amplification onward (FII is vulnerable to AT)
     // In Initiation, only FX spawns which is not yet activated (zymogen)
     appearInPhases: ['amplification', 'propagation', 'stabilization'],
-    respawnDelayMs: 5000,
+    respawnDelayMs: 8000, // longer delay between spawns
   },
   apc: {
     type: 'apc',
-    speed: 90,
+    speed: 50, // slower hunting speed
     targets: 'apc',
     color: '#A855F7', // purple
     appearInPhases: ['amplification', 'propagation', 'stabilization'],
-    respawnDelayMs: 6000,
+    respawnDelayMs: 10000, // longer delay between spawns
   },
   plasmin: {
     type: 'plasmin',
