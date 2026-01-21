@@ -1273,6 +1273,24 @@ export interface UseGameStateReturn {
   incrementFactorsCaught: () => void;
   /** Set elapsed time */
   setTimeTaken: (time: number) => void;
+  /** Spawn a messenger factor (FIXa traveling from TF-cell) */
+  spawnMessenger: (messenger: MessengerFactor) => void;
+  /** Update messenger positions */
+  tickMessengers: (deltaTime: number) => void;
+  /** Handle messenger arrival at platelet */
+  messengerArrived: (messengerId: string) => void;
+  /** Destroy a messenger (antagonist caught it) */
+  destroyMessenger: (messengerId: string, antagonistId: string) => void;
+  /** Spawn spillover particle */
+  spawnSpillover: (particle: SpilloverParticle) => void;
+  /** Update spillover particles */
+  tickSpillover: (deltaTime: number) => void;
+  /** Handle spillover hitting vessel wall */
+  spilloverHitEdge: (particleId: string) => void;
+  /** Trigger Protein C activation */
+  triggerProteinC: () => void;
+  /** Increment platelet activation meter */
+  incrementPlateletActivation: (amount: number) => void;
 }
 
 /**
@@ -1406,6 +1424,42 @@ export function useGameState(): UseGameStateReturn {
     dispatch({ type: 'SET_TIME_TAKEN', time });
   }, []);
 
+  const spawnMessenger = useCallback((messenger: MessengerFactor) => {
+    dispatch({ type: 'SPAWN_MESSENGER', messenger });
+  }, []);
+
+  const tickMessengers = useCallback((deltaTime: number) => {
+    dispatch({ type: 'TICK_MESSENGERS', deltaTime });
+  }, []);
+
+  const messengerArrived = useCallback((messengerId: string) => {
+    dispatch({ type: 'MESSENGER_ARRIVED', messengerId });
+  }, []);
+
+  const destroyMessenger = useCallback((messengerId: string, antagonistId: string) => {
+    dispatch({ type: 'DESTROY_MESSENGER', messengerId, antagonistId });
+  }, []);
+
+  const spawnSpillover = useCallback((particle: SpilloverParticle) => {
+    dispatch({ type: 'SPAWN_SPILLOVER', particle });
+  }, []);
+
+  const tickSpillover = useCallback((deltaTime: number) => {
+    dispatch({ type: 'TICK_SPILLOVER', deltaTime });
+  }, []);
+
+  const spilloverHitEdge = useCallback((particleId: string) => {
+    dispatch({ type: 'SPILLOVER_HIT_EDGE', particleId });
+  }, []);
+
+  const triggerProteinC = useCallback(() => {
+    dispatch({ type: 'TRIGGER_PROTEIN_C' });
+  }, []);
+
+  const incrementPlateletActivation = useCallback((amount: number) => {
+    dispatch({ type: 'INCREMENT_PLATELET_ACTIVATION', amount });
+  }, []);
+
   return {
     state,
     selectFactor,
@@ -1427,5 +1481,14 @@ export function useGameState(): UseGameStateReturn {
     setGameResult,
     incrementFactorsCaught,
     setTimeTaken,
+    spawnMessenger,
+    tickMessengers,
+    messengerArrived,
+    destroyMessenger,
+    spawnSpillover,
+    tickSpillover,
+    spilloverHitEdge,
+    triggerProteinC,
+    incrementPlateletActivation,
   };
 }
