@@ -25,7 +25,7 @@ import {
   getActiveAntagonistTypes,
   ANTAGONIST_CONFIGS,
 } from '@/engine/game/antagonist-ai';
-import type { FloatingFactor, AntagonistType, Antagonist, MessengerFactor } from '@/types/game';
+import type { FloatingFactor, AntagonistType, Antagonist, MessengerFactor, SpilloverParticle } from '@/types/game';
 import type { GameEvent } from '@/types/game-events';
 
 // =============================================================================
@@ -75,6 +75,10 @@ export default function GamePage(): ReactElement {
     tickMessengers,
     messengerArrived,
     destroyMessenger,
+    spawnSpillover,
+    tickSpillover,
+    spilloverHitEdge,
+    triggerProteinC,
   } = useGameState();
 
   // Refs for game loop
@@ -332,6 +336,53 @@ export default function GamePage(): ReactElement {
         }
       }
 
+      // === THROMBIN SPILLOVER (during Propagation/Stabilization burst) ===
+      // Spawn spillover particles when thrombin is high
+      if (
+        (state.phase === 'propagation' || state.phase === 'stabilization') &&
+        state.thrombinMeter >= 80 &&
+        state.spilloverParticles.length < 5 // Cap at 5 particles
+      ) {
+        // Random chance to spawn spillover each frame
+        if (Math.random() < 0.02) { // ~2% chance per frame
+          const goingUp = Math.random() > 0.5;
+          const particle: SpilloverParticle = {
+            id: `spillover-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+            position: {
+              x: 600 + Math.random() * 200, // Near center
+              y: 60, // Middle of bloodstream
+            },
+            velocity: {
+              x: (Math.random() - 0.5) * 20, // Slight horizontal drift
+              y: goingUp ? -30 : 30, // Drift toward top or bottom edge
+            },
+            lifetime: 3, // 3 seconds
+          };
+          spawnSpillover(particle);
+        }
+      }
+
+      // === SPILLOVER MOVEMENT ===
+      if (state.spilloverParticles.length > 0 && deltaTime > 0 && deltaTime < 1) {
+        tickSpillover(deltaTime);
+
+        // Check for spillover hitting vessel wall edges
+        for (const particle of state.spilloverParticles) {
+          // Top edge (y < 20) or bottom edge (y > 100)
+          if (particle.position.y < 20 || particle.position.y > 100) {
+            spilloverHitEdge(particle.id);
+            triggerProteinC();
+
+            // Spawn APC if not already present
+            const apcExists = state.antagonists.some((a) => a.type === 'apc');
+            if (!apcExists) {
+              const apc = createAntagonist('apc', generateAntagonistId());
+              spawnAntagonist(apc);
+            }
+          }
+        }
+      }
+
       // === ANTAGONIST SPAWNING ===
       const activeAntagonistTypes = getActiveAntagonistTypes(state.phase);
 
@@ -402,6 +453,9 @@ export default function GamePage(): ReactElement {
     state.slots,
     state.circulationFactors,
     state.messengerFactors,
+    state.thrombinMeter,
+    state.spilloverParticles,
+    state.antagonists,
     spawnFloatingFactor,
     tickFloatingFactors,
     spawnAntagonist,
@@ -410,6 +464,10 @@ export default function GamePage(): ReactElement {
     spawnMessenger,
     tickMessengers,
     messengerArrived,
+    spawnSpillover,
+    tickSpillover,
+    spilloverHitEdge,
+    triggerProteinC,
   ]);
 
   const handleMainMenu = useCallback((): void => {
