@@ -15,6 +15,7 @@ import { GameOverScreen } from './GameOverScreen';
 import { VictoryScreen } from './VictoryScreen';
 import { PhaseUnlockBanner } from './PhaseUnlockBanner';
 import { TutorialOverlay } from './TutorialOverlay';
+import { ZymogenShape } from './shapes';
 
 interface GameCanvasProps {
   gameState: GameState;
@@ -185,44 +186,17 @@ export const GameCanvas = forwardRef<HTMLDivElement, GameCanvasProps>(function G
             position: 'absolute',
             left: heldFactorDisplayPosition.x,
             top: heldFactorDisplayPosition.y,
-            transform: 'translate(-50%, -50%)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '8px 14px',
-            borderRadius: 10,
-            background: `linear-gradient(135deg, ${heldFactorDef.color}60 0%, ${heldFactorDef.color}40 100%)`,
-            border: `3px solid ${heldFactorDef.color}`,
-            boxShadow: `0 0 24px ${heldFactorDef.color}80, 0 8px 16px rgba(0,0,0,0.3)`,
-            minWidth: 60,
+            transform: 'translate(-50%, -50%) scale(1.1)',
             pointerEvents: 'none',
             zIndex: 1000,
             cursor: 'grabbing',
+            filter: `drop-shadow(0 0 16px ${heldFactorDef.color}) drop-shadow(0 8px 16px rgba(0,0,0,0.3))`,
           }}
         >
-          <span
-            style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: '#FFFFFF',
-              textShadow: '0 1px 2px rgba(0,0,0,0.3)',
-              letterSpacing: '0.3px',
-            }}
-          >
-            {heldFactorDef.inactiveLabel}
-          </span>
-          <span
-            style={{
-              fontSize: 8,
-              color: 'rgba(255,255,255,0.7)',
-              marginTop: 2,
-              textTransform: 'uppercase',
-              letterSpacing: '0.3px',
-            }}
-          >
-            {heldFactorDef.category}
-          </span>
+          <ZymogenShape
+            color={heldFactorDef.color}
+            label={heldFactorDef.inactiveLabel}
+          />
         </div>
       )}
 

@@ -89,7 +89,7 @@ export function ComplexAssembly({
         onClick={onEnzymeSlotClick}
         style={{
           width: 70,
-          height: 55,
+          height: 58,
           border: `2px dashed ${isLocked ? '#4B5563' : enzymeFactor ? 'transparent' : '#6B7280'}`,
           borderRadius: 12,
           display: 'flex',
@@ -98,10 +98,11 @@ export function ComplexAssembly({
           cursor: isLocked ? 'not-allowed' : 'pointer',
           opacity: isLocked ? 0.5 : 1,
           backgroundColor: enzymeFactor ? 'transparent' : 'rgba(107,114,128,0.1)',
+          overflow: 'visible',
         }}
       >
         {enzymeFactor ? (
-          <FactorToken factor={enzymeFactor} isActive={true} />
+          <FactorToken factor={enzymeFactor} isActive={true} isInComplex={true} />
         ) : (
           <span style={{ fontSize: 10, color: '#6B7280' }}>
             {expectedEnzyme}
@@ -123,10 +124,11 @@ export function ComplexAssembly({
           cursor: isLocked ? 'not-allowed' : 'pointer',
           opacity: isLocked ? 0.5 : 1,
           backgroundColor: cofactorFactor ? 'transparent' : 'rgba(107,114,128,0.1)',
+          overflow: 'visible',
         }}
       >
         {cofactorFactor ? (
-          <FactorToken factor={cofactorFactor} isActive={true} />
+          <FactorToken factor={cofactorFactor} isActive={true} isInComplex={true} />
         ) : (
           <span style={{ fontSize: 10, color: '#6B7280' }}>
             {expectedCofactor}

@@ -9,8 +9,6 @@ import { getAllFactorIds, getFactorDefinition } from '@/engine/game/factor-defin
 import {
   validatePlacement,
   validateComplexPlacement,
-  shouldUnlockClotZone,
-  isProthrombinaseComplete,
   checkVictoryCondition,
   isAmplificationComplete,
   isTenaseComplete,

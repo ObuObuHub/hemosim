@@ -5,6 +5,7 @@ import type { FloatingFactor as FloatingFactorType, Antagonist, MessengerFactor,
 import { BLOODSTREAM_ZONE, GAME_CANVAS, COLORS } from '@/engine/game/game-config';
 import { FloatingFactor } from './FloatingFactor';
 import { AntagonistSprite } from './AntagonistSprite';
+import { EnzymeShape } from './shapes';
 
 interface BloodstreamZoneProps {
   floatingFactors: FloatingFactorType[];
@@ -111,24 +112,17 @@ export function BloodstreamZone({
           key={messenger.id}
           style={{
             position: 'absolute',
-            left: messenger.position.x - 20,
-            top: messenger.position.y - 15,
-            width: 40,
-            height: 30,
-            backgroundColor: '#06B6D480',
-            border: '2px solid #06B6D4',
-            borderRadius: 8,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 11,
-            fontWeight: 700,
-            color: '#06B6D4',
-            boxShadow: '0 0 10px #06B6D4',
+            left: messenger.position.x - 30,
+            top: messenger.position.y - 25,
             pointerEvents: 'none',
+            filter: 'drop-shadow(0 0 10px #06B6D4)',
           }}
         >
-          FIXa
+          <EnzymeShape
+            color="#06B6D4"
+            label="FIXa"
+            isWobbling={false}
+          />
         </div>
       ))}
 

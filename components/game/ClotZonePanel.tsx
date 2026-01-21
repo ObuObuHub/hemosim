@@ -47,7 +47,7 @@ interface CalciumSparklesProps {
   onComplete: () => void;
 }
 
-function CalciumSparkles({ color, onComplete }: CalciumSparklesProps): React.ReactElement {
+function CalciumSparkles({ color: _color, onComplete }: CalciumSparklesProps): React.ReactElement {
   useEffect(() => {
     const timer = setTimeout(onComplete, 500);
     return () => clearTimeout(timer);
@@ -211,7 +211,6 @@ function getPanelStatus(
   slots: Slot[],
   gameState: GameState
 ): { label: string; color: string } | null {
-  const anyLocked = slots.some((s) => s.isLocked);
   const allPlaced = slots.every((s) => s.placedFactorId !== null);
 
   if (gameState.phase !== 'stabilization' && gameState.phase !== 'complete') {
@@ -274,9 +273,6 @@ function SlotComponent({
 
   const pos = SLOT_POSITIONS[slot.id];
   if (!pos) return null;
-
-  // Determine slot label based on factor type
-  const slotLabel = slot.acceptsFactorId === 'FXIII' ? 'FXIII' : 'Fibrinogen';
 
   // Build className for CSS animations
   const classNames = ['game-interactive'];

@@ -48,7 +48,7 @@ interface CalciumSparklesProps {
   onComplete: () => void;
 }
 
-function CalciumSparkles({ color, onComplete }: CalciumSparklesProps): React.ReactElement {
+function CalciumSparkles({ color: _color, onComplete }: CalciumSparklesProps): React.ReactElement {
   useEffect(() => {
     const timer = setTimeout(onComplete, 500);
     return () => clearTimeout(timer);
@@ -348,6 +348,19 @@ function PreplacedElementComponent({ element, tfpiActive = false }: PreplacedEle
 }
 
 // =============================================================================
+// HELPER: Get factor from complex slot safely
+// =============================================================================
+
+function getComplexSlotFactor(
+  complexSlots: ComplexSlot[],
+  slotId: string
+): ReturnType<typeof getFactorDefinition> | null {
+  const slot = complexSlots.find((s) => s.id === slotId);
+  if (!slot?.placedFactorId) return null;
+  return getFactorDefinition(slot.placedFactorId);
+}
+
+// =============================================================================
 // MAIN SURFACE PANEL COMPONENT
 // =============================================================================
 
@@ -593,16 +606,8 @@ export function SurfacePanel({
           <div style={{ position: 'absolute', left: 30, top: 90, zIndex: 2 }}>
             <ComplexAssembly
               complexType="tenase"
-              enzymeFactor={
-                complexSlots.find(s => s.id === 'tenase-enzyme')?.placedFactorId
-                  ? getFactorDefinition(complexSlots.find(s => s.id === 'tenase-enzyme')!.placedFactorId!)
-                  : null
-              }
-              cofactorFactor={
-                complexSlots.find(s => s.id === 'tenase-cofactor')?.placedFactorId
-                  ? getFactorDefinition(complexSlots.find(s => s.id === 'tenase-cofactor')!.placedFactorId!)
-                  : null
-              }
+              enzymeFactor={getComplexSlotFactor(complexSlots, 'tenase-enzyme')}
+              cofactorFactor={getComplexSlotFactor(complexSlots, 'tenase-cofactor')}
               onEnzymeSlotClick={() => onComplexSlotClick('tenase-enzyme')}
               isLocked={gameState.phase !== 'propagation' && gameState.phase !== 'complete'}
             />
@@ -612,16 +617,8 @@ export function SurfacePanel({
           <div style={{ position: 'absolute', left: 30, top: 210, zIndex: 2 }}>
             <ComplexAssembly
               complexType="prothrombinase"
-              enzymeFactor={
-                complexSlots.find(s => s.id === 'prothrombinase-enzyme')?.placedFactorId
-                  ? getFactorDefinition(complexSlots.find(s => s.id === 'prothrombinase-enzyme')!.placedFactorId!)
-                  : null
-              }
-              cofactorFactor={
-                complexSlots.find(s => s.id === 'prothrombinase-cofactor')?.placedFactorId
-                  ? getFactorDefinition(complexSlots.find(s => s.id === 'prothrombinase-cofactor')!.placedFactorId!)
-                  : null
-              }
+              enzymeFactor={getComplexSlotFactor(complexSlots, 'prothrombinase-enzyme')}
+              cofactorFactor={getComplexSlotFactor(complexSlots, 'prothrombinase-cofactor')}
               onEnzymeSlotClick={() => onComplexSlotClick('prothrombinase-enzyme')}
               isLocked={
                 (gameState.phase !== 'propagation' && gameState.phase !== 'complete') ||
