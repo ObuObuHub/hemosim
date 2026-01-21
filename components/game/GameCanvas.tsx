@@ -58,13 +58,17 @@ export const GameCanvas = forwardRef<HTMLDivElement, GameCanvasProps>(function G
     ? getFactorDefinition(gameState.heldFactor.factorId)
     : null;
 
-  // Tutorial state - check localStorage to see if already dismissed
-  // Initialize with a function to avoid calling localStorage on every render
-  const [showTutorial, setShowTutorial] = useState(() => {
-    // Only run in browser
-    if (typeof window === 'undefined') return false;
-    return !localStorage.getItem(TUTORIAL_DISMISSED_KEY);
-  });
+  // Tutorial state - start hidden, then show after hydration if not dismissed
+  // This prevents hydration mismatch between server and client
+  const [showTutorial, setShowTutorial] = useState(false);
+
+  // Check localStorage after hydration to avoid SSR mismatch
+  useEffect(() => {
+    const isDismissed = localStorage.getItem(TUTORIAL_DISMISSED_KEY);
+    if (!isDismissed) {
+      setShowTutorial(true);
+    }
+  }, []);
 
   // Phase unlock banner state
   const [showPhaseUnlock, setShowPhaseUnlock] = useState<GamePhase | null>(null);
@@ -89,7 +93,9 @@ export const GameCanvas = forwardRef<HTMLDivElement, GameCanvasProps>(function G
   // Handle tutorial dismissal
   const handleDismissTutorial = useCallback(() => {
     setShowTutorial(false);
-    localStorage.setItem(TUTORIAL_DISMISSED_KEY, 'true');
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(TUTORIAL_DISMISSED_KEY, 'true');
+    }
   }, []);
 
   // Handle phase unlock banner completion
