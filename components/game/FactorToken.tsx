@@ -2,13 +2,14 @@
 'use client';
 
 import type { FactorDefinition } from '@/types/game';
-import { COLORS } from '@/engine/game/game-config';
+import { ZymogenShape, EnzymeShape, CofactorShape, getShapeType } from './shapes';
 
 interface FactorTokenProps {
   factor: FactorDefinition;
   isActive: boolean;
   isSelected?: boolean;
   isInPalette?: boolean;
+  isInComplex?: boolean;
   onClick?: () => void;
   style?: React.CSSProperties;
 }
@@ -18,74 +19,103 @@ export function FactorToken({
   isActive,
   isSelected = false,
   isInPalette = false,
+  isInComplex = false,
   onClick,
   style,
 }: FactorTokenProps): React.ReactElement {
   const label = isActive ? factor.activeLabel : factor.inactiveLabel;
-  const categoryLabel = factor.category;
+  const shapeType = getShapeType(factor.id, isActive);
 
-  // Enhanced glow for active factors
-  const glowIntensity = isActive ? '0 0 20px' : '0 0 8px';
-  const selectedGlow = isSelected ? `0 0 25px ${factor.color}, 0 0 40px ${factor.color}60` : '';
-  const activeGlow = isActive ? `${glowIntensity} ${factor.color}80, inset 0 1px 0 rgba(255,255,255,0.3)` : 'none';
-  const combinedShadow = isSelected ? selectedGlow : activeGlow;
+  // Selection glow effect
+  const selectionStyle: React.CSSProperties = isSelected ? {
+    filter: `drop-shadow(0 0 8px ${factor.color}) drop-shadow(0 0 16px ${factor.color})`,
+    transform: 'scale(1.08)',
+  } : {};
+
+  // Combine styles
+  const combinedStyle: React.CSSProperties = {
+    cursor: onClick ? 'pointer' : 'default',
+    transition: 'transform 0.15s ease-out, filter 0.15s ease-out',
+    ...selectionStyle,
+    ...style,
+  };
+
+  // Render appropriate shape based on factor type and activation state
+  const renderShape = (): React.ReactElement => {
+    switch (shapeType) {
+      case 'enzyme':
+        return (
+          <EnzymeShape
+            color={factor.color}
+            label={label}
+            isWobbling={!isInComplex} // Don't wobble when part of complex
+            style={combinedStyle}
+          />
+        );
+
+      case 'cofactor':
+        return (
+          <CofactorShape
+            color={factor.color}
+            label={label}
+            style={combinedStyle}
+          />
+        );
+
+      case 'zymogen':
+      case 'procofactor':
+      default:
+        return (
+          <ZymogenShape
+            color={factor.color}
+            label={label}
+            style={combinedStyle}
+          />
+        );
+    }
+  };
 
   return (
     <div
       onClick={onClick}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '10px 18px',
-        borderRadius: 12,
-        background: isActive
-          ? `linear-gradient(135deg, ${factor.color} 0%, ${factor.color}CC 100%)`
-          : `linear-gradient(135deg, ${factor.color}50 0%, ${factor.color}30 100%)`,
-        border: `3px solid ${isSelected ? '#FBBF24' : isActive ? factor.color : `${factor.color}80`}`,
-        boxShadow: combinedShadow,
-        cursor: onClick ? 'pointer' : 'default',
-        transition: 'all 0.15s ease-out',
-        minWidth: 85,
-        transform: isSelected ? 'scale(1.08)' : 'scale(1)',
-        ...style,
-      }}
       onMouseEnter={(e) => {
-        if (onClick) {
-          e.currentTarget.style.transform = isSelected ? 'scale(1.08)' : 'scale(1.05)';
-          e.currentTarget.style.boxShadow = `0 0 25px ${factor.color}90`;
+        if (onClick && !isSelected) {
+          const target = e.currentTarget.querySelector('svg');
+          if (target) {
+            target.style.transform = 'scale(1.05)';
+            target.style.filter = `drop-shadow(0 0 12px ${factor.color})`;
+          }
         }
       }}
       onMouseLeave={(e) => {
-        if (onClick) {
-          e.currentTarget.style.transform = isSelected ? 'scale(1.08)' : 'scale(1)';
-          e.currentTarget.style.boxShadow = combinedShadow;
+        if (onClick && !isSelected) {
+          const target = e.currentTarget.querySelector('svg');
+          if (target) {
+            target.style.transform = '';
+            target.style.filter = '';
+          }
         }
       }}
+      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
     >
-      <span
-        style={{
-          fontSize: 18,
-          fontWeight: 700,
-          color: '#FFFFFF',
-          textShadow: isActive ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
-          letterSpacing: '0.5px',
-        }}
-      >
-        {label}
-      </span>
+      {renderShape()}
+
+      {/* Category label for palette view */}
       {isInPalette && (
         <span
           style={{
+            position: 'absolute',
+            bottom: -16,
+            left: '50%',
+            transform: 'translateX(-50%)',
             fontSize: 9,
             color: 'rgba(255,255,255,0.7)',
-            marginTop: 3,
             textTransform: 'uppercase',
             letterSpacing: '0.5px',
+            whiteSpace: 'nowrap',
           }}
         >
-          {categoryLabel}
+          {factor.category}
         </span>
       )}
     </div>
