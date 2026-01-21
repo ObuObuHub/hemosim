@@ -24,7 +24,7 @@ export const FACTOR_DEFINITIONS: Record<string, FactorDefinition> = {
     activeLabel: 'FIXa',
     category: 'zymogen',
     targetSurface: 'tf-cell',
-    activationMessage: 'FIXa generated on TF-cell (TF+VIIa catalyzes). Held in circulation.',
+    activationMessage: 'FIXa generated! Messenger traveling to platelet...',
     errorMessageWrongSlot: 'FIX must be placed on TF-bearing cell where TF+VIIa can activate it.',
     prerequisites: [],
     thrombinContribution: 0,
@@ -65,6 +65,18 @@ export const FACTOR_DEFINITIONS: Record<string, FactorDefinition> = {
     prerequisites: [], // only needs platelet unlocked
     thrombinContribution: 0,
     color: '#EC4899', // pink
+  },
+  FXI: {
+    id: 'FXI',
+    inactiveLabel: 'FXI',
+    activeLabel: 'FXIa',
+    category: 'zymogen',
+    targetSurface: 'platelet',
+    activationMessage: 'FXIa activated! Reinforcement loop active - generating local FIXa.',
+    errorMessageWrongSlot: 'FXI must be placed on activated platelet where thrombin can activate it.',
+    prerequisites: [], // needs platelet unlocked + thrombin present
+    thrombinContribution: 0,
+    color: '#14B8A6', // teal
   },
   // Activated FIXa - spawns in Propagation, docks into Tenase enzyme slot
   FIXa: {
