@@ -4,7 +4,7 @@
 import { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import type { ReactElement } from 'react';
 import { useSceneState } from '@/hooks/useSceneState';
-import { InitiationScene, AmplificationScene, PropagationScene } from '@/components/game/scenes';
+import { InitiationScene, AmplificationScene, PropagationScene, StabilizationScene } from '@/components/game/scenes';
 import { FactorTokenNew } from '@/components/game/tokens/FactorTokenNew';
 import type { FloatingFactor } from '@/types/game';
 
@@ -172,8 +172,8 @@ export default function GamePageV2(): ReactElement {
   const propMembraneY = GAME_HEIGHT * 0.75;
 
   const propDockingPositions = useMemo(() => ({
-    // Left side: FIX docking with FVIIIa to form Tenase
-    fix: { x: GAME_WIDTH * 0.25 - 40, y: propMembraneY - 60 },
+    // Left side: FIXa docking with FVIIIa to form Tenase
+    fixa: { x: GAME_WIDTH * 0.25 - 40, y: propMembraneY - 60 },
     // Right side: FII substrate for Prothrombinase
     fii: { x: GAME_WIDTH * 0.75, y: propMembraneY - 70 },
   }), [GAME_WIDTH, propMembraneY]);
@@ -203,10 +203,44 @@ export default function GamePageV2(): ReactElement {
   // Check for propagation phase completion (thrombin burst)
   useEffect(() => {
     if (state.currentScene === 'propagation' && propThrombinBurst) {
-      setDebugLog(prev => [...prev.slice(-4), 'THROMBIN BURST! → Victory']);
-      setTimeout(() => setScene('victory'), 2000);
+      setDebugLog(prev => [...prev.slice(-4), 'THROMBIN BURST! → Stabilization']);
+      setTimeout(() => setScene('stabilization'), 2000);
     }
   }, [state.currentScene, propThrombinBurst, setScene]);
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // STABILIZATION PHASE STATE
+  // ═══════════════════════════════════════════════════════════════════════
+  const [stabFibrinCount, setStabFibrinCount] = useState(0);
+  const [stabFxiiiActivated, setStabFxiiiActivated] = useState(false);
+  const [stabMeshCrosslinked, setStabMeshCrosslinked] = useState(false);
+
+  // Stabilization docking positions
+  const stabMembraneY = GAME_HEIGHT * 0.75;
+
+  const stabDockingPositions = useMemo(() => ({
+    fibrinogen: { x: GAME_WIDTH * 0.5, y: stabMembraneY - 80 },
+    fxiii: { x: GAME_WIDTH * 0.7, y: stabMembraneY - 60 },
+  }), [GAME_WIDTH, stabMembraneY]);
+
+  // Auto-crosslink mesh when FXIIIa activates (with delay)
+  useEffect(() => {
+    if (stabFxiiiActivated && !stabMeshCrosslinked) {
+      const timer = setTimeout(() => {
+        setStabMeshCrosslinked(true);
+        setDebugLog(prev => [...prev.slice(-4), 'FXIIIa crosslinks fibrin!']);
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [stabFxiiiActivated, stabMeshCrosslinked]);
+
+  // Check for stabilization phase completion
+  useEffect(() => {
+    if (state.currentScene === 'stabilization' && stabMeshCrosslinked) {
+      setDebugLog(prev => [...prev.slice(-4), 'STABLE CLOT! → Victory']);
+      setTimeout(() => setScene('victory'), 2000);
+    }
+  }, [state.currentScene, stabMeshCrosslinked, setScene]);
 
   // Platelet position for collision detection - TOP MIDDLE of bloodstream
   // TEXTBOOK: Resting platelet floating in blood, waiting for thrombin
@@ -324,11 +358,13 @@ export default function GamePageV2(): ReactElement {
     const spawnFactor = (): void => {
       const bloodstreamHeight = GAME_HEIGHT * 0.75;
 
-      // First: spawn FIX until Tenase forms
+      // First: spawn FIXa until Tenase forms
+      // TEXTBOOK: FIXa comes from Initiation (TF-VIIa activated FIX → FIXa)
+      // It diffuses to the platelet surface for Tenase assembly
       if (!propTenaseFormed) {
         const factor: FloatingFactor = {
           id: `floating-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          factorId: 'FIX',
+          factorId: 'FIXa', // Already activated - diffused from Initiation
           position: { x: -50, y: 100 + Math.random() * (bloodstreamHeight - 200) },
           velocity: { x: 35 + Math.random() * 20, y: (Math.random() - 0.5) * 15 },
           isVulnerableTo: [],
@@ -356,6 +392,46 @@ export default function GamePageV2(): ReactElement {
     const interval = setInterval(spawnFactor, 2000);
     return () => clearInterval(interval);
   }, [state.currentScene, addFloatingFactor, GAME_HEIGHT, propTenaseFormed, propProthrombinaseFormed, propThrombinBurst]);
+
+  // Spawn floating factors for STABILIZATION phase
+  useEffect(() => {
+    if (state.currentScene !== 'stabilization') return;
+
+    const spawnFactor = (): void => {
+      const bloodstreamHeight = GAME_HEIGHT * 0.75;
+
+      // First: spawn Fibrinogen until 3 fibrin strands formed
+      if (stabFibrinCount < 3) {
+        const factor: FloatingFactor = {
+          id: `floating-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          factorId: 'Fibrinogen',
+          position: { x: -50, y: 100 + Math.random() * (bloodstreamHeight - 200) },
+          velocity: { x: 25 + Math.random() * 15, y: (Math.random() - 0.5) * 10 },
+          isVulnerableTo: [],
+        };
+        addFloatingFactor(factor);
+        return;
+      }
+
+      // Then: spawn FXIII for crosslinking
+      if (!stabFxiiiActivated) {
+        const factor: FloatingFactor = {
+          id: `floating-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          factorId: 'FXIII',
+          position: { x: -50, y: 100 + Math.random() * (bloodstreamHeight - 200) },
+          velocity: { x: 30 + Math.random() * 15, y: (Math.random() - 0.5) * 10 },
+          isVulnerableTo: [],
+        };
+        addFloatingFactor(factor);
+      }
+    };
+
+    // Initial spawn
+    spawnFactor();
+    // Spawn every 2 seconds
+    const interval = setInterval(spawnFactor, 2000);
+    return () => clearInterval(interval);
+  }, [state.currentScene, addFloatingFactor, GAME_HEIGHT, stabFibrinCount, stabFxiiiActivated]);
 
   // Game loop for factor movement
   useEffect(() => {
@@ -608,12 +684,13 @@ export default function GamePageV2(): ReactElement {
     // PROPAGATION PHASE DOCKING - Enzyme complex assembly
     // ═══════════════════════════════════════════════════════════════════════
     if (state.currentScene === 'propagation') {
-      // Check FIX docking with FVIIIa → forms Tenase
-      if (heldFactor.factorId === 'FIX' && !propTenaseFormed &&
-          Math.abs(dropX - propDockingPositions.fix.x) < 70 &&
-          Math.abs(dropY - propDockingPositions.fix.y) < 60) {
+      // Check FIXa docking with FVIIIa → forms Tenase
+      // TEXTBOOK: Tenase = FIXa (enzyme) + FVIIIa (cofactor)
+      if (heldFactor.factorId === 'FIXa' && !propTenaseFormed &&
+          Math.abs(dropX - propDockingPositions.fixa.x) < 70 &&
+          Math.abs(dropY - propDockingPositions.fixa.y) < 60) {
         setPropTenaseFormed(true);
-        setDebugLog(prev => [...prev.slice(-4), 'FIX + FVIIIa → TENASE!']);
+        setDebugLog(prev => [...prev.slice(-4), 'FIXa + FVIIIa → TENASE!']);
         setHeldFactor(null);
         return;
       }
@@ -629,6 +706,31 @@ export default function GamePageV2(): ReactElement {
       }
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // STABILIZATION PHASE DOCKING - Fibrin mesh formation
+    // ═══════════════════════════════════════════════════════════════════════
+    if (state.currentScene === 'stabilization') {
+      // Check Fibrinogen docking → converts to Fibrin strand
+      if (heldFactor.factorId === 'Fibrinogen' && stabFibrinCount < 3 &&
+          Math.abs(dropX - stabDockingPositions.fibrinogen.x) < 80 &&
+          Math.abs(dropY - stabDockingPositions.fibrinogen.y) < 70) {
+        setStabFibrinCount(prev => prev + 1);
+        setDebugLog(prev => [...prev.slice(-4), `Fibrinogen → Fibrin (${stabFibrinCount + 1}/3)`]);
+        setHeldFactor(null);
+        return;
+      }
+
+      // Check FXIII docking → activates to FXIIIa (thrombin activates it)
+      if (heldFactor.factorId === 'FXIII' && stabFibrinCount >= 3 && !stabFxiiiActivated &&
+          Math.abs(dropX - stabDockingPositions.fxiii.x) < 70 &&
+          Math.abs(dropY - stabDockingPositions.fxiii.y) < 60) {
+        setStabFxiiiActivated(true);
+        setDebugLog(prev => [...prev.slice(-4), 'FXIII → FXIIIa!']);
+        setHeldFactor(null);
+        return;
+      }
+    }
+
     // Return to floating in bloodstream
     addFloatingFactor({
       ...heldFactor.originalFloatingFactor,
@@ -637,7 +739,7 @@ export default function GamePageV2(): ReactElement {
     });
 
     setHeldFactor(null);
-  }, [heldFactor, draggedThrombin, addFloatingFactor, tfPositions, tfDockingState, fixDockingState, fxDockingState, fvDockingState, fiiDockedState, plateletPosition, setScene, GAME_HEIGHT, state.currentScene, ampVwfSplit, ampFvActivated, ampFviiiActivated, ampFxiActivated, ampDockingPositions, propTenaseFormed, propProthrombinaseFormed, propThrombinBurst, propDockingPositions]);
+  }, [heldFactor, draggedThrombin, addFloatingFactor, tfPositions, tfDockingState, fixDockingState, fxDockingState, fvDockingState, fiiDockedState, plateletPosition, setScene, GAME_HEIGHT, state.currentScene, ampVwfSplit, ampFvActivated, ampFviiiActivated, ampFxiActivated, ampDockingPositions, propTenaseFormed, propProthrombinaseFormed, propThrombinBurst, propDockingPositions, stabFibrinCount, stabFxiiiActivated, stabDockingPositions]);
 
   const handleFactorDock = useCallback((_factorId: string, _complexId: string): void => {
     // Placeholder for docking logic
@@ -737,6 +839,20 @@ export default function GamePageV2(): ReactElement {
             thrombinBurst={propThrombinBurst}
             heldFactorId={heldFactor?.factorId ?? null}
             onFactorCatch={handleFactorCatch}
+            onPhaseComplete={() => setScene('stabilization')}
+          />
+        )}
+
+        {state.currentScene === 'stabilization' && (
+          <StabilizationScene
+            width={GAME_WIDTH}
+            height={GAME_HEIGHT}
+            floatingFactors={state.floatingFactors}
+            fibrinCount={stabFibrinCount}
+            fxiiiActivated={stabFxiiiActivated}
+            meshCrosslinked={stabMeshCrosslinked}
+            heldFactorId={heldFactor?.factorId ?? null}
+            onFactorCatch={handleFactorCatch}
             onPhaseComplete={() => setScene('victory')}
           />
         )}
@@ -811,19 +927,19 @@ export default function GamePageV2(): ReactElement {
             zIndex: 100,
           }}
         >
-          {/* Glowing trail effect */}
+          {/* Glowing trail effect - DARK RED for thrombin */}
           <div
             style={{
               position: 'absolute',
               inset: -25,
-              background: 'radial-gradient(circle, rgba(59, 130, 246, 0.8) 0%, transparent 70%)',
+              background: 'radial-gradient(circle, rgba(153, 27, 27, 0.9) 0%, transparent 70%)',
               borderRadius: '50%',
               animation: 'pulse 0.4s ease-in-out infinite',
             }}
           />
           <div
             style={{
-              filter: 'drop-shadow(0 0 20px rgba(59, 130, 246, 1))',
+              filter: 'drop-shadow(0 0 20px rgba(153, 27, 27, 1))',
             }}
           >
             <FactorTokenNew factorId="FIIa" isActive />

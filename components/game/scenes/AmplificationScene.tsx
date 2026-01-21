@@ -131,7 +131,7 @@ export function AmplificationScene({
             <div
               style={{
                 opacity: isHoldingThrombin ? 0.7 : 0.3,
-                filter: isHoldingThrombin ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'grayscale(50%)',
+                filter: isHoldingThrombin ? 'drop-shadow(0 0 12px rgba(153, 27, 27, 0.9))' : 'grayscale(50%)',
                 transform: isHoldingThrombin ? 'scale(1.05)' : 'scale(1)',
                 transition: 'all 0.2s ease',
               }}
@@ -157,7 +157,7 @@ export function AmplificationScene({
             <div
               style={{
                 opacity: isHoldingThrombin ? 0.7 : 0.3,
-                filter: isHoldingThrombin ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'grayscale(50%)',
+                filter: isHoldingThrombin ? 'drop-shadow(0 0 12px rgba(153, 27, 27, 0.9))' : 'grayscale(50%)',
                 transform: isHoldingThrombin ? 'scale(1.05)' : 'scale(1)',
                 transition: 'all 0.2s ease',
               }}
@@ -186,7 +186,7 @@ export function AmplificationScene({
                 display: 'flex',
                 alignItems: 'center',
                 gap: 4,
-                filter: isHoldingThrombin ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'none',
+                filter: isHoldingThrombin ? 'drop-shadow(0 0 12px rgba(153, 27, 27, 0.9))' : 'none',
                 transform: isHoldingThrombin ? 'scale(1.05)' : 'scale(1)',
                 transition: 'all 0.2s ease',
               }}
@@ -241,7 +241,7 @@ export function AmplificationScene({
               <div
                 style={{
                   opacity: isHoldingThrombin ? 0.7 : 0.3,
-                  filter: isHoldingThrombin ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'grayscale(50%)',
+                  filter: isHoldingThrombin ? 'drop-shadow(0 0 12px rgba(153, 27, 27, 0.9))' : 'grayscale(50%)',
                   transform: isHoldingThrombin ? 'scale(1.05)' : 'scale(1)',
                   transition: 'all 0.2s ease',
                 }}

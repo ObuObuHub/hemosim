@@ -86,6 +86,8 @@ function formatSceneName(scene: GameScene): string {
       return 'Amplification';
     case 'propagation':
       return 'Propagation';
+    case 'stabilization':
+      return 'Stabilization';
     case 'victory':
       return 'Victory';
     default: {

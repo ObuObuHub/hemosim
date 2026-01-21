@@ -40,8 +40,8 @@ export const FACTOR_VISUALS: Record<string, FactorVisual> = {
     factorId: 'FII',
     inactiveShape: 'zymogen',
     activeShape: 'enzyme',
-    inactiveColor: '#EAB308', // YELLOW (like reference - II is yellow)
-    activeColor: '#3B82F6',   // BLUE (Thrombin/IIa)
+    inactiveColor: '#EAB308', // YELLOW (like reference - II/Prothrombin is yellow)
+    activeColor: '#991B1B',   // DARK RED (Thrombin/IIa - matches reference chart)
     width: 60,
     height: 45,
   },
@@ -71,6 +71,16 @@ export const FACTOR_VISUALS: Record<string, FactorVisual> = {
     activeShape: 'enzyme',
     inactiveColor: '#DB2777', // PINK/MAGENTA (like reference chart - XIa is magenta)
     activeColor: '#EC4899',   // bright pink when activated
+    width: 55,
+    height: 40,
+  },
+  // FXIII - Fibrin stabilizing factor, activated by thrombin
+  FXIII: {
+    factorId: 'FXIII',
+    inactiveShape: 'zymogen',
+    activeShape: 'enzyme',
+    inactiveColor: '#22C55E', // GREEN (crosslinker)
+    activeColor: '#16A34A',   // darker green when activated
     width: 55,
     height: 40,
   },

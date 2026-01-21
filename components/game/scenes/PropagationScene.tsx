@@ -35,7 +35,7 @@ interface PropagationSceneProps {
  *
  * GAMEPLAY:
  * 1. FVIIIa and FVa are pre-docked (from Amplification phase)
- * 2. Catch FIX, dock with FVIIIa → forms Tenase
+ * 2. Catch FIXa (diffused from Initiation), dock with FVIIIa → forms Tenase
  * 3. Tenase produces FXa (visual burst)
  * 4. FXa + FVa → Prothrombinase forms automatically
  * 5. Catch FII, dock with Prothrombinase → THROMBIN BURST!
@@ -58,9 +58,9 @@ export function PropagationScene({
 
   // Docking positions along the membrane
   const dockingPositions = useMemo(() => ({
-    // Left side: FVIIIa cofactor slot (pre-docked) + FIX enzyme slot for Tenase
+    // Left side: FVIIIa cofactor slot (pre-docked) + FIXa enzyme slot for Tenase
     fviiia: { x: width * 0.25, y: membraneY - 60 },
-    fix: { x: width * 0.25 - 40, y: membraneY - 60 },  // FIX docks next to FVIIIa
+    fixa: { x: width * 0.25 - 40, y: membraneY - 60 },  // FIXa docks next to FVIIIa
     // Center: FXa appears here after Tenase, then forms Prothrombinase with FVa
     fxa: { x: width * 0.5, y: membraneY - 50 },
     fva: { x: width * 0.5 + 40, y: membraneY - 50 },  // FVa pre-docked
@@ -69,9 +69,9 @@ export function PropagationScene({
   }), [width, membraneY]);
 
   // Visual feedback states
-  const isHoldingFIX = heldFactorId === 'FIX';
+  const isHoldingFIXa = heldFactorId === 'FIXa';
   const isHoldingFII = heldFactorId === 'FII';
-  const canDockFIX = !tenaseFormed && isHoldingFIX;
+  const canDockFIXa = !tenaseFormed && isHoldingFIXa;
   const canDockFII = prothrombinaseFormed && !thrombinBurst && isHoldingFII;
 
   // Thrombin burst animation state
@@ -163,7 +163,7 @@ export function PropagationScene({
           </div>
         </div>
 
-        {/* FIX/FIXa slot - enzyme for Tenase */}
+        {/* FIXa slot - enzyme for Tenase (already activated, diffused from Initiation) */}
         <div
           style={{
             position: 'absolute',
@@ -172,20 +172,20 @@ export function PropagationScene({
           }}
         >
           {!tenaseFormed ? (
-            // Ghost slot for FIX
+            // Ghost slot for FIXa (waiting for docking)
             <div
               style={{
-                opacity: canDockFIX ? 0.8 : 0.3,
-                filter: canDockFIX ? 'drop-shadow(0 0 15px rgba(59, 130, 246, 0.9))' : 'grayscale(50%)',
-                transform: canDockFIX ? 'scale(1.1)' : 'scale(1)',
+                opacity: canDockFIXa ? 0.8 : 0.3,
+                filter: canDockFIXa ? 'drop-shadow(0 0 15px rgba(139, 92, 246, 0.9))' : 'grayscale(50%)',
+                transform: canDockFIXa ? 'scale(1.1)' : 'scale(1)',
                 transition: 'all 0.2s ease',
               }}
             >
-              <FactorTokenNew factorId="FIX" />
+              <FactorTokenNew factorId="FIXa" />
             </div>
           ) : (
             // FIXa docked - Tenase complex formed!
-            <div style={{ filter: 'drop-shadow(0 0 15px rgba(59, 130, 246, 1))' }}>
+            <div style={{ filter: 'drop-shadow(0 0 15px rgba(139, 92, 246, 1))' }}>
               <FactorTokenNew factorId="FIXa" isActive />
             </div>
           )}
@@ -305,7 +305,7 @@ export function PropagationScene({
               style={{
                 opacity: canDockFII ? 0.8 : prothrombinaseFormed ? 0.5 : 0.2,
                 filter: canDockFII
-                  ? 'drop-shadow(0 0 15px rgba(234, 179, 8, 0.9))'
+                  ? 'drop-shadow(0 0 15px rgba(153, 27, 27, 0.9))'
                   : prothrombinaseFormed
                   ? 'none'
                   : 'grayscale(70%)',
@@ -325,7 +325,7 @@ export function PropagationScene({
                     position: 'absolute',
                     left: Math.cos(particle.angle) * 60,
                     top: Math.sin(particle.angle) * 60 - 20,
-                    filter: 'drop-shadow(0 0 20px rgba(234, 179, 8, 1))',
+                    filter: 'drop-shadow(0 0 20px rgba(153, 27, 27, 1))',
                     animation: 'burst-out 1s ease-out forwards',
                     transform: `translate(-50%, -50%) scale(${0.6 + Math.random() * 0.4})`,
                   }}
@@ -336,7 +336,7 @@ export function PropagationScene({
               {/* Central thrombin */}
               <div
                 style={{
-                  filter: 'drop-shadow(0 0 25px rgba(234, 179, 8, 1))',
+                  filter: 'drop-shadow(0 0 25px rgba(153, 27, 27, 1))',
                   animation: 'pulse 0.3s ease-in-out infinite',
                 }}
               >
@@ -354,13 +354,13 @@ export function PropagationScene({
               left: width * 0.75 - 60,
               top: -130,
               padding: '6px 16px',
-              background: 'linear-gradient(135deg, rgba(234, 179, 8, 0.95) 0%, rgba(202, 138, 4, 0.95) 100%)',
+              background: 'linear-gradient(135deg, rgba(153, 27, 27, 0.95) 0%, rgba(127, 29, 29, 0.95) 100%)',
               borderRadius: 8,
               fontSize: 14,
               fontWeight: 800,
               color: '#FFFFFF',
               whiteSpace: 'nowrap',
-              boxShadow: '0 0 30px rgba(234, 179, 8, 0.6)',
+              boxShadow: '0 0 30px rgba(153, 27, 27, 0.6)',
               animation: 'pulse 0.5s ease-in-out infinite',
             }}
           >
@@ -446,7 +446,7 @@ export function PropagationScene({
         <ProgressDot label="Tenase" done={tenaseFormed} color="#3B82F6" />
         <ProgressDot label="FXa" done={fxaProduced} color="#EF4444" />
         <ProgressDot label="Prothrombinase" done={prothrombinaseFormed} color="#EF4444" />
-        <ProgressDot label="Thrombin Burst" done={thrombinBurst} color="#EAB308" />
+        <ProgressDot label="Thrombin Burst" done={thrombinBurst} color="#991B1B" />
       </div>
 
       {/* CSS animations */}

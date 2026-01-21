@@ -309,14 +309,14 @@ export function InitiationScene({
                   style={{
                     position: 'absolute',
                     inset: -25,
-                    background: 'radial-gradient(circle, rgba(59, 130, 246, 0.7) 0%, transparent 70%)',
+                    background: 'radial-gradient(circle, rgba(153, 27, 27, 0.8) 0%, transparent 70%)',
                     borderRadius: '50%',
                     animation: 'pulse 1.2s ease-in-out infinite',
                   }}
                 />
                 <div
                   style={{
-                    filter: 'drop-shadow(0 0 18px rgba(59, 130, 246, 1))',
+                    filter: 'drop-shadow(0 0 18px rgba(153, 27, 27, 1))',
                     animation: 'pulse 1.2s ease-in-out infinite',
                   }}
                 >
@@ -393,7 +393,7 @@ export function InitiationScene({
           width: plateletPosition.width,
           transition: 'filter 0.3s ease',
           filter: isDraggingThrombin
-            ? 'drop-shadow(0 0 30px rgba(59, 130, 246, 0.8))'
+            ? 'drop-shadow(0 0 30px rgba(153, 27, 27, 0.9))'
             : 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))',
         }}
       >

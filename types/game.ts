@@ -92,7 +92,7 @@ export type GamePhase = 'initiation' | 'amplification' | 'propagation' | 'stabil
 // SCENE TYPES (Visual Overhaul)
 // =============================================================================
 
-export type GameScene = 'initiation' | 'amplification' | 'propagation' | 'victory';
+export type GameScene = 'initiation' | 'amplification' | 'propagation' | 'stabilization' | 'victory';
 
 export interface SceneObjective {
   id: string;
