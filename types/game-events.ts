@@ -177,6 +177,19 @@ export interface FactorDestroyedEvent {
 }
 
 // =============================================================================
+// PROTEIN C PATHWAY EVENTS
+// =============================================================================
+
+export interface SpilloverHitThrombomodulinEvent {
+  type: 'SPILLOVER_HIT_THROMBOMODULIN';
+  particleId: string;
+}
+
+export interface ProteinCActivatedEvent {
+  type: 'PROTEIN_C_ACTIVATED';
+}
+
+// =============================================================================
 // UNION TYPE
 // =============================================================================
 
@@ -187,6 +200,7 @@ export type GameEvent =
   | GameOverEvent
   | ClotStabilizedEvent
   | TFPIActivatedEvent
+  | ProteinCActivatedEvent
   // Standard priority
   | FactorSelectedEvent
   | FactorPlacedEvent
@@ -201,6 +215,7 @@ export type GameEvent =
   | FXIIIActivatedEvent
   | CrossLinkFormedEvent
   | FactorDestroyedEvent
+  | SpilloverHitThrombomodulinEvent
   // Low priority
   | MeterChangedEvent
   | ArrowPulseEvent
@@ -222,6 +237,7 @@ export function getEventPriority(event: GameEvent): EventPriority {
     case 'CLOT_STABILIZED':
     case 'TFPI_ACTIVATED':
     case 'FXIII_ACTIVATED':
+    case 'PROTEIN_C_ACTIVATED':
       return 'critical';
 
     case 'FACTOR_SELECTED':
@@ -236,6 +252,7 @@ export function getEventPriority(event: GameEvent): EventPriority {
     case 'FIBRINOGEN_CONVERTED':
     case 'CROSS_LINK_FORMED':
     case 'FACTOR_DESTROYED':
+    case 'SPILLOVER_HIT_THROMBOMODULIN':
       return 'standard';
 
     case 'METER_CHANGED':
@@ -252,7 +269,7 @@ export function getEventPriority(event: GameEvent): EventPriority {
 
 export function isCriticalEvent(
   event: GameEvent
-): event is PhaseUnlockedEvent | VictoryEvent | GameOverEvent | ClotStabilizedEvent | TFPIActivatedEvent | FXIIIActivatedEvent {
+): event is PhaseUnlockedEvent | VictoryEvent | GameOverEvent | ClotStabilizedEvent | TFPIActivatedEvent | FXIIIActivatedEvent | ProteinCActivatedEvent {
   return getEventPriority(event) === 'critical';
 }
 

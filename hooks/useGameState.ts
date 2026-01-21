@@ -1172,6 +1172,63 @@ function gameReducer(state: GameState, action: GameAction): ReducerResult {
       };
     }
 
+    case 'SPAWN_SPILLOVER': {
+      return {
+        state: {
+          ...state,
+          spilloverParticles: [...state.spilloverParticles, action.particle],
+        },
+        events: [],
+      };
+    }
+
+    case 'TICK_SPILLOVER': {
+      // Move spillover particles and decrease lifetime
+      const updatedParticles = state.spilloverParticles
+        .map((particle) => ({
+          ...particle,
+          position: {
+            x: particle.position.x + particle.velocity.x * action.deltaTime,
+            y: particle.position.y + particle.velocity.y * action.deltaTime,
+          },
+          lifetime: particle.lifetime - action.deltaTime,
+        }))
+        .filter((p) => p.lifetime > 0); // Remove expired particles
+
+      return {
+        state: {
+          ...state,
+          spilloverParticles: updatedParticles,
+        },
+        events: [],
+      };
+    }
+
+    case 'SPILLOVER_HIT_EDGE': {
+      // Remove the particle that hit the edge
+      return {
+        state: {
+          ...state,
+          spilloverParticles: state.spilloverParticles.filter(
+            (p) => p.id !== action.particleId
+          ),
+        },
+        events: [{ type: 'SPILLOVER_HIT_THROMBOMODULIN' as const, particleId: action.particleId }],
+      };
+    }
+
+    case 'TRIGGER_PROTEIN_C': {
+      // Protein C activation - spawns APC antagonist
+      // The actual APC spawn is handled in the game loop
+      return {
+        state: {
+          ...state,
+          currentMessage: 'Thrombin spillover activated Protein C → APC generated!',
+        },
+        events: [{ type: 'PROTEIN_C_ACTIVATED' as const }],
+      };
+    }
+
     default:
       return { state, events: [] };
   }
