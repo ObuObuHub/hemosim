@@ -158,6 +158,14 @@ export interface ClotStabilizedEvent {
 }
 
 // =============================================================================
+// TFPI EVENTS
+// =============================================================================
+
+export interface TFPIActivatedEvent {
+  type: 'TFPI_ACTIVATED';
+}
+
+// =============================================================================
 // ANTAGONIST EVENTS
 // =============================================================================
 
@@ -178,6 +186,7 @@ export type GameEvent =
   | VictoryEvent
   | GameOverEvent
   | ClotStabilizedEvent
+  | TFPIActivatedEvent
   // Standard priority
   | FactorSelectedEvent
   | FactorPlacedEvent
@@ -211,6 +220,7 @@ export function getEventPriority(event: GameEvent): EventPriority {
     case 'VICTORY':
     case 'GAME_OVER':
     case 'CLOT_STABILIZED':
+    case 'TFPI_ACTIVATED':
     case 'FXIII_ACTIVATED':
       return 'critical';
 
@@ -242,7 +252,7 @@ export function getEventPriority(event: GameEvent): EventPriority {
 
 export function isCriticalEvent(
   event: GameEvent
-): event is PhaseUnlockedEvent | VictoryEvent | GameOverEvent | ClotStabilizedEvent | FXIIIActivatedEvent {
+): event is PhaseUnlockedEvent | VictoryEvent | GameOverEvent | ClotStabilizedEvent | TFPIActivatedEvent | FXIIIActivatedEvent {
   return getEventPriority(event) === 'critical';
 }
 

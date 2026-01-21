@@ -342,9 +342,14 @@ function gameReducer(state: GameState, action: GameAction): ReducerResult {
       // Valid placement - update state
       const factor = getFactorDefinition(factorId)!;
 
-      // Update slot with placed factor
-      // FIX transfers to circulation, FII becomes soluble thrombin (meter shows it)
-      const transfersToCirculation = factorId === 'FIX' || factorId === 'FII';
+      // FIX generates FIXa Messenger (spawned in game loop, not added to circulation here)
+      // FX generates local FXa (stays on TF-cell, counts toward TFPI)
+      const isFIXPlacement = factorId === 'FIX';
+      const isFXPlacement = factorId === 'FX';
+
+      // Mark as transferred for visual feedback
+      const transfersToCirculation = isFIXPlacement || factorId === 'FII';
+
       let newSlots: Slot[] = state.slots.map((slot) =>
         slot.id === action.slotId
           ? {
@@ -355,6 +360,18 @@ function gameReducer(state: GameState, action: GameAction): ReducerResult {
             }
           : slot
       );
+
+      // Track local FXa for TFPI trigger
+      let newLocalFXaCount = state.localFXaCount;
+      let newTfpiActive = state.tfpiActive;
+
+      if (isFXPlacement && !state.tfpiActive) {
+        newLocalFXaCount = state.localFXaCount + 1;
+        if (newLocalFXaCount >= 3) {
+          newTfpiActive = true;
+          events.push({ type: 'TFPI_ACTIVATED' as const });
+        }
+      }
 
       // Emit FACTOR_TRANSFERRED for FIX (to circulation) or FII (as signal)
       if (factorId === 'FIX') {
@@ -501,7 +518,10 @@ function gameReducer(state: GameState, action: GameAction): ReducerResult {
         ...state,
         phase: newPhase,
         thrombinMeter: newThrombinMeter,
+        plateletActivation: state.plateletActivation, // preserve
         clotIntegrity: newClotIntegrity,
+        tfpiActive: newTfpiActive,
+        localFXaCount: newLocalFXaCount,
         slots: newSlots,
         complexSlots: newComplexSlots,
         circulationFactors: newCirculationFactors,
@@ -1088,6 +1108,37 @@ function gameReducer(state: GameState, action: GameAction): ReducerResult {
           messengerFactors: state.messengerFactors.filter((m) => m.id !== action.messengerId),
         },
         events,
+      };
+    }
+
+    case 'INCREMENT_LOCAL_FXA': {
+      const newCount = state.localFXaCount + 1;
+      const shouldActivateTFPI = newCount >= 3 && !state.tfpiActive;
+
+      let newMessage = state.currentMessage;
+      if (shouldActivateTFPI) {
+        newMessage = 'TFPI activated! TF+VIIa factory shut down. Use existing factors wisely.';
+      }
+
+      return {
+        state: {
+          ...state,
+          localFXaCount: newCount,
+          tfpiActive: shouldActivateTFPI ? true : state.tfpiActive,
+          currentMessage: newMessage,
+        },
+        events: shouldActivateTFPI ? [{ type: 'TFPI_ACTIVATED' as const }] : [],
+      };
+    }
+
+    case 'ACTIVATE_TFPI': {
+      return {
+        state: {
+          ...state,
+          tfpiActive: true,
+          currentMessage: 'TFPI has shut down the TF+VIIa factory!',
+        },
+        events: [{ type: 'TFPI_ACTIVATED' as const }],
       };
     }
 
