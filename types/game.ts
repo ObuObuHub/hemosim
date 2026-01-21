@@ -89,6 +89,44 @@ export interface PreplacedElement {
 export type GamePhase = 'initiation' | 'amplification' | 'propagation' | 'stabilization' | 'complete';
 
 // =============================================================================
+// SCENE TYPES (Visual Overhaul)
+// =============================================================================
+
+export type GameScene = 'initiation' | 'amplification' | 'propagation' | 'victory';
+
+export interface SceneObjective {
+  id: string;
+  description: string;
+  isComplete: boolean;
+}
+
+export interface DockedComplex {
+  id: string;
+  complexType: 'tf-viia' | 'prothrombinase-init' | 'tenase' | 'prothrombinase';
+  enzymeFactorId: string | null;
+  cofactorFactorId: string | null;
+  position: { x: number; y: number };
+  isComplete: boolean;
+}
+
+export interface FibrinStrand {
+  id: string;
+  startPoint: { x: number; y: number };
+  endPoint: { x: number; y: number };
+  connectedTo: string[]; // IDs of other strands
+  opacity: number;
+}
+
+export interface ActivationArrow {
+  id: string;
+  fromPosition: { x: number; y: number };
+  toPosition: { x: number; y: number };
+  color: string;
+  progress: number; // 0-1 for animation
+  expiresAt: number;
+}
+
+// =============================================================================
 // FLOATING FACTOR (Bloodstream)
 // =============================================================================
 
