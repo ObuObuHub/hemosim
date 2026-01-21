@@ -12,11 +12,13 @@ export interface PhaseSpawnConfig {
 
 export const PHASE_SPAWN_CONFIG: Record<GamePhase, PhaseSpawnConfig> = {
   initiation: {
-    factorIds: ['FX'],
+    // FX becomes FXa (catalyst), FII generates starter thrombin (30%) to unlock platelet
+    factorIds: ['FX', 'FII'],
     spawnIntervalMs: 4000,
   },
   amplification: {
-    factorIds: ['FII', 'FV'],
+    // FV and FVIII are cofactors needed for complexes
+    factorIds: ['FV', 'FVIII'],
     spawnIntervalMs: 3000,
   },
   propagation: {
@@ -40,10 +42,11 @@ export const PHASE_SPAWN_CONFIG: Record<GamePhase, PhaseSpawnConfig> = {
 export const FACTOR_VULNERABILITIES: Record<string, InhibitorVulnerability[]> = {
   // Initiation
   FX: [],
+  FII: ['antithrombin'], // prothrombin - targeted by antithrombin
 
   // Amplification
-  FII: ['antithrombin'], // becomes IIa when activated
-  FV: ['apc'],
+  FV: ['apc'], // procofactor - targeted by APC
+  FVIII: ['apc'], // procofactor - targeted by APC
 
   // Propagation
   FIXa: ['antithrombin'],
