@@ -64,6 +64,16 @@ export const FACTOR_VISUALS: Record<string, FactorVisual> = {
     width: 70,
     height: 50,
   },
+  // FXI - activated by thrombin in Amplification phase
+  FXI: {
+    factorId: 'FXI',
+    inactiveShape: 'zymogen',
+    activeShape: 'enzyme',
+    inactiveColor: '#DB2777', // PINK/MAGENTA (like reference chart - XIa is magenta)
+    activeColor: '#EC4899',   // bright pink when activated
+    width: 55,
+    height: 40,
+  },
   // Fibrinogen/Fibrin
   Fibrinogen: {
     factorId: 'Fibrinogen',
