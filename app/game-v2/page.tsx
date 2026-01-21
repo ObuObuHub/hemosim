@@ -889,21 +889,50 @@ export default function GamePageV2(): ReactElement {
       <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 1000, background: 'rgba(0,0,0,0.8)', padding: 12, borderRadius: 8 }}>
         <button
           onClick={() => {
-            setDebugLog(prev => [...prev.slice(-4), 'Forced → Amplification']);
+            // Reset Amplification state
+            setAmpVwfSplit(false);
+            setAmpFvActivated(false);
+            setAmpFviiiActivated(false);
+            setAmpFxiActivated(false);
+            // Clear floating factors
+            updateFloatingFactors([]);
+            setDebugLog(prev => [...prev.slice(-4), 'Forced → Amplification (reset)']);
             setScene('amplification');
           }}
-          style={{ padding: '8px 16px', background: '#3B82F6', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', marginRight: 8 }}
+          style={{ padding: '6px 12px', background: '#EAB308', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', marginRight: 4, fontSize: 11 }}
         >
-          → Amplification
+          Amp
         </button>
         <button
           onClick={() => {
-            setDebugLog(prev => [...prev.slice(-4), 'Forced → Propagation']);
+            // Reset Propagation state
+            setPropTenaseFormed(false);
+            setPropFxaProduced(false);
+            setPropProthrombinaseFormed(false);
+            setPropThrombinBurst(false);
+            // Clear floating factors
+            updateFloatingFactors([]);
+            setDebugLog(prev => [...prev.slice(-4), 'Forced → Propagation (reset)']);
             setScene('propagation');
           }}
-          style={{ padding: '8px 16px', background: '#8B5CF6', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}
+          style={{ padding: '6px 12px', background: '#EF4444', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', marginRight: 4, fontSize: 11 }}
         >
-          → Propagation
+          Prop
+        </button>
+        <button
+          onClick={() => {
+            // Reset Stabilization state
+            setStabFibrinCount(0);
+            setStabFxiiiActivated(false);
+            setStabMeshCrosslinked(false);
+            // Clear floating factors
+            updateFloatingFactors([]);
+            setDebugLog(prev => [...prev.slice(-4), 'Forced → Stabilization (reset)']);
+            setScene('stabilization');
+          }}
+          style={{ padding: '6px 12px', background: '#22C55E', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 11 }}
+        >
+          Stab
         </button>
         <div style={{ color: '#4ADE80', fontSize: 12, marginTop: 8, fontWeight: 600 }}>
           Scene: {state.currentScene}
