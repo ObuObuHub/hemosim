@@ -7,51 +7,62 @@ import type { FactorVisual, DockConfig } from '@/types/game';
  */
 export const FACTOR_VISUALS: Record<string, FactorVisual> = {
   // Zymogens (inactive) → Enzymes (active)
+  // TEXTBOOK COLORS - based on standard coagulation cascade diagrams
+  // COLORS BASED ON REFERENCE IMAGE
+  FVII: {
+    factorId: 'FVII',
+    inactiveShape: 'zymogen',
+    activeShape: 'enzyme',
+    inactiveColor: '#DC2626', // red (like reference - VIIa is red/orange)
+    activeColor: '#EF4444',   // bright red when activated
+    width: 55,
+    height: 40,
+  },
   FIX: {
     factorId: 'FIX',
     inactiveShape: 'zymogen',
     activeShape: 'enzyme',
-    inactiveColor: '#22C55E', // green
-    activeColor: '#3B82F6', // blue
-    width: 50,
-    height: 35,
+    inactiveColor: '#7C3AED', // purple (like reference - IX is purple)
+    activeColor: '#8B5CF6',   // bright purple when activated
+    width: 60,
+    height: 45,
   },
   FX: {
     factorId: 'FX',
     inactiveShape: 'zymogen',
     activeShape: 'enzyme',
-    inactiveColor: '#14B8A6', // teal
-    activeColor: '#3B82F6', // blue
-    width: 50,
-    height: 35,
+    inactiveColor: '#DC2626', // red (like reference - X is red)
+    activeColor: '#EF4444',   // bright red when activated (Xa)
+    width: 60,
+    height: 45,
   },
   FII: {
     factorId: 'FII',
     inactiveShape: 'zymogen',
     activeShape: 'enzyme',
-    inactiveColor: '#3B82F6', // blue (prothrombin)
-    activeColor: '#3B82F6', // blue (thrombin - glows)
-    width: 50,
-    height: 35,
+    inactiveColor: '#EAB308', // YELLOW (like reference - II is yellow)
+    activeColor: '#3B82F6',   // BLUE (Thrombin/IIa)
+    width: 60,
+    height: 45,
   },
-  // Cofactors
+  // Cofactors - larger shapes
   FV: {
     factorId: 'FV',
     inactiveShape: 'cofactor',
     activeShape: 'cofactor',
-    inactiveColor: '#F97316', // orange (dimmer)
-    activeColor: '#F97316', // orange
-    width: 55,
-    height: 30,
+    inactiveColor: '#2563EB', // BLUE (like reference - V is blue)
+    activeColor: '#3B82F6',   // bright blue when activated
+    width: 70,
+    height: 50,
   },
   FVIII: {
     factorId: 'FVIII',
     inactiveShape: 'cofactor',
     activeShape: 'cofactor',
-    inactiveColor: '#A855F7', // purple (dimmer)
-    activeColor: '#A855F7', // purple
-    width: 55,
-    height: 30,
+    inactiveColor: '#22C55E', // GREEN (like reference - VIII is green)
+    activeColor: '#4ADE80',   // bright green when activated
+    width: 70,
+    height: 50,
   },
   // Fibrinogen/Fibrin
   Fibrinogen: {
@@ -59,9 +70,9 @@ export const FACTOR_VISUALS: Record<string, FactorVisual> = {
     inactiveShape: 'fibrinogen',
     activeShape: 'fibrin',
     inactiveColor: '#EAB308', // yellow
-    activeColor: '#22C55E', // green (fibrin)
-    width: 60,
-    height: 25,
+    activeColor: '#22C55E',   // green (fibrin)
+    width: 80,    // LARGER
+    height: 35,
   },
 };
 

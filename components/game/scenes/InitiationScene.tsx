@@ -17,22 +17,40 @@ interface InitiationSceneProps {
   floatingFactors: FloatingFactor[];
   dockedComplexes: DockedComplex[];
   activationArrows: ActivationArrowType[];
-  onFactorCatch: (factorId: string) => void;
+  tfDockingState: Record<number, boolean>;   // TF + FVII → TF+VIIa
+  fixDockingState: Record<number, boolean>;  // TF+VIIa activates FIX → FIXa
+  fxDockingState: Record<number, boolean>;   // TF+VIIa activates FX → FXa
+  fvDockingState: Record<number, boolean>;   // FXa + FVa → PROTHROMBINASE
+  fiiDockedState: Record<number, boolean>;   // FII → FIIa (THROMBIN!) via Prothrombinase
+  plateletPosition: { x: number; y: number; width: number; height: number };
+  isDraggingThrombin: boolean;
+  onFactorCatch: (factorId: string, event: React.MouseEvent) => void;
   onFactorDock: (factorId: string, complexId: string) => void;
   onThrombinDrag: (thrombinId: string, targetX: number, targetY: number) => void;
+  onThrombinDragStart: (fromIndex: number, event: React.MouseEvent) => void;
   onArrowComplete: (arrowId: string) => void;
 }
 
 /**
- * Initiation Scene: TF-bearing fibroblast surface
+ * INITIATION PHASE - Cell-Based Model of Coagulation
  *
- * TEXTBOOK:
- * - TF+VIIa complex is pre-assembled on fibroblast
- * - Player catches FX, FV from bloodstream
- * - FX -> FXa (via TF+VIIa)
- * - FXa + FVa -> Prothrombinase
- * - Prothrombinase -> Thrombin spark
- * - Player drags thrombin to platelet to activate it
+ * MEDICAL ACCURACY (Hoffman & Monroe model):
+ * ═══════════════════════════════════════════
+ * Location: TF-bearing cell (fibroblast/subendothelium) - exposed after injury
+ *
+ * Step 1: TF exposed on damaged tissue
+ * Step 2: FVII from blood binds TF → TF+VIIa complex
+ * Step 3: TF+VIIa activates:
+ *         - FIX → FIXa (small amount)
+ *         - FX → FXa (small amount)
+ * Step 4: FXa + FVa → small Prothrombinase → small thrombin
+ * Step 5: This small thrombin diffuses to activate platelets!
+ *
+ * GAME OBJECTIVE: Build the Extrinsic Xase complex and generate
+ * the initial thrombin "spark" that will activate a nearby platelet.
+ *
+ * Visual: Two cells visible - TF-bearing fibroblast (active) and
+ * resting platelet (waiting for thrombin activation)
  */
 export function InitiationScene({
   width,
@@ -40,18 +58,28 @@ export function InitiationScene({
   floatingFactors,
   dockedComplexes,
   activationArrows,
+  tfDockingState,
+  fixDockingState,
+  fxDockingState,
+  fvDockingState,
+  fiiDockedState,
+  plateletPosition,
+  isDraggingThrombin,
   onFactorCatch,
+  onThrombinDragStart,
   onArrowComplete,
 }: InitiationSceneProps): React.ReactElement {
-  const bloodstreamHeight = height * 0.4;
-  const membraneHeight = height * 0.6;
+  // Membrane takes only ~25% at the bottom, bloodstream is 75%
+  const membraneHeight = height * 0.25;
+  const bloodstreamHeight = height - membraneHeight;
   const membraneY = bloodstreamHeight;
 
-  // TF protein positions along membrane
+  // TF protein positions - extending UP into bloodstream for visibility
+  // Positioned at the membrane boundary, reaching into bloodstream
   const tfPositions = [
-    { x: width * 0.25, y: membraneY + 10 },
-    { x: width * 0.45, y: membraneY + 10 },
-    { x: width * 0.65, y: membraneY + 10 },
+    { x: width * 0.2, index: 0 },
+    { x: width * 0.5, index: 1 },
+    { x: width * 0.8, index: 2 },
   ];
 
   return (
@@ -85,7 +113,7 @@ export function InitiationScene({
               transform: 'translate(-50%, -50%)',
               cursor: 'grab',
             }}
-            onClick={() => onFactorCatch(factor.id)}
+            onMouseDown={(e) => onFactorCatch(factor.id, e)}
           >
             <FactorTokenNew factorId={factor.factorId} />
           </div>
@@ -108,9 +136,215 @@ export function InitiationScene({
           variant="fibroblast"
         />
 
-        {/* TF proteins */}
-        {tfPositions.map((pos, i) => (
-          <TFProtein key={i} x={pos.x} y={15} />
+        {/* TF complexes - clustered blobs like reference image */}
+        {tfPositions.map((pos) => (
+          <div key={`tf-container-${pos.index}`}>
+            {/* FVII docking zone - ghosted silhouette */}
+            {!tfDockingState[pos.index] && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: pos.x - 5,
+                  top: -85,
+                  opacity: 0.25,
+                  filter: 'grayscale(50%)',
+                  pointerEvents: 'none',
+                }}
+              >
+                <FactorTokenNew factorId="FVII" />
+              </div>
+            )}
+
+            {/* TF protein (always visible) */}
+            <TFProtein
+              x={pos.x}
+              y={0}
+              hasVIIa={tfDockingState[pos.index]}
+            />
+
+            {/* VIIa blob sitting ON TOP of TF when docked (like reference) */}
+            {tfDockingState[pos.index] && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: pos.x - 5,
+                  top: -85,
+                  filter: 'drop-shadow(2px 3px 4px rgba(0,0,0,0.4))',
+                }}
+              >
+                <FactorTokenNew factorId="FVIIa" isActive />
+              </div>
+            )}
+
+            {/* FIX docking slot - ghosted silhouette */}
+            {tfDockingState[pos.index] && !fixDockingState[pos.index] && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: pos.x - 85,
+                  top: -45,
+                  opacity: 0.25,
+                  filter: 'grayscale(50%)',
+                  pointerEvents: 'none',
+                }}
+              >
+                <FactorTokenNew factorId="FIX" />
+              </div>
+            )}
+
+            {/* FIXa blob when docked (purple, left of complex) */}
+            {/* TEXTBOOK: FIXa will diffuse to platelet for Tenase in Propagation */}
+            {fixDockingState[pos.index] && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: pos.x - 85,
+                  top: -45,
+                  filter: 'drop-shadow(2px 3px 4px rgba(0,0,0,0.4))',
+                }}
+              >
+                <FactorTokenNew factorId="FIXa" isActive />
+              </div>
+            )}
+
+            {/* FX docking slot - ghosted silhouette */}
+            {tfDockingState[pos.index] && !fxDockingState[pos.index] && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: pos.x + 45,
+                  top: -55,
+                  opacity: 0.25,
+                  filter: 'grayscale(50%)',
+                  pointerEvents: 'none',
+                }}
+              >
+                <FactorTokenNew factorId="FX" />
+              </div>
+            )}
+
+            {/* FXa blob when docked (Extrinsic Xase formed!) */}
+            {fxDockingState[pos.index] && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: pos.x + 45,
+                  top: -55,
+                  filter: 'drop-shadow(2px 3px 4px rgba(0,0,0,0.4))',
+                }}
+              >
+                <FactorTokenNew factorId="FXa" isActive />
+              </div>
+            )}
+
+            {/* FV docking slot - ghosted silhouette */}
+            {fxDockingState[pos.index] && !fvDockingState[pos.index] && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: pos.x + 95,
+                  top: -45,
+                  opacity: 0.25,
+                  filter: 'grayscale(50%)',
+                  pointerEvents: 'none',
+                }}
+              >
+                <FactorTokenNew factorId="FV" />
+              </div>
+            )}
+
+            {/* FVa blob when docked - PROTHROMBINASE FORMED! */}
+            {fvDockingState[pos.index] && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: pos.x + 95,
+                  top: -45,
+                  filter: 'drop-shadow(2px 3px 4px rgba(0,0,0,0.4))',
+                }}
+              >
+                <FactorTokenNew factorId="FVa" isActive />
+              </div>
+            )}
+
+            {/* ═══════════════════════════════════════════════════════ */}
+            {/* FII SUBSTRATE SLOT - Prothrombinase needs FII!         */}
+            {/* ═══════════════════════════════════════════════════════ */}
+            {fvDockingState[pos.index] && !fiiDockedState[pos.index] && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: pos.x + 145,
+                  top: -70,
+                  opacity: 0.25,
+                  filter: 'grayscale(50%)',
+                  pointerEvents: 'none',
+                }}
+              >
+                <FactorTokenNew factorId="FII" />
+              </div>
+            )}
+
+            {/* ═══════════════════════════════════════════════════════ */}
+            {/* THROMBIN (FIIa) - the product after FII conversion!    */}
+            {/* Pulsing glow indicates it can be grabbed and moved     */}
+            {/* ═══════════════════════════════════════════════════════ */}
+            {fiiDockedState[pos.index] && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: pos.x + 145,
+                  top: -75,
+                  cursor: 'grab',
+                  zIndex: 50,
+                }}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  console.log('🟢 THROMBIN CLICKED at index:', pos.index);
+                  onThrombinDragStart(pos.index, e);
+                }}
+              >
+                {/* Pulsing glow effect to indicate draggability */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: -25,
+                    background: 'radial-gradient(circle, rgba(59, 130, 246, 0.7) 0%, transparent 70%)',
+                    borderRadius: '50%',
+                    animation: 'pulse 1.2s ease-in-out infinite',
+                  }}
+                />
+                <div
+                  style={{
+                    filter: 'drop-shadow(0 0 18px rgba(59, 130, 246, 1))',
+                    animation: 'pulse 1.2s ease-in-out infinite',
+                  }}
+                >
+                  <FactorTokenNew factorId="FIIa" isActive />
+                </div>
+              </div>
+            )}
+
+            {/* Prothrombinase label when formed */}
+            {fvDockingState[pos.index] && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: pos.x + 60,
+                  top: 10,
+                  padding: '3px 8px',
+                  background: 'rgba(59, 130, 246, 0.8)',
+                  borderRadius: 6,
+                  fontSize: 8,
+                  color: '#FFFFFF',
+                  fontWeight: 600,
+                  letterSpacing: 0.5,
+                }}
+              >
+                PROTHROMBINASE
+              </div>
+            )}
+          </div>
         ))}
 
         {/* Docked complexes */}
@@ -147,27 +381,111 @@ export function InitiationScene({
         />
       ))}
 
-      {/* Platelet target (for thrombin delivery) */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* RESTING PLATELET - uses same PhospholipidMembrane component    */}
+      {/* Positioned at top-middle, membrane facing down into bloodstream */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
       <div
         style={{
           position: 'absolute',
-          right: 20,
-          top: membraneY - 60,
-          width: 80,
-          height: 50,
-          borderRadius: '50%',
-          backgroundColor: 'rgba(249, 168, 212, 0.5)',
-          border: '2px dashed #EC4899',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 10,
-          color: '#EC4899',
-          fontWeight: 600,
+          left: plateletPosition.x - plateletPosition.width / 2,
+          top: 0,
+          width: plateletPosition.width,
+          transition: 'filter 0.3s ease',
+          filter: isDraggingThrombin
+            ? 'drop-shadow(0 0 30px rgba(59, 130, 246, 0.8))'
+            : 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))',
         }}
       >
-        PLATELET
+        {/* Reuse the same membrane component as fibroblast */}
+        <div style={{
+          animation: isDraggingThrombin ? 'pulse 0.8s ease-in-out infinite' : 'none',
+        }}>
+          <PhospholipidMembrane
+            width={plateletPosition.width}
+            height={plateletPosition.height}
+            variant="platelet"
+          />
+        </div>
+
+        {/* PLT label overlay */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 10,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            fontSize: 16,
+            fontWeight: 800,
+            color: isDraggingThrombin ? '#1E40AF' : '#9F1239',
+            textShadow: '0 1px 2px rgba(255,255,255,0.8)',
+          }}
+        >
+          PLT
+        </div>
+
+        {/* Ghosted thrombin docking zone below */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: -45,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            opacity: isDraggingThrombin ? 0.7 : 0.25,
+            transition: 'opacity 0.3s ease',
+          }}
+        >
+          <FactorTokenNew factorId="FIIa" isActive />
+        </div>
       </div>
+
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* PHASE INDICATOR - Educational label                            */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 20,
+          left: 20,
+          padding: '12px 20px',
+          background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.9) 0%, rgba(22, 163, 74, 0.9) 100%)',
+          borderRadius: 12,
+          boxShadow: '0 4px 15px rgba(34, 197, 94, 0.4)',
+        }}
+      >
+        <div style={{ color: '#FFFFFF', fontSize: 10, fontWeight: 500, opacity: 0.9, letterSpacing: 2 }}>
+          PHASE 1
+        </div>
+        <div style={{ color: '#FFFFFF', fontSize: 18, fontWeight: 700 }}>
+          INITIATION
+        </div>
+        <div style={{ color: '#DCFCE7', fontSize: 9, marginTop: 4 }}>
+          TF-bearing cell surface
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* CELL LABEL - Fibroblast identification                         */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 20,
+          left: 20,
+          padding: '8px 16px',
+          background: 'rgba(0,0,0,0.7)',
+          borderRadius: 8,
+          border: '1px solid rgba(255,255,255,0.2)',
+        }}
+      >
+        <div style={{ color: '#F9DC5C', fontSize: 12, fontWeight: 700 }}>
+          TF-BEARING FIBROBLAST
+        </div>
+        <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 9 }}>
+          Subendothelial surface exposed after injury
+        </div>
+      </div>
+
     </div>
   );
 }

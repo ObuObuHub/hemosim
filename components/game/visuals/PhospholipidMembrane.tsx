@@ -7,43 +7,11 @@ interface PhospholipidMembraneProps {
   className?: string;
 }
 
-interface PhospholipidHead {
-  x: number;
-  y: number;
-}
-
-interface MembraneColors {
-  light: string;
-  dark: string;
-  head: string;
-}
-
 /**
- * Generate a wavy path for the top edge of the membrane
- */
-function generateWavyPath(width: number, height: number): string {
-  const waveHeight = 8;
-  const waveCount = Math.floor(width / 40);
-  let path = `M 0 ${waveHeight}`;
-
-  for (let i = 0; i < waveCount; i++) {
-    const x1 = (i * width) / waveCount + width / waveCount / 4;
-    const x2 = (i * width) / waveCount + (width / waveCount / 4) * 3;
-    const x3 = ((i + 1) * width) / waveCount;
-    const y1 = waveHeight - 4;
-    const y2 = waveHeight + 4;
-
-    path += ` Q ${x1} ${y1}, ${x2} ${y2} T ${x3} ${waveHeight}`;
-  }
-
-  path += ` L ${width} ${height} L 0 ${height} Z`;
-  return path;
-}
-
-/**
- * Phospholipid bilayer membrane surface
- * TEXTBOOK: Membrane is where coagulation complexes assemble
- * Visual: Tan/beige for fibroblast, pink/salmon for activated platelet
+ * Phospholipid bilayer membrane surface - TEXTBOOK STYLE
+ *
+ * Visual reference: Yellow/golden lollipop heads in organized rows
+ * on a tissue background (pink for fibroblast, salmon for platelet)
  */
 export function PhospholipidMembrane({
   width,
@@ -51,16 +19,31 @@ export function PhospholipidMembrane({
   variant,
   className,
 }: PhospholipidMembraneProps): React.ReactElement {
-  const colors: MembraneColors = variant === 'fibroblast'
-    ? { light: '#D4A574', dark: '#A67B5B', head: '#E8D4B8' }
-    : { light: '#F9A8D4', dark: '#EC4899', head: '#FDF2F8' };
+  // Tissue background colors (the cellular layer)
+  const tissueColor = variant === 'fibroblast'
+    ? { top: '#E8B4B4', bottom: '#D4A0A0' }  // Pink-ish tissue
+    : { top: '#FFB6C1', bottom: '#FF91A4' }; // Salmon pink for platelets
 
-  // Generate phospholipid head positions (randomized but consistent)
-  const headSpacing = 12;
+  // Phospholipid head color - GOLDEN YELLOW like textbook
+  const headColor = '#F9DC5C';  // Golden yellow
+  const tailColor = '#C9A227';  // Darker gold for tails
+
+  // Phospholipid bilayer dimensions
+  const bilayerTop = 15;  // Where the top row of heads starts
+  const headRadius = 5;
+  const headSpacing = 16;  // Space between heads
+  const tailLength = 20;
   const headCount = Math.floor(width / headSpacing);
-  const heads: PhospholipidHead[] = Array.from({ length: headCount }, (_, i) => ({
-    x: i * headSpacing + headSpacing / 2 + (Math.sin(i * 1.5) * 2),
-    y: 8 + (Math.cos(i * 2) * 2),
+
+  // Generate two rows of phospholipid heads (bilayer)
+  const topRowHeads = Array.from({ length: headCount }, (_, i) => ({
+    x: i * headSpacing + headSpacing / 2,
+    y: bilayerTop,
+  }));
+
+  const bottomRowHeads = Array.from({ length: headCount }, (_, i) => ({
+    x: i * headSpacing + headSpacing / 2,
+    y: bilayerTop + tailLength * 2 + headRadius * 2,
   }));
 
   return (
@@ -72,45 +55,101 @@ export function PhospholipidMembrane({
       style={{ display: 'block' }}
     >
       <defs>
-        {/* Gradient for membrane depth */}
-        <linearGradient id={`membrane-gradient-${variant}`} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor={colors.light} />
-          <stop offset="40%" stopColor={colors.dark} stopOpacity={0.8} />
-          <stop offset="100%" stopColor={colors.dark} />
+        {/* Tissue background gradient */}
+        <linearGradient id={`tissue-gradient-${variant}`} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={tissueColor.top} />
+          <stop offset="100%" stopColor={tissueColor.bottom} />
         </linearGradient>
+
+        {/* Head gradient for 3D effect */}
+        <radialGradient id={`head-gradient-${variant}`} cx="30%" cy="30%">
+          <stop offset="0%" stopColor="#FFFACD" />
+          <stop offset="100%" stopColor={headColor} />
+        </radialGradient>
       </defs>
 
-      {/* Wavy top edge path */}
-      <path
-        d={generateWavyPath(width, height)}
-        fill={`url(#membrane-gradient-${variant})`}
+      {/* Tissue background layer */}
+      <rect
+        x={0}
+        y={bilayerTop + tailLength + headRadius}
+        width={width}
+        height={height - bilayerTop - tailLength - headRadius}
+        fill={`url(#tissue-gradient-${variant})`}
       />
 
-      {/* Phospholipid heads (lollipop pattern) */}
-      {heads.map((head, i) => (
-        <g key={i}>
-          {/* Tail (line) */}
-          <line
-            x1={head.x}
-            y1={head.y}
-            x2={head.x}
-            y2={head.y + 15}
-            stroke={colors.dark}
-            strokeWidth={1.5}
-            opacity={0.5}
+      {/* Top row of phospholipids (facing bloodstream) */}
+      {topRowHeads.map((head, i) => (
+        <g key={`top-${i}`}>
+          {/* Tail (two wavy lines for lipid tails) */}
+          <path
+            d={`M ${head.x - 2} ${head.y + headRadius}
+                Q ${head.x - 4} ${head.y + headRadius + tailLength / 2} ${head.x - 2} ${head.y + headRadius + tailLength}`}
+            stroke={tailColor}
+            strokeWidth={2}
+            fill="none"
+            opacity={0.7}
+          />
+          <path
+            d={`M ${head.x + 2} ${head.y + headRadius}
+                Q ${head.x + 4} ${head.y + headRadius + tailLength / 2} ${head.x + 2} ${head.y + headRadius + tailLength}`}
+            stroke={tailColor}
+            strokeWidth={2}
+            fill="none"
+            opacity={0.7}
           />
           {/* Head (circle) */}
           <circle
             cx={head.x}
             cy={head.y}
-            r={4}
-            fill={colors.head}
-            stroke={colors.dark}
-            strokeWidth={0.5}
-            opacity={0.8}
+            r={headRadius}
+            fill={`url(#head-gradient-${variant})`}
+            stroke={tailColor}
+            strokeWidth={1}
           />
         </g>
       ))}
+
+      {/* Bottom row of phospholipids (inner leaflet) */}
+      {bottomRowHeads.map((head, i) => (
+        <g key={`bottom-${i}`}>
+          {/* Tail (pointing up) */}
+          <path
+            d={`M ${head.x - 2} ${head.y - headRadius}
+                Q ${head.x - 4} ${head.y - headRadius - tailLength / 2} ${head.x - 2} ${head.y - headRadius - tailLength}`}
+            stroke={tailColor}
+            strokeWidth={2}
+            fill="none"
+            opacity={0.7}
+          />
+          <path
+            d={`M ${head.x + 2} ${head.y - headRadius}
+                Q ${head.x + 4} ${head.y - headRadius - tailLength / 2} ${head.x + 2} ${head.y - headRadius - tailLength}`}
+            stroke={tailColor}
+            strokeWidth={2}
+            fill="none"
+            opacity={0.7}
+          />
+          {/* Head (circle) */}
+          <circle
+            cx={head.x}
+            cy={head.y}
+            r={headRadius}
+            fill={`url(#head-gradient-${variant})`}
+            stroke={tailColor}
+            strokeWidth={1}
+          />
+        </g>
+      ))}
+
+      {/* Subtle membrane interior fill (between the bilayer) */}
+      <rect
+        x={0}
+        y={bilayerTop + headRadius + 5}
+        width={width}
+        height={tailLength * 2 - 10}
+        fill="#FFF8DC"
+        opacity={0.3}
+      />
     </svg>
   );
 }
