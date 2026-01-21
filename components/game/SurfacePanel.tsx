@@ -4,11 +4,12 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import type { Slot, ComplexSlot, GamePhase } from '@/types/game';
 import type { PanelConfig } from '@/engine/game/game-config';
-import { COLORS, SLOT_POSITIONS, PREPLACED_POSITIONS, COMPLEX_SLOT_POSITIONS, COMPLEX_LABELS } from '@/engine/game/game-config';
+import { COLORS, SLOT_POSITIONS, PREPLACED_POSITIONS } from '@/engine/game/game-config';
 import { PREPLACED_ELEMENTS, getFactorDefinition } from '@/engine/game/factor-definitions';
 import { getValidSlotsForFactor, isTenaseComplete } from '@/engine/game/validation-rules';
 import { FactorToken } from './FactorToken';
 import { MembraneBackground } from './MembraneBackground';
+import { ComplexAssembly } from './ComplexAssembly';
 import { useAnimationTarget } from '@/hooks/useAnimationTarget';
 import type { GameState } from '@/types/game';
 
@@ -347,131 +348,6 @@ function PreplacedElementComponent({ element, tfpiActive = false }: PreplacedEle
 }
 
 // =============================================================================
-// COMPLEX SLOT COMPONENT (with animation target registration)
-// =============================================================================
-
-interface ComplexSlotComponentProps {
-  complexSlot: ComplexSlot;
-  gameState: GameState;
-  onComplexSlotClick: (complexSlotId: string) => void;
-}
-
-function ComplexSlotComponent({ complexSlot, gameState, onComplexSlotClick }: ComplexSlotComponentProps): React.ReactElement | null {
-  const slotRef = useRef<HTMLDivElement>(null);
-  // Register as complex-{complexType}-{role} (e.g., complex-tenase-enzyme)
-  useAnimationTarget(`complex-${complexSlot.complexType}-${complexSlot.role}`, slotRef);
-
-  // Track previous placed state to detect new placements
-  const prevPlacedRef = useRef<string | null>(null);
-  const [showDockingEffects, setShowDockingEffects] = useState(false);
-  const [showRipple, setShowRipple] = useState(false);
-  const [showSparkles, setShowSparkles] = useState(false);
-
-  // Detect when a factor is newly placed
-  useEffect(() => {
-    const wasEmpty = prevPlacedRef.current === null;
-    const isNowFilled = complexSlot.placedFactorId !== null;
-
-    if (wasEmpty && isNowFilled) {
-      // Factor just placed - trigger animations
-      setShowDockingEffects(true);
-      setShowRipple(true);
-      setShowSparkles(true);
-
-      // Clear docking animation after completion
-      const dockingTimer = setTimeout(() => {
-        setShowDockingEffects(false);
-      }, 350);
-
-      return () => clearTimeout(dockingTimer);
-    }
-
-    prevPlacedRef.current = complexSlot.placedFactorId;
-  }, [complexSlot.placedFactorId]);
-
-  const handleRippleComplete = useCallback(() => setShowRipple(false), []);
-  const handleSparklesComplete = useCallback(() => setShowSparkles(false), []);
-
-  const pos = COMPLEX_SLOT_POSITIONS[complexSlot.id];
-  if (!pos) return null;
-
-  const isEnzymeSlot = !complexSlot.isAutoFilled;
-  const isClickable = isEnzymeSlot && gameState.phase === 'propagation';
-  const placedFactor = complexSlot.placedFactorId
-    ? getFactorDefinition(complexSlot.placedFactorId)
-    : null;
-
-  // For cofactor slots, show expected factor even before placed (greyed)
-  const previewFactorId = complexSlot.isAutoFilled
-    ? (complexSlot.id === 'tenase-cofactor' ? 'FVIII' : 'FV')
-    : null;
-  const previewFactor = previewFactorId ? getFactorDefinition(previewFactorId) : null;
-
-  // Determine if slot should be dimmed
-  const isLocked = gameState.phase !== 'propagation' && gameState.phase !== 'complete';
-  const needsTenase = complexSlot.id === 'prothrombinase-enzyme' && !isTenaseComplete(gameState);
-  const isDimmed = isLocked || needsTenase;
-
-  // Get factor color for effects
-  const factorColor = placedFactor?.color || previewFactor?.color || COLORS.panelBorder;
-
-  return (
-    <div
-      ref={slotRef}
-      onClick={() => isClickable && !needsTenase && onComplexSlotClick(complexSlot.id)}
-      style={{
-        position: 'absolute',
-        left: pos.x,
-        top: pos.y,
-        width: pos.width,
-        height: pos.height,
-        backgroundColor: isDimmed
-          ? `${COLORS.slotBackground}30`
-          : COLORS.slotBackground,
-        border: complexSlot.isAutoFilled
-          ? `2px solid ${isDimmed ? COLORS.textDim : COLORS.panelBorder}`
-          : `2px dashed ${isDimmed ? COLORS.textDim : COLORS.panelBorder}`,
-        borderRadius: 8,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        cursor: isClickable && !needsTenase ? 'pointer' : 'default',
-        opacity: isDimmed ? 0.5 : 1,
-        transition: 'all 0.2s ease',
-        overflow: 'visible',
-      }}
-    >
-      {/* Ripple effect on placement */}
-      {showRipple && <RippleEffect color={factorColor} onComplete={handleRippleComplete} />}
-
-      {/* Ca²⁺ sparkles on placement */}
-      {showSparkles && <CalciumSparkles color={factorColor} onComplete={handleSparklesComplete} />}
-
-      {placedFactor ? (
-        <div className={showDockingEffects ? 'factor-docking' : undefined}>
-          <FactorToken factor={placedFactor} isActive={true} />
-        </div>
-      ) : previewFactor ? (
-        <FactorToken
-          factor={previewFactor}
-          isActive={true}
-          style={{ opacity: 0.4 }}
-        />
-      ) : (
-        <span
-          style={{
-            fontSize: 11,
-            color: COLORS.textDim,
-          }}
-        >
-          {complexSlot.role}
-        </span>
-      )}
-    </div>
-  );
-}
-
-// =============================================================================
 // MAIN SURFACE PANEL COMPONENT
 // =============================================================================
 
@@ -710,48 +586,49 @@ export function SurfacePanel({
           );
         })}
 
-      {/* Complex Slots (Activated Platelet only) */}
+      {/* Complex Assemblies (Activated Platelet only) */}
       {!config.isComingSoon && config.surface === 'activated-platelet' && (
         <>
-          {/* Tenase label */}
-          <div
-            style={{
-              position: 'absolute',
-              left: 30,
-              top: 70,
-              fontSize: 12,
-              fontWeight: 700,
-              color: COLORS.textSecondary,
-              zIndex: 2,
-            }}
-          >
-            {COMPLEX_LABELS.tenase.name}
-          </div>
-
-          {/* Prothrombinase label */}
-          <div
-            style={{
-              position: 'absolute',
-              left: 30,
-              top: 190,
-              fontSize: 12,
-              fontWeight: 700,
-              color: COLORS.textSecondary,
-              zIndex: 2,
-            }}
-          >
-            {COMPLEX_LABELS.prothrombinase.name}
-          </div>
-
-          {/* Complex slots */}
-          {complexSlots.map((complexSlot) => (
-            <ComplexSlotComponent
-              key={complexSlot.id}
-              complexSlot={complexSlot}
-              gameState={gameState}
-              onComplexSlotClick={onComplexSlotClick}
+          {/* Tenase Complex Assembly */}
+          <div style={{ position: 'absolute', left: 30, top: 90, zIndex: 2 }}>
+            <ComplexAssembly
+              complexType="tenase"
+              enzymeFactor={
+                complexSlots.find(s => s.id === 'tenase-enzyme')?.placedFactorId
+                  ? getFactorDefinition(complexSlots.find(s => s.id === 'tenase-enzyme')!.placedFactorId!)
+                  : null
+              }
+              cofactorFactor={
+                complexSlots.find(s => s.id === 'tenase-cofactor')?.placedFactorId
+                  ? getFactorDefinition(complexSlots.find(s => s.id === 'tenase-cofactor')!.placedFactorId!)
+                  : null
+              }
+              onEnzymeSlotClick={() => onComplexSlotClick('tenase-enzyme')}
+              isLocked={gameState.phase !== 'propagation' && gameState.phase !== 'complete'}
             />
-          ))}
+          </div>
+
+          {/* Prothrombinase Complex Assembly */}
+          <div style={{ position: 'absolute', left: 30, top: 210, zIndex: 2 }}>
+            <ComplexAssembly
+              complexType="prothrombinase"
+              enzymeFactor={
+                complexSlots.find(s => s.id === 'prothrombinase-enzyme')?.placedFactorId
+                  ? getFactorDefinition(complexSlots.find(s => s.id === 'prothrombinase-enzyme')!.placedFactorId!)
+                  : null
+              }
+              cofactorFactor={
+                complexSlots.find(s => s.id === 'prothrombinase-cofactor')?.placedFactorId
+                  ? getFactorDefinition(complexSlots.find(s => s.id === 'prothrombinase-cofactor')!.placedFactorId!)
+                  : null
+              }
+              onEnzymeSlotClick={() => onComplexSlotClick('prothrombinase-enzyme')}
+              isLocked={
+                (gameState.phase !== 'propagation' && gameState.phase !== 'complete') ||
+                !isTenaseComplete(gameState)
+              }
+            />
+          </div>
         </>
       )}
     </div>
