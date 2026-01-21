@@ -87,7 +87,7 @@ export interface ComplexOutputEvent {
 
 export interface SignalFlowEvent {
   type: 'SIGNAL_FLOW';
-  signal: 'THR';
+  signal: 'THR' | 'Spark THR';
   fromSurface: string;
   toSurface: string;
   intensity: 'starter' | 'burst';
@@ -106,7 +106,7 @@ export interface PanelStateChangedEvent {
 
 export interface MeterChangedEvent {
   type: 'METER_CHANGED';
-  meter: 'thrombin' | 'fibrin' | 'clotIntegrity';
+  meter: 'thrombin' | 'fibrin' | 'clotIntegrity' | 'plateletActivation';
   target: number;
   delta: number;
 }

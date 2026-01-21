@@ -9,7 +9,6 @@ import { getAllFactorIds, getFactorDefinition } from '@/engine/game/factor-defin
 import {
   validatePlacement,
   validateComplexPlacement,
-  shouldUnlockPlatelet,
   shouldUnlockClotZone,
   isProthrombinaseComplete,
   checkVictoryCondition,
@@ -390,31 +389,45 @@ function gameReducer(state: GameState, action: GameAction): ReducerResult {
         });
       }
 
-      // Calculate new thrombin meter
+      // Calculate new thrombin meter (FII no longer contributes - goes to platelet activation instead)
+      const thrombinContribution = factorId === 'FII' ? 0 : factor.thrombinContribution;
       const newThrombinMeter = Math.min(
         100,
-        state.thrombinMeter + factor.thrombinContribution
+        state.thrombinMeter + thrombinContribution
       );
 
-      // Emit METER_CHANGED if thrombin increases
-      if (factor.thrombinContribution > 0) {
+      // Calculate new platelet activation (FII contributes 35% to platelet activation)
+      let newPlateletActivation = state.plateletActivation;
+      if (factorId === 'FII') {
+        const activationContribution = 35;
+        newPlateletActivation = Math.min(100, state.plateletActivation + activationContribution);
+
+        // Emit METER_CHANGED for platelet activation
+        events.push({
+          type: 'METER_CHANGED',
+          meter: 'plateletActivation',
+          target: newPlateletActivation,
+          delta: activationContribution,
+        });
+
+        // Emit SIGNAL_FLOW for starter thrombin spark
+        events.push({
+          type: 'SIGNAL_FLOW',
+          signal: 'Spark THR',
+          fromSurface: 'tf-cell',
+          toSurface: 'platelet',
+          intensity: 'starter',
+        });
+      }
+
+      // Emit METER_CHANGED if thrombin increases (non-FII factors)
+      if (thrombinContribution > 0) {
         events.push({
           type: 'METER_CHANGED',
           meter: 'thrombin',
           target: newThrombinMeter,
-          delta: factor.thrombinContribution,
+          delta: thrombinContribution,
         });
-
-        // Emit SIGNAL_FLOW when THR flows to platelet (FII placement)
-        if (factorId === 'FII') {
-          events.push({
-            type: 'SIGNAL_FLOW',
-            signal: 'THR',
-            fromSurface: 'tf-cell',
-            toSurface: 'platelet',
-            intensity: 'starter',
-          });
-        }
       }
 
       // === CLOT-ZONE SPECIAL HANDLING ===
@@ -469,9 +482,9 @@ function gameReducer(state: GameState, action: GameAction): ReducerResult {
         });
       }
 
-      // Check if platelet should unlock
+      // Check if platelet should unlock (based on platelet activation meter, not thrombin)
       const plateletUnlocking =
-        shouldUnlockPlatelet(newThrombinMeter) && !shouldUnlockPlatelet(state.thrombinMeter);
+        newPlateletActivation >= 100 && state.plateletActivation < 100;
       if (plateletUnlocking) {
         // Just crossed threshold - unlock platelet slots
         newSlots = newSlots.map((slot) =>
@@ -482,7 +495,7 @@ function gameReducer(state: GameState, action: GameAction): ReducerResult {
         events.push({
           type: 'PHASE_UNLOCKED',
           phase: 'amplification',
-          trigger: 'thrombin_threshold',
+          trigger: 'platelet_activation',
         });
 
         // Emit PANEL_STATE_CHANGED for platelet
@@ -518,7 +531,7 @@ function gameReducer(state: GameState, action: GameAction): ReducerResult {
         ...state,
         phase: newPhase,
         thrombinMeter: newThrombinMeter,
-        plateletActivation: state.plateletActivation, // preserve
+        plateletActivation: newPlateletActivation,
         clotIntegrity: newClotIntegrity,
         tfpiActive: newTfpiActive,
         localFXaCount: newLocalFXaCount,
@@ -1139,6 +1152,23 @@ function gameReducer(state: GameState, action: GameAction): ReducerResult {
           currentMessage: 'TFPI has shut down the TF+VIIa factory!',
         },
         events: [{ type: 'TFPI_ACTIVATED' as const }],
+      };
+    }
+
+    case 'INCREMENT_PLATELET_ACTIVATION': {
+      const newActivation = Math.min(100, state.plateletActivation + action.amount);
+
+      return {
+        state: {
+          ...state,
+          plateletActivation: newActivation,
+        },
+        events: [{
+          type: 'METER_CHANGED',
+          meter: 'plateletActivation',
+          target: newActivation,
+          delta: action.amount,
+        }],
       };
     }
 
