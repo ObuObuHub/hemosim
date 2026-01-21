@@ -136,20 +136,12 @@ export const PANEL_CONFIGS: PanelConfig[] = [
 
 export function createInitialSlots(): Slot[] {
   return [
-    // TF-cell slots (Initiation)
+    // TF-cell slots (Initiation) - FX and FII only
+    // FIX removed since FIXa spawns directly in Propagation
     {
       id: 'tf-cell-fx',
       surface: 'tf-cell',
       acceptsFactorId: 'FX',
-      isLocked: false,
-      placedFactorId: null,
-      isActive: false,
-      transferredToCirculation: false,
-    },
-    {
-      id: 'tf-cell-fix',
-      surface: 'tf-cell',
-      acceptsFactorId: 'FIX',
       isLocked: false,
       placedFactorId: null,
       isActive: false,
@@ -299,9 +291,8 @@ export interface SlotPosition {
 }
 
 export const SLOT_POSITIONS: Record<string, SlotPosition> = {
-  'tf-cell-fx': { slotId: 'tf-cell-fx', x: 40, y: 180, width: 100, height: 70 },
-  'tf-cell-fix': { slotId: 'tf-cell-fix', x: 160, y: 180, width: 100, height: 70 },
-  'tf-cell-fii': { slotId: 'tf-cell-fii', x: 100, y: 280, width: 100, height: 70 },
+  'tf-cell-fx': { slotId: 'tf-cell-fx', x: 40, y: 200, width: 110, height: 70 },
+  'tf-cell-fii': { slotId: 'tf-cell-fii', x: 150, y: 200, width: 110, height: 70 },
   'platelet-fv': { slotId: 'platelet-fv', x: 60, y: 180, width: 120, height: 80 },
   'platelet-fviii': { slotId: 'platelet-fviii', x: 60, y: 280, width: 140, height: 80 },
   // Clot Zone slots (Stabilization)
