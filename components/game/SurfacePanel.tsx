@@ -142,6 +142,7 @@ function getPanelStatus(
   const anyLocked = panelSlots.some((s) => s.isLocked);
 
   if (surface === 'tf-cell') {
+    if (gameState.tfpiActive) return { label: 'TFPI LOCKED', color: '#DC2626' };
     if (allPlaced) return { label: 'COMPLETED', color: '#22C55E' };
     return { label: 'ACTIVE', color: '#3B82F6' };
   }
@@ -303,14 +304,18 @@ interface PreplacedElementComponentProps {
     tooltip: string;
     isDim: boolean;
   };
+  tfpiActive?: boolean;
 }
 
-function PreplacedElementComponent({ element }: PreplacedElementComponentProps): React.ReactElement | null {
+function PreplacedElementComponent({ element, tfpiActive = false }: PreplacedElementComponentProps): React.ReactElement | null {
   const elementRef = useRef<HTMLDivElement>(null);
   useAnimationTarget(`preplaced-${element.id}`, elementRef);
 
   const pos = PREPLACED_POSITIONS[element.id as keyof typeof PREPLACED_POSITIONS];
   if (!pos) return null;
+
+  // Dim TF+VIIa when TFPI is active
+  const isDimmed = element.isDim || (tfpiActive && element.id === 'tf-viia');
 
   return (
     <div
@@ -322,16 +327,18 @@ function PreplacedElementComponent({ element }: PreplacedElementComponentProps):
         top: pos.y,
         width: pos.width,
         height: pos.height,
-        backgroundColor: element.isDim ? `${COLORS.textDim}30` : '#F59E0B40',
-        border: `2px solid ${element.isDim ? COLORS.textDim : '#F59E0B'}`,
+        backgroundColor: isDimmed ? `${COLORS.textDim}30` : '#F59E0B40',
+        border: `2px solid ${isDimmed ? COLORS.textDim : '#F59E0B'}`,
         borderRadius: 8,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         fontSize: 12,
         fontWeight: 600,
-        color: element.isDim ? COLORS.textDim : '#F59E0B',
+        color: isDimmed ? COLORS.textDim : '#F59E0B',
         cursor: 'help',
+        opacity: tfpiActive && element.id === 'tf-viia' ? 0.4 : 1,
+        transition: 'opacity 0.3s ease',
       }}
     >
       {element.label}
@@ -561,6 +568,34 @@ export function SurfacePanel({
           height={config.height}
         />
       )}
+
+      {/* TFPI Lock overlay for TF-cell */}
+      {config.surface === 'tf-cell' && gameState.tfpiActive && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 50,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            padding: '6px 16px',
+            backgroundColor: '#DC262640',
+            border: '2px solid #DC2626',
+            borderRadius: 6,
+            fontSize: 11,
+            fontWeight: 700,
+            color: '#DC2626',
+            zIndex: 10,
+            textAlign: 'center',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          TFPI ACTIVE
+          <div style={{ fontSize: 9, fontWeight: 400, marginTop: 2 }}>
+            Factory Shut Down
+          </div>
+        </div>
+      )}
+
       {/* Panel Title */}
       <div
         style={{
@@ -649,7 +684,11 @@ export function SurfacePanel({
       {/* Pre-placed elements (TF+VIIa, trace Va) */}
       {!config.isComingSoon &&
         preplacedElements.map((element) => (
-          <PreplacedElementComponent key={element.id} element={element} />
+          <PreplacedElementComponent
+            key={element.id}
+            element={element}
+            tfpiActive={gameState.tfpiActive}
+          />
         ))}
 
       {/* Slots */}
