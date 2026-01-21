@@ -299,7 +299,8 @@ export function CascadeCanvas({
   dicPhase,
   onFactorHover,
   blockedFactors = new Set(),
-  onFactorClick,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Prop kept for API compatibility
+  onFactorClick: _onFactorClick,
   showFeedback = false,
   showInhibition = false,
   currentScenario,
@@ -1171,7 +1172,7 @@ export function CascadeCanvas({
     }
 
     return null;
-  }, [factors, visibleFactors]);
+  }, [factors, visibleFactors, mode]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     // Doar hover dacă nu avem factor selectat

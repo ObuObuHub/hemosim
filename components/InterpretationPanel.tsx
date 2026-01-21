@@ -34,7 +34,8 @@ function ProbabilityBadge({ probability }: { probability: Diagnosis['probability
   );
 }
 
-function ScoreBadge({ score, max, color }: { score: number; max: number; color: string }): React.ReactElement {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- max kept for API compatibility
+function ScoreBadge({ score, max: _max, color }: { score: number; max: number; color: string }): React.ReactElement {
   return (
     <div className={`flex items-center justify-center w-8 h-8 rounded-full ${color} font-bold text-sm shrink-0`}>
       {score}

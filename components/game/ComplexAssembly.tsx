@@ -37,6 +37,7 @@ export function ComplexAssembly({
   useEffect(() => {
     // Trigger assembly when transitioning from incomplete to complete
     if (isComplete && !prevCompleteRef.current) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: triggering animation on completion
       setIsAssembling(true);
       const timer = setTimeout(() => {
         setShowMerged(true);

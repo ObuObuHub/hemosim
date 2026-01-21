@@ -1,7 +1,7 @@
 // components/game/ClotZonePanel.tsx
 'use client';
 
-import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import type { Slot } from '@/types/game';
 import type { PanelConfig } from '@/engine/game/game-config';
 import { COLORS, SLOT_POSITIONS } from '@/engine/game/game-config';
@@ -43,11 +43,10 @@ function RippleEffect({ color, onComplete }: RippleEffectProps): React.ReactElem
 }
 
 interface CalciumSparklesProps {
-  color: string;
   onComplete: () => void;
 }
 
-function CalciumSparkles({ color: _color, onComplete }: CalciumSparklesProps): React.ReactElement {
+function CalciumSparkles({ onComplete }: CalciumSparklesProps): React.ReactElement {
   useEffect(() => {
     const timer = setTimeout(onComplete, 500);
     return () => clearTimeout(timer);
@@ -253,6 +252,7 @@ function SlotComponent({
 
     if (wasEmpty && isNowFilled) {
       // Factor just placed - trigger animations
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: triggering animations on prop change
       setShowDockingEffects(true);
       setShowRipple(true);
       setShowSparkles(true);
@@ -328,7 +328,7 @@ function SlotComponent({
       {showRipple && <RippleEffect color={factorColor} onComplete={handleRippleComplete} />}
 
       {/* Ca²⁺ sparkles on placement */}
-      {showSparkles && <CalciumSparkles color={factorColor} onComplete={handleSparklesComplete} />}
+      {showSparkles && <CalciumSparkles onComplete={handleSparklesComplete} />}
 
       {placedFactor ? (
         <div className={showDockingEffects ? 'factor-docking' : 'factor-placed'}>
@@ -449,11 +449,8 @@ export function ClotZonePanel({
     ? getValidSlotsForFactor(gameState, gameState.selectedFactorId)
     : [];
 
-  // Generate mesh lines
-  const meshLines = useMemo(
-    () => generateMeshLines(fibrinSlots, fxiiiSlot, isCrossLinked),
-    [fibrinSlots, fxiiiSlot, isCrossLinked]
-  );
+  // Generate mesh lines (computed each render since dependencies are derived from slots prop)
+  const meshLines = generateMeshLines(fibrinSlots, fxiiiSlot, isCrossLinked);
 
   return (
     <div

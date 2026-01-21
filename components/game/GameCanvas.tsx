@@ -67,6 +67,7 @@ export const GameCanvas = forwardRef<HTMLDivElement, GameCanvasProps>(function G
   useEffect(() => {
     const isDismissed = localStorage.getItem(TUTORIAL_DISMISSED_KEY);
     if (!isDismissed) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: initializing state after hydration
       setShowTutorial(true);
     }
   }, []);

@@ -44,11 +44,10 @@ function RippleEffect({ color, onComplete }: RippleEffectProps): React.ReactElem
 }
 
 interface CalciumSparklesProps {
-  color: string;
   onComplete: () => void;
 }
 
-function CalciumSparkles({ color: _color, onComplete }: CalciumSparklesProps): React.ReactElement {
+function CalciumSparkles({ onComplete }: CalciumSparklesProps): React.ReactElement {
   useEffect(() => {
     const timer = setTimeout(onComplete, 500);
     return () => clearTimeout(timer);
@@ -193,6 +192,7 @@ function SlotComponent({ slot, isValidTarget, placedFactor, onSlotClick }: SlotC
 
     if (wasEmpty && isNowFilled) {
       // Factor just placed - trigger animations
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: triggering animations on prop change
       setShowDockingEffects(true);
       setShowRipple(true);
       setShowSparkles(true);
@@ -267,7 +267,7 @@ function SlotComponent({ slot, isValidTarget, placedFactor, onSlotClick }: SlotC
       {showRipple && <RippleEffect color={factorColor} onComplete={handleRippleComplete} />}
 
       {/* Ca²⁺ sparkles on placement */}
-      {showSparkles && <CalciumSparkles color={factorColor} onComplete={handleSparklesComplete} />}
+      {showSparkles && <CalciumSparkles onComplete={handleSparklesComplete} />}
 
       {slot.transferredToCirculation ? (
         <div
@@ -400,6 +400,7 @@ export function SurfacePanel({
       prevPhase !== 'propagation' &&
       gameState.phase === 'propagation'
     ) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: triggering animation on phase change
       setIsActivating(true);
       // Reset after animation completes
       const timer = setTimeout(() => {
