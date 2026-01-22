@@ -173,9 +173,10 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
   const [propThrombinBurst, setPropThrombinBurst] = useState(false);
 
   const propMembraneY = GAME_HEIGHT * 0.75;
+  // Aligned with PropagationScene ghost slot positions
   const propDockingPositions = useMemo(() => ({
-    fixa: { x: GAME_WIDTH * 0.25 - 40, y: propMembraneY - 60 },
-    fii: { x: GAME_WIDTH * 0.75, y: propMembraneY - 70 },
+    fixa: { x: GAME_WIDTH * 0.22 - 70, y: propMembraneY - 60 },
+    fii: { x: GAME_WIDTH * 0.78 - 22, y: propMembraneY - 70 },
   }), [GAME_WIDTH, propMembraneY]);
 
   // Auto-produce FXa after Tenase forms

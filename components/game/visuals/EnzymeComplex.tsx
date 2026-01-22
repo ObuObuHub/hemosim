@@ -89,7 +89,9 @@ export function EnzymeComplex({
         flexDirection: 'column',
         alignItems: 'center',
         pointerEvents: 'none',
-      }}
+        // CSS custom property for dynamic glow color in animations
+        '--glow-color': config.glowColor,
+      } as React.CSSProperties}
     >
       {/* Complex Label - appears when formed */}
       {isFormed && (
@@ -363,14 +365,14 @@ export function EnzymeComplex({
         </div>
       )}
 
-      {/* CSS Animations */}
+      {/* CSS Animations - using CSS custom property var(--glow-color) */}
       <style jsx>{`
         @keyframes complex-pulse {
           0%, 100% {
-            box-shadow: 0 4px 12px ${config.glowColor};
+            box-shadow: 0 4px 12px var(--glow-color);
           }
           50% {
-            box-shadow: 0 4px 20px ${config.glowColor}, 0 0 30px ${config.glowColor};
+            box-shadow: 0 4px 20px var(--glow-color), 0 0 30px var(--glow-color);
           }
         }
         @keyframes float-ca {
