@@ -16,7 +16,7 @@ interface PropagationSceneProps {
   prothrombinaseFormed: boolean;
   thrombinBurst: boolean;
   heldFactorId: string | null;
-  onFactorCatch: (factorId: string, event: React.MouseEvent) => void;
+  onFactorCatch: (factorId: string, event: React.MouseEvent | React.TouchEvent) => void;
   onPhaseComplete: () => void;
 }
 
@@ -51,6 +51,8 @@ export function PropagationScene({
   heldFactorId,
   onFactorCatch,
 }: PropagationSceneProps): React.ReactElement {
+  const [touchedFactorId, setTouchedFactorId] = useState<string | null>(null);
+
   // Same layout as Initiation/Amplification: membrane at bottom 25%
   const membraneHeight = height * 0.25;
   const bloodstreamHeight = height - membraneHeight;
@@ -121,10 +123,25 @@ export function PropagationScene({
               top: factor.position.y,
               transform: 'translate(-50%, -50%)',
               cursor: 'grab',
+              padding: '8px',
+              margin: '-8px',
+              touchAction: 'none',
             }}
-            onMouseDown={(e) => onFactorCatch(factor.id, e)}
+            onMouseDown={(e) => {
+              setTouchedFactorId(factor.id);
+              onFactorCatch(factor.id, e);
+            }}
+            onTouchStart={(e) => {
+              setTouchedFactorId(factor.id);
+              onFactorCatch(factor.id, e);
+            }}
+            onMouseUp={() => setTouchedFactorId(null)}
+            onTouchEnd={() => setTouchedFactorId(null)}
           >
-            <FactorTokenNew factorId={factor.factorId} />
+            <FactorTokenNew
+              factorId={factor.factorId}
+              isTouched={touchedFactorId === factor.id}
+            />
           </div>
         ))}
       </div>

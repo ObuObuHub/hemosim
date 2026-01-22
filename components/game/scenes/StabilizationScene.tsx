@@ -1,7 +1,7 @@
 // components/game/scenes/StabilizationScene.tsx
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { PhospholipidMembrane } from '../visuals/PhospholipidMembrane';
 import { FactorTokenNew } from '../tokens/FactorTokenNew';
 import type { FloatingFactor } from '@/types/game';
@@ -14,7 +14,7 @@ interface StabilizationSceneProps {
   fxiiiActivated: boolean;    // FXIII → FXIIIa by thrombin
   meshCrosslinked: boolean;   // FXIIIa crosslinked the mesh
   heldFactorId: string | null;
-  onFactorCatch: (factorId: string, event: React.MouseEvent) => void;
+  onFactorCatch: (factorId: string, event: React.MouseEvent | React.TouchEvent) => void;
   onPhaseComplete: () => void;
 }
 
@@ -48,6 +48,8 @@ export function StabilizationScene({
   heldFactorId,
   onFactorCatch,
 }: StabilizationSceneProps): React.ReactElement {
+  const [touchedFactorId, setTouchedFactorId] = useState<string | null>(null);
+
   // Same layout as previous phases
   const membraneHeight = height * 0.25;
   const bloodstreamHeight = height - membraneHeight;
@@ -106,10 +108,25 @@ export function StabilizationScene({
               top: factor.position.y,
               transform: 'translate(-50%, -50%)',
               cursor: 'grab',
+              padding: '8px',
+              margin: '-8px',
+              touchAction: 'none',
             }}
-            onMouseDown={(e) => onFactorCatch(factor.id, e)}
+            onMouseDown={(e) => {
+              setTouchedFactorId(factor.id);
+              onFactorCatch(factor.id, e);
+            }}
+            onTouchStart={(e) => {
+              setTouchedFactorId(factor.id);
+              onFactorCatch(factor.id, e);
+            }}
+            onMouseUp={() => setTouchedFactorId(null)}
+            onTouchEnd={() => setTouchedFactorId(null)}
           >
-            <FactorTokenNew factorId={factor.factorId} />
+            <FactorTokenNew
+              factorId={factor.factorId}
+              isTouched={touchedFactorId === factor.id}
+            />
           </div>
         ))}
       </div>

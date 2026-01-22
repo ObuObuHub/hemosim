@@ -1,6 +1,7 @@
 // components/game/scenes/InitiationScene.tsx
 'use client';
 
+import { useState } from 'react';
 import { PhospholipidMembrane } from '../visuals/PhospholipidMembrane';
 import { TFProtein } from '../visuals/TFProtein';
 import { ActivationArrow } from '../visuals/ActivationArrow';
@@ -24,10 +25,10 @@ interface InitiationSceneProps {
   fiiDockedState: Record<number, boolean>;   // FII → FIIa (THROMBIN!) via Prothrombinase
   plateletPosition: { x: number; y: number; width: number; height: number };
   isDraggingThrombin: boolean;
-  onFactorCatch: (factorId: string, event: React.MouseEvent) => void;
+  onFactorCatch: (factorId: string, event: React.MouseEvent | React.TouchEvent) => void;
   onFactorDock: (factorId: string, complexId: string) => void;
   onThrombinDrag: (thrombinId: string, targetX: number, targetY: number) => void;
-  onThrombinDragStart: (fromIndex: number, event: React.MouseEvent) => void;
+  onThrombinDragStart: (fromIndex: number, event: React.MouseEvent | React.TouchEvent) => void;
   onArrowComplete: (arrowId: string) => void;
 }
 
@@ -69,6 +70,9 @@ export function InitiationScene({
   onThrombinDragStart,
   onArrowComplete,
 }: InitiationSceneProps): React.ReactElement {
+  // Track touched factor for visual feedback
+  const [touchedFactorId, setTouchedFactorId] = useState<string | null>(null);
+
   // Membrane takes only ~25% at the bottom, bloodstream is 75%
   const membraneHeight = height * 0.25;
   const bloodstreamHeight = height - membraneHeight;
@@ -112,10 +116,25 @@ export function InitiationScene({
               top: factor.position.y,
               transform: 'translate(-50%, -50%)',
               cursor: 'grab',
+              padding: '8px',
+              margin: '-8px',
+              touchAction: 'none',
             }}
-            onMouseDown={(e) => onFactorCatch(factor.id, e)}
+            onMouseDown={(e) => {
+              setTouchedFactorId(factor.id);
+              onFactorCatch(factor.id, e);
+            }}
+            onTouchStart={(e) => {
+              setTouchedFactorId(factor.id);
+              onFactorCatch(factor.id, e);
+            }}
+            onMouseUp={() => setTouchedFactorId(null)}
+            onTouchEnd={() => setTouchedFactorId(null)}
           >
-            <FactorTokenNew factorId={factor.factorId} />
+            <FactorTokenNew
+              factorId={factor.factorId}
+              isTouched={touchedFactorId === factor.id}
+            />
           </div>
         ))}
       </div>
@@ -297,10 +316,18 @@ export function InitiationScene({
                   top: -75,
                   cursor: 'grab',
                   zIndex: 50,
+                  padding: '8px',
+                  margin: '-8px',
+                  touchAction: 'none',
                 }}
                 onMouseDown={(e) => {
                   e.stopPropagation();
                   console.log('🟢 THROMBIN CLICKED at index:', pos.index);
+                  onThrombinDragStart(pos.index, e);
+                }}
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                  console.log('🟢 THROMBIN TOUCHED at index:', pos.index);
                   onThrombinDragStart(pos.index, e);
                 }}
               >

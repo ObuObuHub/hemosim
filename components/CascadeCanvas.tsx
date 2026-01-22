@@ -332,6 +332,9 @@ export function CascadeCanvas({
   const lastTouchRef = useRef<{ x: number; y: number } | null>(null);
   const lastPinchDistRef = useRef<number | null>(null);
   const [isVisible, setIsVisible] = useState(true);
+  const [touchFeedback, setTouchFeedback] = useState<{ x: number; y: number } | null>(null);
+  const touchStartTimeRef = useRef<number>(0);
+  const touchMoveDistRef = useRef<number>(0);
 
   // Factor activ = selectat (click) sau hover
   const activeFactor = selectedFactor || hoveredFactor;
@@ -515,8 +518,10 @@ export function CascadeCanvas({
 
       // Responsive scaling factors for mobile
       const isMobileView = rect.width < 768;
-      const fontScale = isMobileView ? Math.max(1.3, 1 / minScale * 0.8) : 1;
-      const nodeScale = isMobileView ? Math.max(1.2, 1 / minScale * 0.7) : 1;
+      // Increased mobile font scale for better readability
+      const fontScale = isMobileView ? Math.max(1.5, 1 / minScale * 0.9) : 1;
+      // Increased mobile node scale for better touch targets
+      const nodeScale = isMobileView ? Math.max(1.4, 1 / minScale * 0.85) : 1;
 
       // Helper pentru a obține poziția bazată pe mod
       const getPos = (factor: Factor): { x: number; y: number } => {
@@ -949,6 +954,18 @@ export function CascadeCanvas({
         }
       }
 
+      // Draw touch feedback indicator if active
+      if (touchFeedback) {
+        const feedbackRadius = 20;
+        ctx.save();
+        ctx.globalAlpha = 0.3;
+        ctx.beginPath();
+        ctx.arc(touchFeedback.x, touchFeedback.y, feedbackRadius, 0, Math.PI * 2);
+        ctx.fillStyle = '#3b82f6';
+        ctx.fill();
+        ctx.restore();
+      }
+
       // Draw nodes (on top of brackets)
       // NOUA LOGICĂ: Dimensiune variabilă bazată pe activitate
       // Scale up node sizes on mobile for better touch targets
@@ -1203,17 +1220,21 @@ export function CascadeCanvas({
     if (!canvas) return null;
 
     const rect = canvas.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
+
+    // Account for pan and zoom transformations
+    const x = (clientX - rect.left - panOffset.x) / scale;
+    const y = (clientY - rect.top - panOffset.y) / scale;
+
     const scaleX = rect.width / CANVAS_WIDTH;
     const scaleY = rect.height / CANVAS_HEIGHT;
     const minScale = Math.min(scaleX, scaleY);
 
     // Responsive touch target - larger on mobile and scales with canvas
     const isMobileView = rect.width < 768;
-    const nodeScale = isMobileView ? Math.max(1.2, 1 / minScale * 0.7) : 1;
+    const nodeScale = isMobileView ? Math.max(1.4, 1 / minScale * 0.85) : 1;
     const baseRadius = 17 * nodeScale;
-    const touchRadius = baseRadius + (isMobileView ? 18 : 8);
+    // Significantly larger touch area on mobile (44x44 minimum touch target)
+    const touchRadius = baseRadius + (isMobileView ? 22 : 8);
 
     for (const factor of Object.values(factors)) {
       if (!visibleFactors.includes(factor.id)) continue;
@@ -1231,7 +1252,7 @@ export function CascadeCanvas({
     }
 
     return null;
-  }, [factors, visibleFactors, mode]);
+  }, [factors, visibleFactors, mode, panOffset, scale]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     // Doar hover dacă nu avem factor selectat
@@ -1264,7 +1285,14 @@ export function CascadeCanvas({
   }, [onFactorHover, selectedFactor]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    // Reset movement tracking
+    touchStartTimeRef.current = Date.now();
+    touchMoveDistRef.current = 0;
+
     if (e.touches.length === 2) {
+      // Prevent default to avoid zoom conflicts
+      e.preventDefault();
+
       // Pinch start - calculate initial distance
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
@@ -1276,23 +1304,36 @@ export function CascadeCanvas({
       };
     } else if (e.touches.length === 1) {
       const touch = e.touches[0];
-      // If zoomed in, start panning
-      if (scale > 1) {
-        lastTouchRef.current = { x: touch.clientX, y: touch.clientY };
-      } else {
-        // Normal behavior - select factor
-        const found = findFactorAtPosition(touch.clientX, touch.clientY);
-        if (found) {
-          setSelectedFactor(prev => prev === found ? null : found);
-        } else {
-          setSelectedFactor(null);
-        }
+      lastTouchRef.current = { x: touch.clientX, y: touch.clientY };
+
+      // Show touch feedback
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const rect = canvas.getBoundingClientRect();
+        setTouchFeedback({
+          x: touch.clientX - rect.left,
+          y: touch.clientY - rect.top,
+        });
       }
     }
-  }, [findFactorAtPosition, scale]);
+  }, []);
 
   const handleTouchMove = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    const lastTouch = lastTouchRef.current;
+    if (!lastTouch) return;
+
+    // Track movement distance to distinguish tap from pan
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      const dx = touch.clientX - lastTouch.x;
+      const dy = touch.clientY - lastTouch.y;
+      touchMoveDistRef.current += Math.sqrt(dx * dx + dy * dy);
+    }
+
     if (e.touches.length === 2 && lastPinchDistRef.current !== null) {
+      // Prevent default for pinch gestures
+      e.preventDefault();
+
       // Pinch zoom
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
@@ -1304,42 +1345,86 @@ export function CascadeCanvas({
       setScale(prev => Math.min(Math.max(prev * scaleChange, minAllowedScale), 3));
       lastPinchDistRef.current = newDist;
 
-      // Pan while zooming - capture ref value before setState
-      const lastTouch = lastTouchRef.current;
-      if (lastTouch) {
-        const newMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-        const newMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-        setPanOffset(prev => ({
-          x: prev.x + (newMidX - lastTouch.x),
-          y: prev.y + (newMidY - lastTouch.y),
-        }));
-        lastTouchRef.current = { x: newMidX, y: newMidY };
-      }
-    } else if (e.touches.length === 1 && scale > 1) {
-      // Single finger pan when zoomed - capture ref value before setState
-      const lastTouch = lastTouchRef.current;
-      if (lastTouch) {
-        const touch = e.touches[0];
+      // Pan while zooming
+      const newMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const newMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      setPanOffset(prev => ({
+        x: prev.x + (newMidX - lastTouch.x),
+        y: prev.y + (newMidY - lastTouch.y),
+      }));
+      lastTouchRef.current = { x: newMidX, y: newMidY };
+
+      // Clear touch feedback during pinch
+      setTouchFeedback(null);
+    } else if (e.touches.length === 1) {
+      const touch = e.touches[0];
+
+      // Pan when zoomed in or when movement exceeds threshold
+      if (scale > getInitialScale() * 1.1 || touchMoveDistRef.current > 10) {
+        e.preventDefault(); // Prevent scroll when panning
         setPanOffset(prev => ({
           x: prev.x + (touch.clientX - lastTouch.x),
           y: prev.y + (touch.clientY - lastTouch.y),
         }));
         lastTouchRef.current = { x: touch.clientX, y: touch.clientY };
+
+        // Clear touch feedback when panning
+        setTouchFeedback(null);
       }
     }
-  }, [scale]);
+  }, [scale, isMobile, getInitialScale]);
 
-  const handleTouchEnd = useCallback(() => {
+  const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    // Clear touch feedback
+    setTouchFeedback(null);
+
+    // Check if this was a tap (not a pan/pinch)
+    const touchDuration = Date.now() - touchStartTimeRef.current;
+    const wasTap = touchMoveDistRef.current < 10 && touchDuration < 300;
+
+    if (wasTap && e.changedTouches.length === 1) {
+      const touch = e.changedTouches[0];
+      const found = findFactorAtPosition(touch.clientX, touch.clientY);
+
+      if (found) {
+        // Check if clicked on PLT - open primary hemostasis modal
+        if (found === 'PLT') {
+          setShowPrimaryHemostasis(true);
+        } else {
+          // Toggle selection: tap on same factor deselects it
+          setSelectedFactor(prev => prev === found ? null : found);
+        }
+      } else {
+        // Tap outside factors deselects
+        setSelectedFactor(null);
+      }
+    }
+
+    // Reset touch tracking
     lastPinchDistRef.current = null;
     lastTouchRef.current = null;
-  }, []);
+    touchMoveDistRef.current = 0;
+  }, [findFactorAtPosition]);
 
   // Double-tap to reset zoom
   const lastTapTimeRef = useRef<number>(0);
+  const doubleTapCoordsRef = useRef<{ x: number; y: number } | null>(null);
+
   const handleDoubleTap = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length !== 1) return;
+
     const now = Date.now();
-    if (now - lastTapTimeRef.current < 300) {
-      // Double tap - reset to initial scale or zoom to 2x
+    const touch = e.touches[0];
+    const coords = { x: touch.clientX, y: touch.clientY };
+
+    // Check if this is a double tap (within 300ms and same location)
+    if (
+      now - lastTapTimeRef.current < 300 &&
+      doubleTapCoordsRef.current &&
+      Math.abs(coords.x - doubleTapCoordsRef.current.x) < 30 &&
+      Math.abs(coords.y - doubleTapCoordsRef.current.y) < 30
+    ) {
+      // Double tap detected - reset to initial scale or zoom to 2x
       const initialScale = getInitialScale();
       if (scale > initialScale * 1.2) {
         setScale(initialScale);
@@ -1348,9 +1433,12 @@ export function CascadeCanvas({
         setScale(initialScale * 2);
       }
       e.preventDefault();
+      doubleTapCoordsRef.current = null;
+    } else {
+      doubleTapCoordsRef.current = coords;
+      lastTapTimeRef.current = now;
     }
-    lastTapTimeRef.current = now;
-  }, [scale]);
+  }, [scale, getInitialScale]);
 
   // Detectează desktop (width >= 768px)
   const isDesktop = canvasSize.width >= 768;
@@ -1424,7 +1512,15 @@ export function CascadeCanvas({
   };
 
   return (
-    <div ref={containerRef} className="cascade-container" style={{ overflow: 'hidden' }}>
+    <div
+      ref={containerRef}
+      className="cascade-container"
+      style={{
+        overflow: 'hidden',
+        // Prevent pull-to-refresh and overscroll on mobile
+        overscrollBehavior: 'none',
+      }}
+    >
       <div
         style={{
           transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${scale})`,
@@ -1432,13 +1528,21 @@ export function CascadeCanvas({
           willChange: 'transform',
           width: '100%',
           height: '100%',
-          touchAction: scale > 1 ? 'none' : 'auto',
+          // Prevent default touch behaviors (pinch-zoom, double-tap zoom)
+          touchAction: 'none',
         }}
       >
         <canvas
           ref={canvasRef}
           className="cascade-canvas"
-          style={{ willChange: 'transform' }}
+          style={{
+            willChange: 'transform',
+            // Prevent text selection on touch
+            WebkitUserSelect: 'none',
+            userSelect: 'none',
+            // Improve touch responsiveness
+            WebkitTapHighlightColor: 'transparent',
+          }}
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
           onClick={handleClick}

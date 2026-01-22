@@ -241,19 +241,19 @@ export function MobileLabInput({
     <div className="space-y-4">
       {/* Header with reset */}
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-slate-700">Valori Laborator</span>
-        <div className="flex gap-2">
+        <span className="text-base font-semibold text-slate-700">Valori Laborator</span>
+        <div className="flex gap-3">
           <button
             type="button"
             onClick={onToggleScenarios}
-            className="text-xs text-blue-600 font-medium px-4 py-2.5 rounded-lg bg-blue-50 active:bg-blue-100 transition-colors min-h-[44px]"
+            className="text-sm text-blue-600 font-medium px-5 py-3 rounded-lg bg-blue-50 active:bg-blue-100 transition-colors min-h-[48px]"
           >
             {showScenarios ? 'Închide' : 'Scenarii'}
           </button>
           <button
             type="button"
             onClick={onReset}
-            className="text-xs text-slate-600 font-medium px-4 py-2.5 rounded-lg bg-slate-100 active:bg-slate-200 transition-colors min-h-[44px]"
+            className="text-sm text-slate-600 font-medium px-5 py-3 rounded-lg bg-slate-100 active:bg-slate-200 transition-colors min-h-[48px]"
           >
             Reset
           </button>
@@ -271,9 +271,9 @@ export function MobileLabInput({
               placeholder="Caută scenariu..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value.slice(0, 100))}
-              className="w-full pl-10 pr-12 py-3 text-base border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-400/50 min-h-[44px]"
+              className="w-full pl-11 pr-12 py-3.5 text-base border-2 border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-400/50 min-h-[48px]"
             />
-            <svg aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             {searchQuery && (
@@ -281,7 +281,7 @@ export function MobileLabInput({
                 type="button"
                 aria-label="Șterge căutarea"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 active:text-slate-600 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 active:text-slate-600 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg"
               >
                 <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -327,11 +327,11 @@ export function MobileLabInput({
                   aria-expanded={isExpanded}
                   aria-controls={`category-${category.id}`}
                   onClick={toggleCategory}
-                  className="w-full px-4 py-3 flex items-center justify-between text-left bg-slate-50 active:bg-slate-100 transition-colors min-h-[44px]"
+                  className="w-full px-4 py-3.5 flex items-center justify-between text-left bg-slate-50 active:bg-slate-100 transition-colors min-h-[48px]"
                 >
                   <span className="text-sm font-semibold text-slate-700">
                     {category.name}
-                    <span className="ml-2 text-xs font-normal text-slate-500">
+                    <span className="ml-2 text-sm font-normal text-slate-500">
                       ({filteredPresets.length})
                     </span>
                   </span>
@@ -348,13 +348,13 @@ export function MobileLabInput({
 
                 {/* Category Presets */}
                 {isExpanded && (
-                  <div id={`category-${category.id}`} className="grid grid-cols-2 gap-2 p-3">
+                  <div id={`category-${category.id}`} className="flex flex-col gap-2 p-3">
                     {filteredPresets.map(preset => (
                       <button
                         key={preset.id}
                         type="button"
                         onClick={() => applyPreset(preset)}
-                        className="px-3 py-3 text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg active:bg-blue-50 active:border-blue-300 transition-colors text-left min-h-[44px]"
+                        className="px-4 py-3.5 text-sm font-medium text-slate-700 bg-slate-50 border-2 border-slate-200 rounded-lg active:bg-blue-50 active:border-blue-300 transition-colors text-left min-h-[48px]"
                       >
                         {preset.name}
                       </button>
@@ -368,10 +368,10 @@ export function MobileLabInput({
       )}
 
       {/* PT / INR Row */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-4">
         {/* PT */}
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="input-pt" className="text-xs font-semibold text-slate-600 uppercase tracking-wide">PT</label>
+        <div className="flex flex-col gap-2">
+          <label htmlFor="input-pt" className="text-sm font-semibold text-slate-700 uppercase tracking-wide">PT</label>
           <div className="relative">
             <input
               id="input-pt"
@@ -381,7 +381,7 @@ export function MobileLabInput({
               value={'pt' in editingValues ? editingValues.pt : values.pt}
               onChange={(e) => handlePTChange(e.target.value)}
               onBlur={() => handleBlur('pt')}
-              className={`w-full pl-3 pr-8 py-3 text-base border-2 rounded-lg text-right transition-all focus:outline-none focus:ring-2 focus:ring-blue-400/50 min-h-[44px]
+              className={`w-full pl-4 pr-10 py-3.5 text-lg border-2 rounded-lg text-right transition-all focus:outline-none focus:ring-2 focus:ring-blue-400/50 min-h-[48px]
                 ${getStatus(values.pt, 'pt') === 'normal'
                   ? 'border-slate-300 bg-white'
                   : getStatus(values.pt, 'pt') === 'abnormal'
@@ -389,12 +389,12 @@ export function MobileLabInput({
                     : 'border-red-500 bg-red-50'
                 }`}
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 font-medium">s</span>
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-500 font-medium">s</span>
           </div>
         </div>
         {/* INR */}
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="input-inr" className="text-xs font-semibold text-slate-600 uppercase tracking-wide">INR</label>
+        <div className="flex flex-col gap-2">
+          <label htmlFor="input-inr" className="text-sm font-semibold text-slate-700 uppercase tracking-wide">INR</label>
           <div className="relative">
             <input
               id="input-inr"
@@ -404,7 +404,7 @@ export function MobileLabInput({
               value={'inr' in editingValues ? editingValues.inr : values.inr}
               onChange={(e) => handleINRChange(e.target.value)}
               onBlur={() => handleBlur('inr')}
-              className={`w-full pl-3 pr-3 py-3 text-base border-2 rounded-lg text-right transition-all focus:outline-none focus:ring-2 focus:ring-blue-400/50 min-h-[44px]
+              className={`w-full pl-4 pr-4 py-3.5 text-lg border-2 rounded-lg text-right transition-all focus:outline-none focus:ring-2 focus:ring-blue-400/50 min-h-[48px]
                 ${getStatus(values.inr, 'inr') === 'normal'
                   ? 'border-slate-300 bg-white'
                   : getStatus(values.inr, 'inr') === 'abnormal'
@@ -417,14 +417,14 @@ export function MobileLabInput({
       </div>
 
       {/* Lab values - 2 column grid */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-4">
         {LAB_FIELDS.map(({ key, short, step }) => {
           const range = LAB_RANGES[key];
           const status = getStatus(values[key], key);
 
           return (
-            <div key={key} className="flex flex-col gap-1.5">
-              <label htmlFor={`input-${key}`} className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
+            <div key={key} className="flex flex-col gap-2">
+              <label htmlFor={`input-${key}`} className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
                 {short}
               </label>
               <div className="relative">
@@ -436,7 +436,7 @@ export function MobileLabInput({
                   value={getValue(key)}
                   onChange={(e) => handleChange(key, e.target.value)}
                   onBlur={() => handleBlur(key)}
-                  className={`w-full pl-3 pr-14 py-3 text-base border-2 rounded-lg text-right transition-all focus:outline-none focus:ring-2 focus:ring-blue-400/50 min-h-[44px]
+                  className={`w-full pl-4 pr-16 py-3.5 text-lg border-2 rounded-lg text-right transition-all focus:outline-none focus:ring-2 focus:ring-blue-400/50 min-h-[48px]
                     ${status === 'normal'
                       ? 'border-slate-300 bg-white'
                       : status === 'abnormal'
@@ -444,7 +444,7 @@ export function MobileLabInput({
                         : 'border-red-500 bg-red-50'
                     }`}
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 font-medium">
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-500 font-medium">
                   {range.unit}
                 </span>
               </div>
@@ -453,18 +453,18 @@ export function MobileLabInput({
         })}
       </div>
       {/* Medications - horizontal chips */}
-      <div className="pt-3 border-t-2 border-slate-200">
-        <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2 block">
+      <div className="pt-4 border-t-2 border-slate-200">
+        <label className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3 block">
           Medicație
         </label>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-3">
           {MED_OPTIONS.map(({ key, short }) => (
             <button
               key={key}
               type="button"
               aria-pressed={medications[key]}
               onClick={() => toggleMed(key)}
-              className={`px-4 py-2.5 text-xs font-semibold rounded-full border-2 transition-all min-h-[44px]
+              className={`px-5 py-3 text-sm font-semibold rounded-full border-2 transition-all min-h-[48px] min-w-[80px]
                 ${medications[key]
                   ? 'bg-blue-500 text-white border-blue-500 shadow-md'
                   : 'bg-white text-slate-700 border-slate-300 active:bg-slate-100 active:border-slate-400'
@@ -478,13 +478,13 @@ export function MobileLabInput({
 
       {/* Testul de Amestec - subtle inline when aPTT isolated (aPTT elevated + PT normal) */}
       {values.aptt > LAB_RANGES.aptt.max && values.pt <= LAB_RANGES.pt.max && (
-        <div className="pt-3 border-t-2 border-slate-200">
-          <label htmlFor="input-mixingTest" className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2 block">
+        <div className="pt-4 border-t-2 border-slate-200">
+          <label htmlFor="input-mixingTest" className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3 block">
             Test de Amestec
           </label>
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-3">
-              <span className="text-sm text-slate-600 font-medium whitespace-nowrap">aPTT mix:</span>
+              <span className="text-sm text-slate-700 font-medium whitespace-nowrap">aPTT mix:</span>
               <input
                 id="input-mixingTest"
                 type="number"
@@ -504,11 +504,11 @@ export function MobileLabInput({
                     onScenarioChange(null);
                   }
                 }}
-                className="flex-1 px-3 py-3 text-base border-2 border-slate-300 rounded-lg text-right focus:outline-none focus:ring-2 focus:ring-blue-400/50 min-h-[44px]"
+                className="flex-1 px-4 py-3.5 text-lg border-2 border-slate-300 rounded-lg text-right focus:outline-none focus:ring-2 focus:ring-blue-400/50 min-h-[48px]"
               />
             </div>
             {values.apttMix !== undefined && values.apttMix > 0 && (
-              <div className={`px-4 py-3 rounded-lg font-semibold text-sm ${
+              <div className={`px-4 py-3.5 rounded-lg font-semibold text-base ${
                 (() => {
                   const result = interpretRosnerIndex(values.aptt, values.apttMix);
                   if (result.interpretation === 'deficiență') return 'bg-green-50 text-green-700 border-2 border-green-300';

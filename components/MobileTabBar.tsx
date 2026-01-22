@@ -40,11 +40,11 @@ const InteractivIcon = (): React.ReactElement => (
   </svg>
 );
 
-const tabs: Array<{ id: TabId; label: string; Icon: () => React.ReactElement }> = [
-  { id: 'labs', label: 'Valori', Icon: FlaskIcon },
-  { id: 'cascade', label: 'Cascadă', Icon: CascadeIcon },
-  { id: 'interactiv', label: 'Interactiv', Icon: InteractivIcon },
-  { id: 'results', label: 'Rezultate', Icon: ResultsIcon },
+const tabs: Array<{ id: TabId; label: string; shortLabel: string; Icon: () => React.ReactElement }> = [
+  { id: 'labs', label: 'Valori', shortLabel: 'Valori', Icon: FlaskIcon },
+  { id: 'cascade', label: 'Cascadă', shortLabel: 'Cascadă', Icon: CascadeIcon },
+  { id: 'interactiv', label: 'Interactiv', shortLabel: 'Joc', Icon: InteractivIcon },
+  { id: 'results', label: 'Rezultate', shortLabel: 'Rezultate', Icon: ResultsIcon },
 ];
 
 export function MobileTabBar({ activeTab, onTabChange, hasAbnormalFindings }: MobileTabBarProps): React.ReactElement {
@@ -70,7 +70,7 @@ export function MobileTabBar({ activeTab, onTabChange, hasAbnormalFindings }: Mo
 
   return (
     <nav className="mobile-tab-bar" role="tablist" aria-label="Navigare principală">
-      {tabs.map(({ id, label, Icon }, index) => (
+      {tabs.map(({ id, label, shortLabel, Icon }, index) => (
         <button
           key={id}
           id={`tab-${id}`}
@@ -78,13 +78,17 @@ export function MobileTabBar({ activeTab, onTabChange, hasAbnormalFindings }: Mo
           role="tab"
           aria-selected={activeTab === id}
           aria-controls={`tabpanel-${id}`}
+          aria-label={label}
           tabIndex={activeTab === id ? 0 : -1}
           className={`mobile-tab ${activeTab === id ? 'active' : ''}`}
           onClick={() => onTabChange(id)}
           onKeyDown={(e) => handleKeyDown(e, index)}
         >
           <Icon />
-          <span className="mobile-tab-label">{label}</span>
+          <span className="mobile-tab-label" aria-hidden="true">
+            <span className="hidden [@media(min-width:361px)]:inline">{label}</span>
+            <span className="[@media(min-width:361px)]:hidden">{shortLabel}</span>
+          </span>
           {id === 'results' && hasAbnormalFindings && (
             <span className="mobile-tab-badge" aria-label="Există rezultate anormale" />
           )}

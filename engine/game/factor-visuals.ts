@@ -2,8 +2,25 @@
 import type { FactorVisual, DockConfig } from '@/types/game';
 
 /**
+ * Detect if device is mobile based on screen width
+ */
+function isMobileDevice(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.innerWidth < 768;
+}
+
+/**
+ * Get scale factor for mobile devices
+ * Mobile tokens are 1.3x larger for easier touch interaction
+ */
+function getMobileScale(): number {
+  return isMobileDevice() ? 1.3 : 1;
+}
+
+/**
  * Bio-accurate visual definitions for each factor
  * TEXTBOOK FIRST: Shapes match biochemical role
+ * Automatically scales up 30% on mobile for better touch targets
  */
 export const FACTOR_VISUALS: Record<string, FactorVisual> = {
   // Zymogens (inactive) → Enzymes (active)
@@ -98,11 +115,24 @@ export const FACTOR_VISUALS: Record<string, FactorVisual> = {
 
 /**
  * Get visual definition for a factor
+ * Scales dimensions for mobile devices automatically
  */
 export function getFactorVisual(factorId: string): FactorVisual | null {
   // Handle activated forms (FIXa, FXa, etc.)
   const baseId = factorId.replace(/a$/, '');
-  return FACTOR_VISUALS[baseId] ?? FACTOR_VISUALS[factorId] ?? null;
+  const visual = FACTOR_VISUALS[baseId] ?? FACTOR_VISUALS[factorId] ?? null;
+
+  if (!visual) return null;
+
+  const scale = getMobileScale();
+  if (scale === 1) return visual;
+
+  // Scale dimensions for mobile
+  return {
+    ...visual,
+    width: Math.round(visual.width * scale),
+    height: Math.round(visual.height * scale),
+  };
 }
 
 /**

@@ -1,7 +1,7 @@
 // components/game/scenes/AmplificationScene.tsx
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { PhospholipidMembrane } from '../visuals/PhospholipidMembrane';
 import { FactorTokenNew } from '../tokens/FactorTokenNew';
 import type { FloatingFactor } from '@/types/game';
@@ -15,7 +15,7 @@ interface AmplificationSceneProps {
   fviiiActivated: boolean;
   fxiActivated: boolean;
   heldFactorId: string | null;
-  onFactorCatch: (factorId: string, event: React.MouseEvent) => void;
+  onFactorCatch: (factorId: string, event: React.MouseEvent | React.TouchEvent) => void;
   onPhaseComplete: () => void;
 }
 
@@ -43,6 +43,8 @@ export function AmplificationScene({
   heldFactorId,
   onFactorCatch,
 }: AmplificationSceneProps): React.ReactElement {
+  const [touchedFactorId, setTouchedFactorId] = useState<string | null>(null);
+
   // Same layout as Initiation: membrane at bottom 25%
   const membraneHeight = height * 0.25;
   const bloodstreamHeight = height - membraneHeight;
@@ -91,10 +93,26 @@ export function AmplificationScene({
               top: factor.position.y,
               transform: 'translate(-50%, -50%)',
               cursor: 'grab',
+              padding: '8px',
+              margin: '-8px',
+              touchAction: 'none',
             }}
-            onMouseDown={(e) => onFactorCatch(factor.id, e)}
+            onMouseDown={(e) => {
+              setTouchedFactorId(factor.id);
+              onFactorCatch(factor.id, e);
+            }}
+            onTouchStart={(e) => {
+              setTouchedFactorId(factor.id);
+              onFactorCatch(factor.id, e);
+            }}
+            onMouseUp={() => setTouchedFactorId(null)}
+            onTouchEnd={() => setTouchedFactorId(null)}
           >
-            <FactorTokenNew factorId={factor.factorId} isActive={factor.factorId === 'FIIa'} />
+            <FactorTokenNew
+              factorId={factor.factorId}
+              isActive={factor.factorId === 'FIIa'}
+              isTouched={touchedFactorId === factor.id}
+            />
           </div>
         ))}
       </div>

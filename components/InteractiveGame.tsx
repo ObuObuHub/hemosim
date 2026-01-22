@@ -405,43 +405,67 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
     return () => cancelAnimationFrame(animationFrameRef.current);
   }, [state.floatingFactors, updateFloatingFactors, GAME_WIDTH]);
 
+  // Unified position extraction from mouse or touch events
+  const getEventPosition = useCallback((event: React.MouseEvent | React.TouchEvent): { x: number; y: number } | null => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return null;
+
+    let clientX: number;
+    let clientY: number;
+
+    if ('touches' in event && event.touches.length > 0) {
+      clientX = event.touches[0].clientX;
+      clientY = event.touches[0].clientY;
+    } else if ('changedTouches' in event && event.changedTouches.length > 0) {
+      clientX = event.changedTouches[0].clientX;
+      clientY = event.changedTouches[0].clientY;
+    } else if ('clientX' in event) {
+      clientX = event.clientX;
+      clientY = event.clientY;
+    } else {
+      return null;
+    }
+
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top,
+    };
+  }, []);
+
   // Handlers
-  const handleFactorCatch = useCallback((factorId: string, event: React.MouseEvent): void => {
+  const handleFactorCatch = useCallback((factorId: string, event: React.MouseEvent | React.TouchEvent): void => {
+    event.preventDefault();
     const floatingFactor = state.floatingFactors.find(f => f.id === factorId);
     if (!floatingFactor) return;
 
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    const position = getEventPosition(event);
+    if (!position) return;
 
     setHeldFactor({
       id: floatingFactor.id,
       factorId: floatingFactor.factorId,
       originalFloatingFactor: floatingFactor,
-      position: { x, y },
+      position,
     });
     removeFloatingFactor(factorId);
-  }, [state.floatingFactors, removeFloatingFactor]);
+  }, [state.floatingFactors, removeFloatingFactor, getEventPosition]);
 
-  const handleMouseMove = useCallback((event: React.MouseEvent): void => {
-    if (!containerRef.current) return;
+  const handleMove = useCallback((event: React.MouseEvent | React.TouchEvent): void => {
+    if (!heldFactor && !draggedThrombin) return;
 
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    const position = getEventPosition(event);
+    if (!position) return;
 
     if (heldFactor) {
-      setHeldFactor(prev => prev ? { ...prev, position: { x, y } } : null);
+      setHeldFactor(prev => prev ? { ...prev, position } : null);
     }
 
     if (draggedThrombin) {
-      setDraggedThrombin(prev => prev ? { ...prev, position: { x, y } } : null);
+      setDraggedThrombin(prev => prev ? { ...prev, position } : null);
     }
-  }, [heldFactor, draggedThrombin]);
+  }, [heldFactor, draggedThrombin, getEventPosition]);
 
-  const handleMouseUp = useCallback((): void => {
+  const handleEnd = useCallback((): void => {
     // Handle thrombin drop on platelet
     if (draggedThrombin) {
       const dropX = draggedThrombin.position.x;
@@ -602,14 +626,13 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
 
   const handleFactorDock = useCallback((_factorId: string, _complexId: string): void => {}, []);
 
-  const handleThrombinDragStart = useCallback((fromIndex: number, event: React.MouseEvent): void => {
+  const handleThrombinDragStart = useCallback((fromIndex: number, event: React.MouseEvent | React.TouchEvent): void => {
+    event.preventDefault();
     setDebugLog(prev => [...prev.slice(-4), `Thrombin drag started`]);
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-    setDraggedThrombin({ fromIndex, position: { x, y } });
-  }, []);
+    const position = getEventPosition(event);
+    if (!position) return;
+    setDraggedThrombin({ fromIndex, position });
+  }, [getEventPosition]);
 
   const handleThrombinDrag = useCallback((_thrombinId: string, _targetX: number, _targetY: number): void => {}, []);
 
@@ -653,10 +676,14 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
         cursor: heldFactor || draggedThrombin ? 'grabbing' : 'default',
         userSelect: 'none',
         WebkitUserSelect: 'none',
+        touchAction: 'none',
       }}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
+      onMouseMove={handleMove}
+      onMouseUp={handleEnd}
+      onMouseLeave={handleEnd}
+      onTouchMove={handleMove}
+      onTouchEnd={handleEnd}
+      onTouchCancel={handleEnd}
       onDragStart={(e) => e.preventDefault()}
     >
       {state.currentScene === 'initiation' && (
