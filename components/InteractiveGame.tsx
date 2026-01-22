@@ -40,6 +40,10 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
   const animationFrameRef = useRef<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Refs for game loop to avoid dependency array issues
+  const floatingFactorsRef = useRef(state.floatingFactors);
+  const updateFloatingFactorsRef = useRef(updateFloatingFactors);
+
   // Container dimensions (responsive to parent size)
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
 
@@ -63,8 +67,20 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
     };
   }, []);
 
+  // Keep refs in sync with state (for game loop)
+  useEffect(() => {
+    floatingFactorsRef.current = state.floatingFactors;
+  }, [state.floatingFactors]);
+  useEffect(() => {
+    updateFloatingFactorsRef.current = updateFloatingFactors;
+  }, [updateFloatingFactors]);
+
   const GAME_WIDTH = dimensions.width;
   const GAME_HEIGHT = dimensions.height;
+  const gameWidthRef = useRef(GAME_WIDTH);
+  useEffect(() => {
+    gameWidthRef.current = GAME_WIDTH;
+  }, [GAME_WIDTH]);
 
   // Held factor state for drag-and-drop
   const [heldFactor, setHeldFactor] = useState<HeldFactor | null>(null);
@@ -373,7 +389,7 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
     return () => clearInterval(interval);
   }, [state.currentScene, addFloatingFactor, GAME_HEIGHT, stabFibrinCount, stabFxiiiActivated]);
 
-  // Game loop for factor movement
+  // Game loop for factor movement - uses refs to avoid dependency array issues
   useEffect(() => {
     const gameLoop = (timestamp: number): void => {
       if (lastFrameTimeRef.current === 0) {
@@ -383,7 +399,11 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
       const deltaTime = (timestamp - lastFrameTimeRef.current) / 1000;
       lastFrameTimeRef.current = timestamp;
 
-      const updatedFactors = state.floatingFactors
+      // Use refs to get current values without causing effect re-runs
+      const currentFactors = floatingFactorsRef.current;
+      const currentGameWidth = gameWidthRef.current;
+
+      const updatedFactors = currentFactors
         .map((factor) => ({
           ...factor,
           position: {
@@ -391,11 +411,11 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
             y: factor.position.y + factor.velocity.y * deltaTime,
           },
         }))
-        .filter((factor) => factor.position.x < GAME_WIDTH + 100);
+        .filter((factor) => factor.position.x < currentGameWidth + 100);
 
-      if (updatedFactors.length !== state.floatingFactors.length ||
-          updatedFactors.some((f, i) => f.position.x !== state.floatingFactors[i]?.position.x)) {
-        updateFloatingFactors(updatedFactors);
+      if (updatedFactors.length !== currentFactors.length ||
+          updatedFactors.some((f, i) => f.position.x !== currentFactors[i]?.position.x)) {
+        updateFloatingFactorsRef.current(updatedFactors);
       }
 
       animationFrameRef.current = requestAnimationFrame(gameLoop);
@@ -403,7 +423,7 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
 
     animationFrameRef.current = requestAnimationFrame(gameLoop);
     return () => cancelAnimationFrame(animationFrameRef.current);
-  }, [state.floatingFactors, updateFloatingFactors, GAME_WIDTH]);
+  }, []); // Empty dependency array - uses refs for all values
 
   // Unified position extraction from mouse or touch events
   const getEventPosition = useCallback((event: React.MouseEvent | React.TouchEvent): { x: number; y: number } | null => {

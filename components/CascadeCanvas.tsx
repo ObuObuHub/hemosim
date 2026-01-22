@@ -331,7 +331,7 @@ export function CascadeCanvas({
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const lastTouchRef = useRef<{ x: number; y: number } | null>(null);
   const lastPinchDistRef = useRef<number | null>(null);
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
   const [touchFeedback, setTouchFeedback] = useState<{ x: number; y: number } | null>(null);
   const touchStartTimeRef = useRef<number>(0);
   const touchMoveDistRef = useRef<number>(0);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { CascadeCanvas } from '@/components/CascadeCanvas';
 import { LabInputPanel } from '@/components/LabInputPanel';
 import { InterpretationPanel } from '@/components/InterpretationPanel';
@@ -30,6 +30,17 @@ export default function Home(): React.ReactElement {
   const [hoveredLabValue, setHoveredLabValue] = useState<string | null>(null);
   const [blockedFactors, setBlockedFactors] = useState<Set<string>>(new Set());
   const [activeDesktopTab, setActiveDesktopTab] = useState<DesktopTab>('simulator');
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile device to avoid mounting heavy components on wrong platform
+  useEffect(() => {
+    const checkMobile = (): void => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const handleFactorClick = useCallback((factorId: string): void => {
     setBlockedFactors(prev => {
@@ -53,7 +64,8 @@ export default function Home(): React.ReactElement {
       {/* Disclaimer Popup - shown on both desktop and mobile */}
       <DisclaimerPopup />
 
-      {/* Desktop Layout - 3 columns */}
+      {/* Desktop Layout - 3 columns - only mount on desktop */}
+      {!isMobile && (
       <div className="hidden md:flex h-screen w-screen flex-col overflow-hidden bg-slate-50">
         {/* Desktop Header */}
         <header className="flex-shrink-0 h-14 flex items-center justify-between px-6 bg-white border-b border-slate-200">
@@ -204,19 +216,22 @@ export default function Home(): React.ReactElement {
         )}
 
       </div>
+      )}
 
-      {/* Mobile Layout - Tab navigation */}
-      <MobileLayout
-        state={state}
-        updateLabInput={updateLabInput}
-        updateMedications={updateMedications}
-        updateHit4TCriteria={updateHit4TCriteria}
-        updateIsthManualCriteria={updateIsthManualCriteria}
-        isthManualCriteria={isthManualCriteria}
-        reset={reset}
-        setHoveredFactor={setHoveredFactor}
-        setCurrentScenario={setCurrentScenario}
-      />
+      {/* Mobile Layout - only mount on mobile to avoid running heavy components on desktop */}
+      {isMobile && (
+        <MobileLayout
+          state={state}
+          updateLabInput={updateLabInput}
+          updateMedications={updateMedications}
+          updateHit4TCriteria={updateHit4TCriteria}
+          updateIsthManualCriteria={updateIsthManualCriteria}
+          isthManualCriteria={isthManualCriteria}
+          reset={reset}
+          setHoveredFactor={setHoveredFactor}
+          setCurrentScenario={setCurrentScenario}
+        />
+      )}
     </>
   );
 }
