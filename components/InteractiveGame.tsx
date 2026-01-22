@@ -745,8 +745,8 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
         </div>
       )}
 
-      {/* Debug panel */}
-      <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 1000, background: 'rgba(0,0,0,0.8)', padding: 12, borderRadius: 8 }}>
+      {/* Debug panel - hidden on mobile */}
+      <div className="hidden md:block" style={{ position: 'absolute', top: 10, right: 10, zIndex: 1000, background: 'rgba(0,0,0,0.8)', padding: 12, borderRadius: 8 }}>
         <button onClick={() => { setAmpVwfSplit(false); setAmpFvActivated(false); setAmpFviiiActivated(false); setAmpFxiActivated(false); updateFloatingFactors([]); setDebugLog(prev => [...prev.slice(-4), 'Forced → Amplification (reset)']); setScene('amplification'); }} style={{ padding: '6px 12px', background: '#EAB308', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', marginRight: 4, fontSize: 11 }}>Amp</button>
         <button onClick={() => { setPropTenaseFormed(false); setPropFxaProduced(false); setPropProthrombinaseFormed(false); setPropThrombinBurst(false); updateFloatingFactors([]); setDebugLog(prev => [...prev.slice(-4), 'Forced → Propagation (reset)']); setScene('propagation'); }} style={{ padding: '6px 12px', background: '#EF4444', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', marginRight: 4, fontSize: 11 }}>Prop</button>
         <button onClick={() => { setStabFibrinCount(0); setStabFxiiiActivated(false); setStabMeshCrosslinked(false); updateFloatingFactors([]); setDebugLog(prev => [...prev.slice(-4), 'Forced → Stabilization (reset)']); setScene('stabilization'); }} style={{ padding: '6px 12px', background: '#22C55E', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 11 }}>Stab</button>
