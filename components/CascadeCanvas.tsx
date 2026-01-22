@@ -482,13 +482,10 @@ export function CascadeCanvas({
   }, [factors, visibleFactors]);
 
   useEffect(() => {
-    const draw = (timestamp: number): void => {
-      // Skip rendering if component is not visible
-      if (!isVisible) {
-        animationRef.current = requestAnimationFrame(draw);
-        return;
-      }
+    // Don't run animation at all if not visible
+    if (!isVisible) return;
 
+    const draw = (timestamp: number): void => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
