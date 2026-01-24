@@ -141,35 +141,30 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
   } | null>(null);
 
   // Debug log for on-screen display
-  const [debugLog, setDebugLog] = useState<string[]>(['Joc pornit']);
+  const [debugLog, setDebugLog] = useState<string[]>(['Game started']);
 
   // AMPLIFICATION PHASE STATE
-  // Based on reference: Thrombin activates XI, VIII, V; XIa activates IX
-  const [ampFxiActivated, setAmpFxiActivated] = useState(false);   // XI → XIa (by Thrombin)
-  const [ampFixActivated, setAmpFixActivated] = useState(false);   // IX → IXa (by XIa)
-  const [ampFviiiActivated, setAmpFviiiActivated] = useState(false); // VIII → VIIIa (by Thrombin)
-  const [ampFvActivated, setAmpFvActivated] = useState(false);     // V → Va (by Thrombin)
+  const [ampVwfSplit, setAmpVwfSplit] = useState(false);
+  const [ampFvActivated, setAmpFvActivated] = useState(false);
+  const [ampFviiiActivated, setAmpFviiiActivated] = useState(false);
+  const [ampFxiActivated, setAmpFxiActivated] = useState(false);
 
-  const ampBloodstreamHeight = GAME_HEIGHT * 0.70;
-  // Thrombin position (center of bloodstream area)
-  const ampThrombinPos = useMemo(() => ({
-    x: GAME_WIDTH * 0.5,
-    y: ampBloodstreamHeight * 0.4,
-  }), [GAME_WIDTH, ampBloodstreamHeight]);
-  // XIa position (left of thrombin, for IX activation)
-  const ampXiaPos = useMemo(() => ({
-    x: GAME_WIDTH * 0.25,
-    y: ampBloodstreamHeight * 0.55,
-  }), [GAME_WIDTH, ampBloodstreamHeight]);
+  const ampMembraneY = GAME_HEIGHT * 0.75;
+  const ampDockingPositions = useMemo(() => ({
+    vwf: { x: GAME_WIDTH * 0.7, y: ampMembraneY - 60 },
+    fviii: { x: GAME_WIDTH * 0.7, y: ampMembraneY - 60 },
+    fv: { x: GAME_WIDTH * 0.3, y: ampMembraneY - 50 },
+    fxi: { x: GAME_WIDTH * 0.5, y: ampMembraneY - 70 },
+  }), [GAME_WIDTH, ampMembraneY]);
 
   // Check for amplification phase completion
   useEffect(() => {
     if (state.currentScene === 'amplification' &&
-        ampFxiActivated && ampFixActivated && ampFviiiActivated && ampFvActivated) {
-      setDebugLog(prev => [...prev.slice(-4), 'Toate activate! → Propagare']);
+        ampVwfSplit && ampFvActivated && ampFviiiActivated && ampFxiActivated) {
+      setDebugLog(prev => [...prev.slice(-4), 'All activated! → Propagation']);
       setTimeout(() => setScene('propagation'), 1000);
     }
-  }, [state.currentScene, ampFxiActivated, ampFixActivated, ampFviiiActivated, ampFvActivated, setScene]);
+  }, [state.currentScene, ampVwfSplit, ampFvActivated, ampFviiiActivated, ampFxiActivated, setScene]);
 
   // PROPAGATION PHASE STATE
   const [propTenaseFormed, setPropTenaseFormed] = useState(false);
@@ -189,7 +184,7 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
     if (propTenaseFormed && !propFxaProduced) {
       const timer = setTimeout(() => {
         setPropFxaProduced(true);
-        setDebugLog(prev => [...prev.slice(-4), 'Tenază → FXa produs!']);
+        setDebugLog(prev => [...prev.slice(-4), 'Tenase → FXa produced!']);
       }, 800);
       return () => clearTimeout(timer);
     }
@@ -200,7 +195,7 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
     if (propFxaProduced && !propProthrombinaseFormed) {
       const timer = setTimeout(() => {
         setPropProthrombinaseFormed(true);
-        setDebugLog(prev => [...prev.slice(-4), 'FXa + FVa → Protrombinază!']);
+        setDebugLog(prev => [...prev.slice(-4), 'FXa + FVa → Prothrombinase!']);
       }, 600);
       return () => clearTimeout(timer);
     }
@@ -230,7 +225,7 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
     if (stabFxiiiActivated && !stabMeshCrosslinked) {
       const timer = setTimeout(() => {
         setStabMeshCrosslinked(true);
-        setDebugLog(prev => [...prev.slice(-4), 'FXIIIa reticulează fibrina!']);
+        setDebugLog(prev => [...prev.slice(-4), 'FXIIIa crosslinks fibrin!']);
       }, 800);
       return () => clearTimeout(timer);
     }
@@ -299,38 +294,29 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
     return () => clearInterval(interval);
   }, [state.currentScene, addFloatingFactor, GAME_HEIGHT, tfDockingState, fxDockingState, fvDockingState, fiiDockedState]);
 
-  // Spawn floating zymogens for AMPLIFICATION phase
-  // Player catches zymogens and drags them to Thrombin (or XIa for FIX)
+  // Spawn floating thrombin for AMPLIFICATION phase
   useEffect(() => {
     if (state.currentScene !== 'amplification') return;
 
-    const spawnZymogen = (): void => {
-      // Build pool based on what's still needed
-      const pool: string[] = [];
-      if (!ampFxiActivated) pool.push('FXI', 'FXI');
-      if (!ampFviiiActivated) pool.push('FVIII', 'FVIII');
-      if (!ampFvActivated) pool.push('FV', 'FV');
-      // FIX only appears after XIa is activated
-      if (ampFxiActivated && !ampFixActivated) pool.push('FIX', 'FIX', 'FIX');
+    const spawnThrombin = (): void => {
+      const needsMore = !ampVwfSplit || !ampFvActivated || !ampFviiiActivated || !ampFxiActivated;
+      if (!needsMore) return;
 
-      if (pool.length === 0) return;
-
-      const factorId = pool[Math.floor(Math.random() * pool.length)];
-      const bloodstreamHeight = GAME_HEIGHT * 0.70;
+      const bloodstreamHeight = GAME_HEIGHT * 0.75;
       const factor: FloatingFactor = {
         id: `floating-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        factorId,
-        position: { x: -50, y: 80 + Math.random() * (bloodstreamHeight - 150) },
-        velocity: { x: 35 + Math.random() * 20, y: (Math.random() - 0.5) * 15 },
+        factorId: 'FIIa',
+        position: { x: -50, y: 100 + Math.random() * (bloodstreamHeight - 200) },
+        velocity: { x: 40 + Math.random() * 20, y: (Math.random() - 0.5) * 15 },
         isVulnerableTo: [],
       };
       addFloatingFactor(factor);
     };
 
-    spawnZymogen();
-    const interval = setInterval(spawnZymogen, 1800);
+    spawnThrombin();
+    const interval = setInterval(spawnThrombin, 2500);
     return () => clearInterval(interval);
-  }, [state.currentScene, addFloatingFactor, GAME_HEIGHT, ampFxiActivated, ampFixActivated, ampFviiiActivated, ampFvActivated]);
+  }, [state.currentScene, addFloatingFactor, GAME_HEIGHT, ampVwfSplit, ampFvActivated, ampFviiiActivated, ampFxiActivated]);
 
   // Spawn floating factors for PROPAGATION phase
   useEffect(() => {
@@ -508,13 +494,13 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
       const plateletCenterX = plateletPosition.x;
       const isOnPlatelet = dropX > plateletCenterX - 150 && dropX < plateletCenterX + 150 && dropY < 180;
 
-      setDebugLog(prev => [...prev.slice(-4), `Drop: y=${Math.round(dropY)}, peTrb=${isOnPlatelet}`]);
+      setDebugLog(prev => [...prev.slice(-4), `Drop: y=${Math.round(dropY)}, onPlt=${isOnPlatelet}`]);
 
       if (isOnPlatelet) {
-        setDebugLog(prev => [...prev.slice(-4), `SUCCES! Trec la Amplificare...`]);
+        setDebugLog(prev => [...prev.slice(-4), `SUCCESS! Going to Amplification...`]);
         setTimeout(() => setScene('amplification'), 800);
       } else {
-        setDebugLog(prev => [...prev.slice(-4), `Ratat - pune pe trombocit (sus)`]);
+        setDebugLog(prev => [...prev.slice(-4), `Miss - drop on platelet (top area)`]);
       }
 
       setDraggedThrombin(null);
@@ -587,37 +573,28 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
     }
 
     // AMPLIFICATION PHASE DOCKING
-    // Zymogens (XI, VIII, V) dock to Thrombin; IX docks to XIa
-    if (state.currentScene === 'amplification') {
-      // FXI docks to Thrombin → XIa
-      if (heldFactor.factorId === 'FXI' && !ampFxiActivated &&
-          Math.abs(dropX - ampThrombinPos.x) < 80 && Math.abs(dropY - ampThrombinPos.y) < 80) {
-        setAmpFxiActivated(true);
-        setDebugLog(prev => [...prev.slice(-4), 'Trombină + FXI → FXIa!']);
+    if (state.currentScene === 'amplification' && heldFactor.factorId === 'FIIa') {
+      if (!ampVwfSplit && Math.abs(dropX - ampDockingPositions.vwf.x) < 80 && Math.abs(dropY - ampDockingPositions.vwf.y) < 60) {
+        setAmpVwfSplit(true);
+        setDebugLog(prev => [...prev.slice(-4), 'vWF-FVIII split!']);
         setHeldFactor(null);
         return;
       }
-      // FVIII docks to Thrombin → VIIIa
-      if (heldFactor.factorId === 'FVIII' && !ampFviiiActivated &&
-          Math.abs(dropX - ampThrombinPos.x) < 80 && Math.abs(dropY - ampThrombinPos.y) < 80) {
+      if (ampVwfSplit && !ampFviiiActivated && Math.abs(dropX - ampDockingPositions.fviii.x) < 60 && Math.abs(dropY - ampDockingPositions.fviii.y) < 60) {
         setAmpFviiiActivated(true);
-        setDebugLog(prev => [...prev.slice(-4), 'Trombină + FVIII → FVIIIa!']);
+        setDebugLog(prev => [...prev.slice(-4), 'FVIII → FVIIIa!']);
         setHeldFactor(null);
         return;
       }
-      // FV docks to Thrombin → Va
-      if (heldFactor.factorId === 'FV' && !ampFvActivated &&
-          Math.abs(dropX - ampThrombinPos.x) < 80 && Math.abs(dropY - ampThrombinPos.y) < 80) {
+      if (!ampFvActivated && Math.abs(dropX - ampDockingPositions.fv.x) < 60 && Math.abs(dropY - ampDockingPositions.fv.y) < 60) {
         setAmpFvActivated(true);
-        setDebugLog(prev => [...prev.slice(-4), 'Trombină + FV → FVa!']);
+        setDebugLog(prev => [...prev.slice(-4), 'FV → FVa!']);
         setHeldFactor(null);
         return;
       }
-      // FIX docks to XIa (only after XIa exists) → IXa
-      if (heldFactor.factorId === 'FIX' && ampFxiActivated && !ampFixActivated &&
-          Math.abs(dropX - ampXiaPos.x) < 70 && Math.abs(dropY - ampXiaPos.y) < 70) {
-        setAmpFixActivated(true);
-        setDebugLog(prev => [...prev.slice(-4), 'XIa + FIX → FIXa!']);
+      if (!ampFxiActivated && Math.abs(dropX - ampDockingPositions.fxi.x) < 60 && Math.abs(dropY - ampDockingPositions.fxi.y) < 60) {
+        setAmpFxiActivated(true);
+        setDebugLog(prev => [...prev.slice(-4), 'FXI → FXIa!']);
         setHeldFactor(null);
         return;
       }
@@ -628,14 +605,14 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
       if (heldFactor.factorId === 'FIXa' && !propTenaseFormed &&
           Math.abs(dropX - propDockingPositions.fixa.x) < 70 && Math.abs(dropY - propDockingPositions.fixa.y) < 60) {
         setPropTenaseFormed(true);
-        setDebugLog(prev => [...prev.slice(-4), 'FIXa + FVIIIa → TENAZĂ!']);
+        setDebugLog(prev => [...prev.slice(-4), 'FIXa + FVIIIa → TENASE!']);
         setHeldFactor(null);
         return;
       }
       if (heldFactor.factorId === 'FII' && propProthrombinaseFormed && !propThrombinBurst &&
           Math.abs(dropX - propDockingPositions.fii.x) < 70 && Math.abs(dropY - propDockingPositions.fii.y) < 60) {
         setPropThrombinBurst(true);
-        setDebugLog(prev => [...prev.slice(-4), 'FII → EXPLOZIE DE TROMBINĂ!']);
+        setDebugLog(prev => [...prev.slice(-4), 'FII → THROMBIN BURST!']);
         setHeldFactor(null);
         return;
       }
@@ -646,7 +623,7 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
       if (heldFactor.factorId === 'Fibrinogen' && stabFibrinCount < 3 &&
           Math.abs(dropX - stabDockingPositions.fibrinogen.x) < 80 && Math.abs(dropY - stabDockingPositions.fibrinogen.y) < 70) {
         setStabFibrinCount(prev => prev + 1);
-        setDebugLog(prev => [...prev.slice(-4), `Fibrinogen → Fibrină (${stabFibrinCount + 1}/3)`]);
+        setDebugLog(prev => [...prev.slice(-4), `Fibrinogen → Fibrin (${stabFibrinCount + 1}/3)`]);
         setHeldFactor(null);
         return;
       }
@@ -666,13 +643,13 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
       velocity: { x: 30, y: 0 },
     });
     setHeldFactor(null);
-  }, [heldFactor, draggedThrombin, addFloatingFactor, tfPositions, tfDockingState, fixDockingState, fxDockingState, fvDockingState, fiiDockedState, plateletPosition, setScene, GAME_HEIGHT, state.currentScene, ampFixActivated, ampFvActivated, ampFviiiActivated, ampFxiActivated, ampThrombinPos, ampXiaPos, propTenaseFormed, propProthrombinaseFormed, propThrombinBurst, propDockingPositions, stabFibrinCount, stabFxiiiActivated, stabDockingPositions]);
+  }, [heldFactor, draggedThrombin, addFloatingFactor, tfPositions, tfDockingState, fixDockingState, fxDockingState, fvDockingState, fiiDockedState, plateletPosition, setScene, GAME_HEIGHT, state.currentScene, ampVwfSplit, ampFvActivated, ampFviiiActivated, ampFxiActivated, ampDockingPositions, propTenaseFormed, propProthrombinaseFormed, propThrombinBurst, propDockingPositions, stabFibrinCount, stabFxiiiActivated, stabDockingPositions]);
 
   const handleFactorDock = useCallback((_factorId: string, _complexId: string): void => {}, []);
 
   const handleThrombinDragStart = useCallback((fromIndex: number, event: React.MouseEvent | React.TouchEvent): void => {
     event.preventDefault();
-    setDebugLog(prev => [...prev.slice(-4), `Tragere trombină pornită`]);
+    setDebugLog(prev => [...prev.slice(-4), `Thrombin drag started`]);
     const position = getEventPosition(event);
     if (!position) return;
     setDraggedThrombin({ fromIndex, position });
@@ -692,10 +669,10 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
     setFxDockingState({ 0: false, 1: false, 2: false });
     setFvDockingState({ 0: false, 1: false, 2: false });
     setFiiDockedState({ 0: false, 1: false, 2: false });
-    setAmpFxiActivated(false);
-    setAmpFixActivated(false);
-    setAmpFviiiActivated(false);
+    setAmpVwfSplit(false);
     setAmpFvActivated(false);
+    setAmpFviiiActivated(false);
+    setAmpFxiActivated(false);
     setPropTenaseFormed(false);
     setPropFxaProduced(false);
     setPropProthrombinaseFormed(false);
@@ -704,7 +681,7 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
     setStabFxiiiActivated(false);
     setStabMeshCrosslinked(false);
     updateFloatingFactors([]);
-    setDebugLog(['Joc resetat']);
+    setDebugLog(['Game reset']);
   }, [setScene, updateFloatingFactors]);
 
   return (
@@ -757,10 +734,10 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
           width={GAME_WIDTH}
           height={GAME_HEIGHT}
           floatingFactors={state.floatingFactors}
-          fxiActivated={ampFxiActivated}
-          fixActivated={ampFixActivated}
-          fviiiActivated={ampFviiiActivated}
+          vwfSplit={ampVwfSplit}
           fvActivated={ampFvActivated}
+          fviiiActivated={ampFviiiActivated}
+          fxiActivated={ampFxiActivated}
           heldFactorId={heldFactor?.factorId ?? null}
           onFactorCatch={handleFactorCatch}
           onPhaseComplete={() => setScene('propagation')}
@@ -799,7 +776,7 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
       {state.currentScene === 'victory' && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#FFFFFF', background: 'linear-gradient(180deg, #7F1D1D 0%, #991B1B 100%)' }}>
           <h2 style={{ fontSize: 48, marginBottom: 20 }}>Cheag Stabilizat!</h2>
-          <p style={{ fontSize: 18, opacity: 0.8, marginBottom: 30 }}>Ai construit cu succes cascada coagulării.</p>
+          <p style={{ fontSize: 18, opacity: 0.8, marginBottom: 30 }}>Ai construit cu succes cascada de coagulare.</p>
           <button
             onClick={resetGame}
             style={{ padding: '12px 24px', background: '#FFFFFF', color: '#991B1B', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 16, fontWeight: 600 }}
@@ -818,10 +795,10 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
 
       {/* Debug panel - hidden on mobile */}
       <div className="hidden md:block" style={{ position: 'absolute', top: 10, right: 10, zIndex: 1000, background: 'rgba(0,0,0,0.8)', padding: 12, borderRadius: 8 }}>
-        <button onClick={() => { setAmpFxiActivated(false); setAmpFixActivated(false); setAmpFviiiActivated(false); setAmpFvActivated(false); updateFloatingFactors([]); setDebugLog(prev => [...prev.slice(-4), 'Forțat → Amplificare (reset)']); setScene('amplification'); }} style={{ padding: '6px 12px', background: '#EAB308', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', marginRight: 4, fontSize: 11 }}>Amp</button>
-        <button onClick={() => { setPropTenaseFormed(false); setPropFxaProduced(false); setPropProthrombinaseFormed(false); setPropThrombinBurst(false); updateFloatingFactors([]); setDebugLog(prev => [...prev.slice(-4), 'Forțat → Propagare (reset)']); setScene('propagation'); }} style={{ padding: '6px 12px', background: '#EF4444', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', marginRight: 4, fontSize: 11 }}>Prop</button>
-        <button onClick={() => { setStabFibrinCount(0); setStabFxiiiActivated(false); setStabMeshCrosslinked(false); updateFloatingFactors([]); setDebugLog(prev => [...prev.slice(-4), 'Forțat → Stabilizare (reset)']); setScene('stabilization'); }} style={{ padding: '6px 12px', background: '#22C55E', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 11 }}>Stab</button>
-        <div style={{ color: '#4ADE80', fontSize: 12, marginTop: 8, fontWeight: 600 }}>Scenă: {state.currentScene}</div>
+        <button onClick={() => { setAmpVwfSplit(false); setAmpFvActivated(false); setAmpFviiiActivated(false); setAmpFxiActivated(false); updateFloatingFactors([]); setDebugLog(prev => [...prev.slice(-4), 'Forced → Amplification (reset)']); setScene('amplification'); }} style={{ padding: '6px 12px', background: '#EAB308', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', marginRight: 4, fontSize: 11 }}>Amp</button>
+        <button onClick={() => { setPropTenaseFormed(false); setPropFxaProduced(false); setPropProthrombinaseFormed(false); setPropThrombinBurst(false); updateFloatingFactors([]); setDebugLog(prev => [...prev.slice(-4), 'Forced → Propagation (reset)']); setScene('propagation'); }} style={{ padding: '6px 12px', background: '#EF4444', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', marginRight: 4, fontSize: 11 }}>Prop</button>
+        <button onClick={() => { setStabFibrinCount(0); setStabFxiiiActivated(false); setStabMeshCrosslinked(false); updateFloatingFactors([]); setDebugLog(prev => [...prev.slice(-4), 'Forced → Stabilization (reset)']); setScene('stabilization'); }} style={{ padding: '6px 12px', background: '#22C55E', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 11 }}>Stab</button>
+        <div style={{ color: '#4ADE80', fontSize: 12, marginTop: 8, fontWeight: 600 }}>Scene: {state.currentScene}</div>
         <div style={{ color: '#FCD34D', fontSize: 10, marginTop: 8, maxWidth: 200 }}>{debugLog.map((log, i) => <div key={i}>• {log}</div>)}</div>
       </div>
 

@@ -192,7 +192,7 @@ export function StabilizationScene({
               color: 'rgba(255,255,255,0.6)',
               whiteSpace: 'nowrap',
             }}>
-              {fibrinCount}/3 fibrină
+              {fibrinCount}/3 fibrin
             </div>
           </div>
         )}
@@ -331,7 +331,7 @@ export function StabilizationScene({
           }}
         >
           <span style={{ fontSize: 18, fontWeight: 800, color: '#FEE2E2' }}>PLT*</span>
-          <span style={{ fontSize: 10, color: '#FECACA', marginLeft: 8 }}>stabilizarea fibrinei</span>
+          <span style={{ fontSize: 10, color: '#FECACA', marginLeft: 8 }}>stabilizare fibrină</span>
         </div>
       </div>
 
@@ -354,7 +354,7 @@ export function StabilizationScene({
           STABILIZARE
         </div>
         <div style={{ color: '#DCFCE7', fontSize: 9, marginTop: 4 }}>
-          Reticularea plasei de fibrină
+          Reticulare rețea fibrină
         </div>
       </div>
 
@@ -374,7 +374,7 @@ export function StabilizationScene({
           FORMAREA CHEAGULUI
         </div>
         <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 9 }}>
-          Polimerizarea fibrinei + reticulare
+          Polimerizare + reticulare fibrină
         </div>
       </div>
 
@@ -392,9 +392,9 @@ export function StabilizationScene({
           borderRadius: 12,
         }}
       >
-        <ProgressDot label="Fibrină 1" done={fibrinCount >= 1} color="#EAB308" />
-        <ProgressDot label="Fibrină 2" done={fibrinCount >= 2} color="#EAB308" />
-        <ProgressDot label="Fibrină 3" done={fibrinCount >= 3} color="#EAB308" />
+        <ProgressDot label="Fibrin 1" done={fibrinCount >= 1} color="#EAB308" />
+        <ProgressDot label="Fibrin 2" done={fibrinCount >= 2} color="#EAB308" />
+        <ProgressDot label="Fibrin 3" done={fibrinCount >= 3} color="#EAB308" />
         <ProgressDot label="FXIIIa" done={fxiiiActivated} color="#22C55E" />
         <ProgressDot label="Reticulat" done={meshCrosslinked} color="#22C55E" />
       </div>

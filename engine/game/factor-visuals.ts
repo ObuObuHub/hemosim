@@ -20,122 +20,95 @@ function getMobileScale(): number {
 /**
  * Bio-accurate visual definitions for each factor
  * TEXTBOOK FIRST: Shapes match biochemical role
- * COLORS MATCH REFERENCE IMAGE (propagation phase textbook figure)
  * Automatically scales up 30% on mobile for better touch targets
  */
 export const FACTOR_VISUALS: Record<string, FactorVisual> = {
-  // ═══════════════════════════════════════════════════════════════
-  // TENASE COMPLEX COMPONENTS (from reference image)
-  // ═══════════════════════════════════════════════════════════════
-
-  // FIX/FIXa - CYAN (serine protease, enzyme of Tenase)
-  FIX: {
-    factorId: 'FIX',
-    inactiveShape: 'zymogen',
-    activeShape: 'enzyme',
-    inactiveColor: '#67E8F9', // lighter cyan (zymogen)
-    activeColor: '#22D3EE',   // CYAN - matches reference IXa
-    width: 50,
-    height: 50,
-  },
-
-  // FVIII/FVIIIa - PURPLE/MAGENTA (cofactor of Tenase)
-  FVIII: {
-    factorId: 'FVIII',
-    inactiveShape: 'cofactor',
-    activeShape: 'cofactor',
-    inactiveColor: '#C084FC', // lighter purple
-    activeColor: '#A855F7',   // PURPLE - matches reference VIIIa
-    width: 70,
-    height: 55,
-  },
-
-  // ═══════════════════════════════════════════════════════════════
-  // PROTHROMBINASE COMPLEX COMPONENTS (from reference image)
-  // ═══════════════════════════════════════════════════════════════
-
-  // FX/FXa - GREEN (substrate of Tenase, enzyme of Prothrombinase)
-  FX: {
-    factorId: 'FX',
-    inactiveShape: 'zymogen',
-    activeShape: 'enzyme',
-    inactiveColor: '#86EFAC', // lighter green (zymogen)
-    activeColor: '#22C55E',   // GREEN - matches reference X/Xa
-    width: 50,
-    height: 50,
-  },
-
-  // FV/FVa - ORANGE (cofactor of Prothrombinase)
-  FV: {
-    factorId: 'FV',
-    inactiveShape: 'cofactor',
-    activeShape: 'cofactor',
-    inactiveColor: '#FDBA74', // lighter orange
-    activeColor: '#F97316',   // ORANGE - matches reference Va
-    width: 70,
-    height: 55,
-  },
-
-  // ═══════════════════════════════════════════════════════════════
-  // THROMBIN (product of Prothrombinase)
-  // ═══════════════════════════════════════════════════════════════
-
-  // FII/FIIa - MAROON → RED (Prothrombin → Thrombin)
-  FII: {
-    factorId: 'FII',
-    inactiveShape: 'zymogen',
-    activeShape: 'enzyme',
-    inactiveColor: '#9F1239', // MAROON - matches reference II
-    activeColor: '#EF4444',   // RED - matches reference IIa (Thrombin)
-    width: 55,
-    height: 55,
-  },
-
-  // ═══════════════════════════════════════════════════════════════
-  // OTHER FACTORS
-  // ═══════════════════════════════════════════════════════════════
-
-  // FVII/FVIIa - TEAL (Tissue Factor pathway)
+  // Zymogens (inactive) → Enzymes (active)
+  // TEXTBOOK COLORS - based on standard coagulation cascade diagrams
+  // COLORS BASED ON REFERENCE IMAGE
   FVII: {
     factorId: 'FVII',
     inactiveShape: 'zymogen',
     activeShape: 'enzyme',
-    inactiveColor: '#5EEAD4', // lighter teal
-    activeColor: '#14B8A6',   // TEAL
-    width: 50,
+    inactiveColor: '#DC2626', // red (like reference - VIIa is red/orange)
+    activeColor: '#EF4444',   // bright red when activated
+    width: 55,
+    height: 40,
+  },
+  FIX: {
+    factorId: 'FIX',
+    inactiveShape: 'zymogen',
+    activeShape: 'enzyme',
+    inactiveColor: '#7C3AED', // purple (like reference - IX is purple)
+    activeColor: '#8B5CF6',   // bright purple when activated
+    width: 60,
     height: 45,
   },
-
-  // FXI/FXIa - PINK/MAGENTA (activated by thrombin in Amplification)
+  FX: {
+    factorId: 'FX',
+    inactiveShape: 'zymogen',
+    activeShape: 'enzyme',
+    inactiveColor: '#DC2626', // red (like reference - X is red)
+    activeColor: '#EF4444',   // bright red when activated (Xa)
+    width: 60,
+    height: 45,
+  },
+  FII: {
+    factorId: 'FII',
+    inactiveShape: 'zymogen',
+    activeShape: 'enzyme',
+    inactiveColor: '#EAB308', // YELLOW (like reference - II/Prothrombin is yellow)
+    activeColor: '#991B1B',   // DARK RED (Thrombin/IIa - matches reference chart)
+    width: 60,
+    height: 45,
+  },
+  // Cofactors - larger shapes
+  FV: {
+    factorId: 'FV',
+    inactiveShape: 'cofactor',
+    activeShape: 'cofactor',
+    inactiveColor: '#2563EB', // BLUE (like reference - V is blue)
+    activeColor: '#3B82F6',   // bright blue when activated
+    width: 70,
+    height: 50,
+  },
+  FVIII: {
+    factorId: 'FVIII',
+    inactiveShape: 'cofactor',
+    activeShape: 'cofactor',
+    inactiveColor: '#22C55E', // GREEN (like reference - VIII is green)
+    activeColor: '#4ADE80',   // bright green when activated
+    width: 70,
+    height: 50,
+  },
+  // FXI - activated by thrombin in Amplification phase
   FXI: {
     factorId: 'FXI',
     inactiveShape: 'zymogen',
     activeShape: 'enzyme',
-    inactiveColor: '#F9A8D4', // lighter pink
-    activeColor: '#EC4899',   // PINK
+    inactiveColor: '#DB2777', // PINK/MAGENTA (like reference chart - XIa is magenta)
+    activeColor: '#EC4899',   // bright pink when activated
     width: 55,
     height: 40,
   },
-
-  // FXIII/FXIIIa - BLUE (Fibrin stabilizing factor)
+  // FXIII - Fibrin stabilizing factor, activated by thrombin
   FXIII: {
     factorId: 'FXIII',
     inactiveShape: 'zymogen',
     activeShape: 'enzyme',
-    inactiveColor: '#93C5FD', // lighter blue
-    activeColor: '#3B82F6',   // BLUE
+    inactiveColor: '#22C55E', // GREEN (crosslinker)
+    activeColor: '#16A34A',   // darker green when activated
     width: 55,
     height: 40,
   },
-
-  // Fibrinogen/Fibrin - GOLD → GREEN
+  // Fibrinogen/Fibrin
   Fibrinogen: {
     factorId: 'Fibrinogen',
     inactiveShape: 'fibrinogen',
     activeShape: 'fibrin',
-    inactiveColor: '#FCD34D', // gold
+    inactiveColor: '#EAB308', // yellow
     activeColor: '#22C55E',   // green (fibrin)
-    width: 80,
+    width: 80,    // LARGER
     height: 35,
   },
 };

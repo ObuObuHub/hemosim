@@ -1,19 +1,17 @@
 // components/game/scenes/PropagationScene.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useMemo, useEffect, useState } from 'react';
+import { PhospholipidMembrane } from '../visuals/PhospholipidMembrane';
+import { FactorTokenNew } from '../tokens/FactorTokenNew';
+import { EnzymeComplex } from '../visuals/EnzymeComplex';
 import type { FloatingFactor } from '@/types/game';
-import {
-  ConsistentFactorToken,
-  ThrombinSpark,
-  PhospholipidMembraneConsistent,
-  FibrinMesh,
-} from '@/components/game/tokens/ConsistentFactorToken';
 
 interface PropagationSceneProps {
   width: number;
   height: number;
   floatingFactors: FloatingFactor[];
+  // State from Amplification (cofactors already activated)
   tenaseFormed: boolean;
   fxaProduced: boolean;
   prothrombinaseFormed: boolean;
@@ -24,21 +22,29 @@ interface PropagationSceneProps {
 }
 
 /**
- * PROPAGATION PHASE - Textbook-Accurate Visualization
+ * PROPAGATION PHASE - Cell-Based Model of Coagulation
  *
- * ACCURATE ENZYME BEHAVIOR:
- * - IXa docks to form Tenase, then DETACHES after catalysis
- * - IIa (Thrombin) is RELEASED from Prothrombinase after being produced
+ * LAYOUT: Same structure as Initiation/Amplification
+ * - Bloodstream (top 75%)
+ * - Platelet membrane (bottom 25%) with phospholipid bilayer
+ * - Enzyme complexes form on membrane surface
  *
- * Flow:
- * 1. Show Tenase complex, user docks FIXa
- * 2. IXa catalyzes X → Xa, then IXa detaches
- * 3. Transition to Prothrombinase, user docks FII
- * 4. FII → IIa, thrombin detaches and floats away
+ * MEDICAL ACCURACY (from reference charts):
+ * - Tenase Complex: FIXa (enzyme) + FVIIIa (cofactor) → activates FX → FXa
+ * - Prothrombinase: FXa (enzyme) + FVa (cofactor) → FII → FIIa (THROMBIN BURST)
+ * - This is where the massive thrombin generation occurs (~350 nM peak!)
+ *
+ * GAMEPLAY:
+ * 1. FVIIIa and FVa are pre-docked (from Amplification phase)
+ * 2. Catch FIXa (diffused from Initiation), dock with FVIIIa → forms Tenase
+ * 3. Tenase produces FXa (visual burst)
+ * 4. FXa + FVa → Prothrombinase forms automatically
+ * 5. Catch FII, dock with Prothrombinase → THROMBIN BURST!
  */
 export function PropagationScene({
   width,
   height,
+  floatingFactors,
   tenaseFormed,
   fxaProduced,
   prothrombinaseFormed,
@@ -46,72 +52,45 @@ export function PropagationScene({
   heldFactorId,
   onFactorCatch,
 }: PropagationSceneProps): React.ReactElement {
-  // Which complex is currently shown
-  const showProthrombinase = fxaProduced;
+  const [touchedFactorId, setTouchedFactorId] = useState<string | null>(null);
 
-  // Visual feedback for docking
+  // Same layout as Initiation/Amplification: membrane at bottom 25%
+  const membraneHeight = height * 0.25;
+  const bloodstreamHeight = height - membraneHeight;
+  const membraneY = bloodstreamHeight;
+
+  // Complex and docking positions along the membrane
+  const positions = useMemo(() => ({
+    // Tenase complex position (left side)
+    tenase: { x: width * 0.22, y: membraneY - 35 },
+    // Prothrombinase complex position (center)
+    prothrombinase: { x: width * 0.52, y: membraneY - 35 },
+    // FII substrate docking for Prothrombinase (right side)
+    fii: { x: width * 0.78, y: membraneY - 50 },
+  }), [width, membraneY]);
+
+  // Visual feedback states
   const isHoldingFIXa = heldFactorId === 'FIXa';
   const isHoldingFII = heldFactorId === 'FII';
   const canDockFIXa = !tenaseFormed && isHoldingFIXa;
   const canDockFII = prothrombinaseFormed && !thrombinBurst && isHoldingFII;
 
-  // Layout
-  const paletteHeight = 90;
-  const membraneHeight = 80;
-  const membraneY = height - membraneHeight - 20;
-  const complexCenterX = width / 2;
-  const complexY = membraneY - 120;
+  // Thrombin burst animation state
+  const [burstParticles, setBurstParticles] = useState<Array<{ id: number; x: number; y: number; angle: number }>>([]);
 
-  // IXa detachment animation state
-  const [ixaDetached, setIxaDetached] = useState(false);
-  const [ixaPosition, setIxaPosition] = useState({ x: 0, y: 0 });
-
-  // Trigger IXa detachment after Tenase forms
+  // Trigger burst animation when thrombin burst happens
   useEffect(() => {
-    if (tenaseFormed && !ixaDetached && !fxaProduced) {
-      const timer = setTimeout(() => {
-        setIxaDetached(true);
-        // Animate IXa floating up and to the side
-        setIxaPosition({ x: -100, y: -80 });
-      }, 800);
-      return () => clearTimeout(timer);
+    if (thrombinBurst && burstParticles.length === 0) {
+      // Create burst particles (~350 nM thrombin burst = 12 particles for visual impact)
+      const particles = Array.from({ length: 12 }, (_, i) => ({
+        id: i,
+        x: positions.fii.x,
+        y: positions.fii.y,
+        angle: (i * 30) * (Math.PI / 180),
+      }));
+      setBurstParticles(particles);
     }
-  }, [tenaseFormed, ixaDetached, fxaProduced]);
-
-  // Thrombin detachment and burst animation
-  const [thrombinDetached, setThrombinDetached] = useState(false);
-  const [burstPhase, setBurstPhase] = useState(0);
-
-  useEffect(() => {
-    if (thrombinBurst && !thrombinDetached) {
-      const timer = setTimeout(() => {
-        setThrombinDetached(true);
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [thrombinBurst, thrombinDetached]);
-
-  useEffect(() => {
-    if (thrombinDetached && burstPhase < 3) {
-      const timer = setTimeout(() => setBurstPhase(prev => prev + 1), 400);
-      return () => clearTimeout(timer);
-    }
-  }, [thrombinDetached, burstPhase]);
-
-  // Available factors in palette based on current state
-  const getPaletteFactors = (): Array<{ id: string; available: boolean }> => {
-    if (!showProthrombinase) {
-      return [
-        { id: 'FIXa', available: !tenaseFormed },
-      ];
-    } else {
-      return [
-        { id: 'FII', available: prothrombinaseFormed && !thrombinBurst },
-      ];
-    }
-  };
-
-  const paletteFactors = getPaletteFactors();
+  }, [thrombinBurst, burstParticles.length, positions.fii]);
 
   return (
     <div
@@ -120,478 +99,462 @@ export function PropagationScene({
         width,
         height,
         overflow: 'hidden',
-        background: 'linear-gradient(180deg, #FFFBEB 0%, #FEF3C7 30%, #FDE68A 60%, #FCD34D 100%)',
       }}
     >
-      {/* ═══════════════════════════════════════════════════════════════ */}
-      {/* FACTOR PALETTE (top)                                            */}
-      {/* ═══════════════════════════════════════════════════════════════ */}
-
+      {/* Bloodstream area */}
       <div
         style={{
           position: 'absolute',
           top: 0,
           left: 0,
-          right: 0,
-          height: paletteHeight,
-          background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(254, 243, 199, 0.9) 100%)',
-          borderBottom: '2px solid rgba(146, 64, 14, 0.2)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 20,
-          padding: '0 20px',
+          width: '100%',
+          height: bloodstreamHeight,
+          background: 'linear-gradient(180deg, #7F1D1D 0%, #991B1B 50%, #B91C1C 100%)',
         }}
       >
-        {/* Phase indicator */}
-        <div
-          style={{
-            position: 'absolute',
-            left: 16,
-            top: '50%',
-            transform: 'translateY(-50%)',
-          }}
-        >
-          <div style={{ fontSize: 10, fontWeight: 500, color: 'rgba(146, 64, 14, 0.6)', letterSpacing: 1 }}>
-            PHASE 3
+        {/* Floating factors (FIX early, then FII after Prothrombinase) */}
+        {floatingFactors.map((factor) => (
+          <div
+            key={factor.id}
+            style={{
+              position: 'absolute',
+              left: factor.position.x,
+              top: factor.position.y,
+              transform: 'translate(-50%, -50%)',
+              cursor: 'grab',
+              padding: '8px',
+              margin: '-8px',
+              touchAction: 'none',
+            }}
+            onMouseDown={(e) => {
+              setTouchedFactorId(factor.id);
+              onFactorCatch(factor.id, e);
+            }}
+            onTouchStart={(e) => {
+              setTouchedFactorId(factor.id);
+              onFactorCatch(factor.id, e);
+            }}
+            onMouseUp={() => setTouchedFactorId(null)}
+            onTouchEnd={() => setTouchedFactorId(null)}
+          >
+            <FactorTokenNew
+              factorId={factor.factorId}
+              isTouched={touchedFactorId === factor.id}
+            />
           </div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: '#92400E' }}>
-            {!showProthrombinase ? 'TENASE' : 'PROTHROMBINASE'}
-          </div>
-        </div>
-
-        {/* Factor palette */}
-        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-          <span style={{ fontSize: 11, color: 'rgba(146, 64, 14, 0.7)', fontWeight: 600 }}>
-            CATCH:
-          </span>
-          {paletteFactors.map((factor) => (
-            <div
-              key={factor.id}
-              style={{
-                opacity: factor.available ? 1 : 0.3,
-                cursor: factor.available ? 'grab' : 'not-allowed',
-                touchAction: 'none',
-              }}
-              onMouseDown={(e) => factor.available && onFactorCatch(`palette-${factor.id}`, e)}
-              onTouchStart={(e) => factor.available && onFactorCatch(`palette-${factor.id}`, e)}
-            >
-              <ConsistentFactorToken
-                factorId={factor.id}
-                scale={1.2}
-                style={{
-                  animation: factor.available ? 'subtlePulse 2s ease-in-out infinite' : 'none',
-                }}
-              />
-              {factor.available && (
-                <div style={{
-                  textAlign: 'center',
-                  fontSize: 9,
-                  color: '#92400E',
-                  marginTop: 4,
-                  fontWeight: 600,
-                }}>
-                  DRAG ↓
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Progress indicator */}
-        <div
-          style={{
-            position: 'absolute',
-            right: 16,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            display: 'flex',
-            gap: 8,
-          }}
-        >
-          <ProgressDot done={tenaseFormed} color="#3B82F6" />
-          <ProgressDot done={fxaProduced} color="#22C55E" />
-          <ProgressDot done={prothrombinaseFormed} color="#F97316" />
-          <ProgressDot done={thrombinBurst} color="#3B82F6" />
-        </div>
+        ))}
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════ */}
-      {/* PHOSPHOLIPID MEMBRANE (bottom) - Consistent design              */}
-      {/* ═══════════════════════════════════════════════════════════════ */}
-
-      <PhospholipidMembraneConsistent
-        width={width}
-        height={membraneHeight}
-        variant="platelet"
-        style={{
-          position: 'absolute',
-          left: 0,
-          top: membraneY,
-        }}
-      />
-
-      {/* Activated platelets label */}
+      {/* Platelet membrane surface (bottom 25%) */}
       <div
         style={{
           position: 'absolute',
-          left: 20,
-          top: membraneY - 30,
-          fontSize: 14,
-          fontWeight: 700,
-          color: '#92400E',
-          textShadow: '0 1px 2px rgba(255,255,255,0.8)',
+          top: membraneY,
+          left: 0,
+          width: '100%',
+          height: membraneHeight,
         }}
       >
-        Activated platelets
-      </div>
+        <PhospholipidMembrane
+          width={width}
+          height={membraneHeight}
+          variant="platelet"
+        />
 
-      {/* ═══════════════════════════════════════════════════════════════ */}
-      {/* TENASE COMPLEX (shown first) - Consistent pill design           */}
-      {/* FIXa (blue) + FVIIIa (purple) + FX (green)                      */}
-      {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* TENASE COMPLEX (left side)                                      */}
+        {/* FIXa (enzyme) + FVIIIa (cofactor) → ~200,000× amplification     */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
 
-      {!showProthrombinase && (
-        <div
-          style={{
-            position: 'absolute',
-            left: complexCenterX - 80,
-            top: complexY,
-          }}
-        >
-          {/* Complex label */}
+        {/* Pre-docking ghost slot for FIXa when not yet formed */}
+        {!tenaseFormed && (
           <div
             style={{
               position: 'absolute',
-              left: 40,
-              top: -50,
-              fontSize: 16,
-              fontWeight: 800,
-              color: tenaseFormed ? '#3B82F6' : 'rgba(146, 64, 14, 0.6)',
-              textShadow: '0 1px 3px rgba(255,255,255,0.8)',
-            }}
-          >
-            Tenase complex
-          </div>
-
-          {/* FVIIIa - Purple pill on membrane */}
-          <ConsistentFactorToken
-            factorId="FVIIIa"
-            scale={2}
-            style={{
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              opacity: tenaseFormed ? 1 : 0.5,
-            }}
-          />
-
-          {/* FIXa - Blue pill (DETACHES after catalysis) */}
-          <ConsistentFactorToken
-            factorId="FIXa"
-            scale={2}
-            isGhost={!tenaseFormed}
-            style={{
-              position: 'absolute',
-              left: ixaDetached ? 110 + ixaPosition.x : 110,
-              top: ixaDetached ? 0 + ixaPosition.y : 0,
-              opacity: tenaseFormed ? 1 : 0.4,
-              transition: ixaDetached ? 'all 1.5s ease-out' : 'all 0.4s ease',
-              filter: canDockFIXa ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'none',
-            }}
-          />
-
-          {!tenaseFormed && (
-            <div style={{
-              position: 'absolute',
-              left: 150,
-              top: -30,
-              fontSize: 10,
-              fontWeight: 700,
-              color: canDockFIXa ? '#3B82F6' : 'rgba(146, 64, 14, 0.6)',
-              whiteSpace: 'nowrap',
-              animation: canDockFIXa ? 'pulse 1s ease-in-out infinite' : 'none',
-            }}>
-              {canDockFIXa ? '↓ DOCK AICI' : 'slot gol'}
-            </div>
-          )}
-
-          {ixaDetached && (
-            <div style={{
-              position: 'absolute',
-              left: 150,
-              top: -30,
-              fontSize: 10,
-              fontWeight: 700,
-              color: '#3B82F6',
-              whiteSpace: 'nowrap',
-              textShadow: '0 1px 2px rgba(255,255,255,0.8)',
-            }}>
-              detaches
-            </div>
-          )}
-
-          {/* FX/FXa - Green pill substrate */}
-          <div
-            style={{
-              position: 'absolute',
-              left: 50,
+              left: positions.tenase.x - 70,
               top: -60,
-              transform: fxaProduced ? 'scale(1.15)' : 'scale(1)',
-              transition: 'all 0.4s ease',
+              opacity: canDockFIXa ? 0.9 : 0.35,
+              filter: canDockFIXa
+                ? 'drop-shadow(0 0 20px rgba(59, 130, 246, 0.9))'
+                : 'grayscale(50%)',
+              transform: canDockFIXa ? 'scale(1.15)' : 'scale(1)',
+              transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
             }}
           >
-            <ConsistentFactorToken
-              factorId={fxaProduced ? 'FXa' : 'FX'}
-              scale={2}
-            />
-            {fxaProduced && (
+            <FactorTokenNew factorId="FIXa" />
+            {canDockFIXa && (
               <div style={{
                 position: 'absolute',
-                top: -25,
+                top: -20,
                 left: '50%',
                 transform: 'translateX(-50%)',
-                fontSize: 10,
-                fontWeight: 700,
-                color: '#22C55E',
+                fontSize: 9,
+                color: '#60A5FA',
+                fontWeight: 600,
                 whiteSpace: 'nowrap',
-                textShadow: '0 1px 2px rgba(255,255,255,0.8)',
+                animation: 'pulse 1s ease-in-out infinite',
               }}>
-                ACTIVATED!
+                ANDOCHEAZĂ AICI
               </div>
             )}
           </div>
+        )}
 
-        </div>
-      )}
+        {/* Pre-docked FVIIIa cofactor (waiting for FIXa) */}
+        {!tenaseFormed && (
+          <div
+            style={{
+              position: 'absolute',
+              left: positions.tenase.x + 10,
+              top: -60,
+            }}
+          >
+            <div style={{ filter: 'drop-shadow(0 0 10px rgba(34, 197, 94, 0.6))' }}>
+              <FactorTokenNew factorId="FVIIIa" isActive />
+            </div>
+          </div>
+        )}
 
-      {/* ═══════════════════════════════════════════════════════════════ */}
-      {/* PROTHROMBINASE COMPLEX - Consistent pill design                 */}
-      {/* FXa (green) + FVa (orange) + Prothrombin (blue)                 */}
-      {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* Tenase EnzymeComplex - appears when formed */}
+        {tenaseFormed && (
+          <EnzymeComplex
+            type="tenase"
+            isFormed={tenaseFormed}
+            isProducing={tenaseFormed && !fxaProduced}
+            showSubstrate={tenaseFormed && !fxaProduced}
+            showProduct={fxaProduced && !prothrombinaseFormed}
+            enzymeFactorId="FIXa"
+            cofactorFactorId="FVIIIa"
+            substrateId="FX"
+            productId="FXa"
+            amplificationFactor="×200,000"
+            position={positions.tenase}
+          />
+        )}
 
-      {showProthrombinase && (
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* PROTHROMBINASE COMPLEX (center)                                 */}
+        {/* FXa (enzyme) + FVa (cofactor) → ~300,000× amplification         */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+
+        {/* Pre-docked FVa cofactor (waiting for FXa from Tenase) */}
+        {!prothrombinaseFormed && (
+          <div
+            style={{
+              position: 'absolute',
+              left: positions.prothrombinase.x + 10,
+              top: -50,
+              opacity: fxaProduced ? 1 : 0.4,
+              filter: fxaProduced
+                ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))'
+                : 'grayscale(40%)',
+              transition: 'all 0.3s ease',
+            }}
+          >
+            <FactorTokenNew factorId="FVa" isActive={fxaProduced} />
+          </div>
+        )}
+
+        {/* FXa slot placeholder (waiting for Tenase to produce) */}
+        {!fxaProduced && (
+          <div
+            style={{
+              position: 'absolute',
+              left: positions.prothrombinase.x - 35,
+              top: -50,
+              width: 44,
+              height: 44,
+              borderRadius: 8,
+              border: '2px dashed rgba(255,255,255,0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 9,
+              color: 'rgba(255,255,255,0.25)',
+            }}
+          >
+            FXa?
+          </div>
+        )}
+
+        {/* FXa appearing animation (produced by Tenase, before Prothrombinase forms) */}
+        {fxaProduced && !prothrombinaseFormed && (
+          <div
+            style={{
+              position: 'absolute',
+              left: positions.prothrombinase.x - 35,
+              top: -50,
+              filter: 'drop-shadow(0 0 18px rgba(239, 68, 68, 1))',
+              animation: 'pulse-appear 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            }}
+          >
+            <FactorTokenNew factorId="FXa" isActive />
+          </div>
+        )}
+
+        {/* Prothrombinase EnzymeComplex - appears when formed */}
+        {prothrombinaseFormed && (
+          <EnzymeComplex
+            type="prothrombinase"
+            isFormed={prothrombinaseFormed}
+            isProducing={prothrombinaseFormed && !thrombinBurst}
+            showSubstrate={prothrombinaseFormed && !thrombinBurst}
+            showProduct={thrombinBurst}
+            enzymeFactorId="FXa"
+            cofactorFactorId="FVa"
+            substrateId="FII"
+            productId="FIIa"
+            amplificationFactor="×300,000"
+            position={positions.prothrombinase}
+          />
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* FII SUBSTRATE SLOT (right side)                                 */}
+        {/* Docking FII with Prothrombinase triggers THROMBIN BURST         */}
+        {/* ~350 nM peak thrombin concentration (from reference)            */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+
         <div
           style={{
             position: 'absolute',
-            left: complexCenterX - 80,
-            top: complexY,
-            animation: 'fadeIn 0.5s ease-out',
+            left: positions.fii.x - 22,
+            top: -70,
           }}
         >
-          {/* FVa - Orange pill on membrane */}
-          <ConsistentFactorToken
-            factorId="FVa"
-            scale={2}
-            style={{
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              opacity: prothrombinaseFormed ? 1 : 0.5,
-            }}
-          />
-
-          {/* FXa - Green pill on membrane */}
-          <ConsistentFactorToken
-            factorId="FXa"
-            scale={2}
-            style={{
-              position: 'absolute',
-              left: 100,
-              top: 0,
-              opacity: prothrombinaseFormed ? 1 : 0.5,
-            }}
-          />
-
-          {/* Prothrombin - Blue pill being converted */}
-          {!thrombinDetached && (
-            <ConsistentFactorToken
-              factorId="FII"
-              scale={2}
-              isGhost={!prothrombinaseFormed}
+          {!thrombinBurst ? (
+            // Ghost slot for FII (only active after Prothrombinase forms)
+            <div
               style={{
-                position: 'absolute',
-                left: 40,
-                top: -60,
-                opacity: prothrombinaseFormed ? 1 : 0.4,
-                transform: prothrombinaseFormed ? 'scale(1)' : 'scale(0.85)',
-                transition: 'all 0.4s ease',
-                filter: canDockFII ? 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.8))' : 'none',
+                opacity: canDockFII ? 0.9 : prothrombinaseFormed ? 0.55 : 0.2,
+                filter: canDockFII
+                  ? 'drop-shadow(0 0 20px rgba(220, 38, 38, 0.9))'
+                  : prothrombinaseFormed
+                  ? 'drop-shadow(0 0 8px rgba(220, 38, 38, 0.4))'
+                  : 'grayscale(70%)',
+                transform: canDockFII ? 'scale(1.15)' : 'scale(1)',
+                transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
               }}
-            />
-          )}
-
-          {!prothrombinaseFormed && (
-            <div style={{
-              position: 'absolute',
-              left: 80,
-              top: -90,
-              fontSize: 10,
-              fontWeight: 700,
-              color: canDockFII ? '#3B82F6' : 'rgba(146, 64, 14, 0.6)',
-              whiteSpace: 'nowrap',
-              animation: canDockFII ? 'pulse 1s ease-in-out infinite' : 'none',
-            }}>
-              {canDockFII ? '↓ DOCK AICI' : 'slot gol'}
+            >
+              <FactorTokenNew factorId="FII" />
+              {canDockFII && (
+                <div style={{
+                  position: 'absolute',
+                  top: -20,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  fontSize: 9,
+                  color: '#F87171',
+                  fontWeight: 600,
+                  whiteSpace: 'nowrap',
+                  animation: 'pulse 1s ease-in-out infinite',
+                }}>
+                  ANDOCHEAZĂ AICI
+                </div>
+              )}
+            </div>
+          ) : (
+            // THROMBIN BURST! ~350 nM peak - multiple thrombin tokens exploding
+            <div style={{ position: 'relative' }}>
+              {/* Outer ring of thrombin particles */}
+              {burstParticles.map((particle) => (
+                <div
+                  key={particle.id}
+                  style={{
+                    position: 'absolute',
+                    left: Math.cos(particle.angle) * (50 + (particle.id % 2) * 25),
+                    top: Math.sin(particle.angle) * (50 + (particle.id % 2) * 25) - 15,
+                    filter: 'drop-shadow(0 0 15px rgba(220, 38, 38, 0.9))',
+                    animation: `burst-out ${0.8 + (particle.id % 3) * 0.2}s ease-out forwards`,
+                    animationDelay: `${particle.id * 0.05}s`,
+                    transform: `translate(-50%, -50%) scale(${0.5 + (particle.id % 3) * 0.15})`,
+                  }}
+                >
+                  <FactorTokenNew factorId="FIIa" isActive />
+                </div>
+              ))}
+              {/* Central thrombin (largest) */}
+              <div
+                style={{
+                  filter: 'drop-shadow(0 0 30px rgba(220, 38, 38, 1))',
+                  animation: 'thrombin-pulse 0.4s ease-in-out infinite',
+                }}
+              >
+                <FactorTokenNew factorId="FIIa" isActive />
+              </div>
             </div>
           )}
-
         </div>
-      )}
 
-      {/* ═══════════════════════════════════════════════════════════════ */}
-      {/* THROMBIN BURST - Multiple Pac-man shapes flying upward          */}
-      {/* ═══════════════════════════════════════════════════════════════ */}
-
-      {thrombinDetached && (
-        <>
-          {/* "Thrombin burst" label */}
+        {/* Thrombin burst label with concentration */}
+        {thrombinBurst && (
           <div
             style={{
               position: 'absolute',
-              left: complexCenterX - 60,
-              top: paletteHeight + 40,
-              fontSize: 16,
-              fontWeight: 800,
-              color: '#1E40AF',
-              textShadow: '0 1px 3px rgba(255,255,255,0.8)',
+              left: positions.fii.x - 70,
+              top: -140,
+              textAlign: 'center',
             }}
           >
-            Thrombin burst
-          </div>
-
-          {/* Multiple ThrombinSpark pac-man shapes bursting upward */}
-          {[0, 1, 2, 3, 4, 5, 6, 7].map((index) => (
-            <ThrombinSpark
-              key={`spark-${index}`}
-              size={25 + (index % 3) * 5}
+            <div
               style={{
-                position: 'absolute',
-                left: complexCenterX - 100 + (index * 30) + ((index % 2) * 15),
-                top: complexY - 100 - (index * 20),
-                animation: `thrombinFloat ${2 + (index % 3) * 0.5}s ease-out ${index * 0.1}s forwards`,
-                opacity: 0,
+                padding: '8px 20px',
+                background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.95) 0%, rgba(153, 27, 27, 0.95) 100%)',
+                borderRadius: 10,
+                border: '2px solid rgba(255, 255, 255, 0.3)',
+                boxShadow: '0 0 40px rgba(220, 38, 38, 0.7), inset 0 1px 2px rgba(255,255,255,0.2)',
+                animation: 'burst-label 0.6s ease-out',
               }}
-            />
-          ))}
-        </>
-      )}
+            >
+              <div style={{
+                fontSize: 16,
+                fontWeight: 800,
+                color: '#FFFFFF',
+                letterSpacing: 1,
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+              }}>
+                EXPLOZIE DE TROMBINĂ!
+              </div>
+              <div style={{
+                fontSize: 10,
+                fontWeight: 600,
+                color: '#FEE2E2',
+                marginTop: 2,
+              }}>
+                ~350 nM peak
+              </div>
+            </div>
+          </div>
+        )}
 
-      {/* ═══════════════════════════════════════════════════════════════ */}
-      {/* FIBRIN - Right side showing fibrinogen → crosslinked fibrin     */}
-      {/* ═══════════════════════════════════════════════════════════════ */}
-
-      {showProthrombinase && (
+        {/* PLT* label */}
         <div
           style={{
             position: 'absolute',
-            right: 40,
-            top: complexY - 40,
+            left: '50%',
+            top: 40,
+            transform: 'translateX(-50%)',
+            padding: '6px 16px',
+            background: 'rgba(127, 29, 29, 0.8)',
+            borderRadius: 8,
+            border: '2px solid #DC2626',
           }}
         >
-          {/* Fibrinogen pill */}
-          <ConsistentFactorToken
-            factorId="Fibrinogen"
-            scale={1.8}
-            style={{
-              marginBottom: 20,
-            }}
-          />
-
-          {/* Arrow pointing down */}
-          <div
-            style={{
-              fontSize: 24,
-              color: '#22C55E',
-              textAlign: 'center',
-              fontWeight: 800,
-              marginBottom: 10,
-            }}
-          >
-            ↓
-          </div>
-
-          {/* Crosslinked fibrin label */}
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 700,
-              color: '#16A34A',
-              marginBottom: 8,
-              textAlign: 'center',
-              textShadow: '0 1px 2px rgba(255,255,255,0.8)',
-            }}
-          >
-            Crosslinked fibrin
-          </div>
-
-          {/* Fibrin mesh */}
-          <FibrinMesh
-            width={100}
-            height={80}
-            style={{
-              border: '2px solid #22C55E',
-              borderRadius: 8,
-              background: 'rgba(187, 247, 208, 0.2)',
-            }}
-          />
-        </div>
-      )}
-
-      {/* ═══════════════════════════════════════════════════════════════ */}
-      {/* INSTRUCTIONS (bottom-left)                                      */}
-      {/* ═══════════════════════════════════════════════════════════════ */}
-
-      <div
-        style={{
-          position: 'absolute',
-          bottom: membraneHeight + 35,
-          left: 16,
-          padding: '10px 14px',
-          background: 'rgba(255, 255, 255, 0.95)',
-          borderRadius: 10,
-          border: '2px solid rgba(146, 64, 14, 0.3)',
-          maxWidth: 200,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        }}
-      >
-        <div style={{ fontSize: 10, color: '#92400E', lineHeight: 1.5, fontWeight: 600 }}>
-          {!tenaseFormed && 'Catch FIXa from above and drag to empty slot'}
-          {tenaseFormed && !ixaDetached && 'FIXa catalyzing reaction...'}
-          {ixaDetached && !fxaProduced && 'FIXa detaches, X → Xa'}
-          {fxaProduced && !prothrombinaseFormed && 'Catch Prothrombin and drag to slot'}
-          {prothrombinaseFormed && !thrombinBurst && 'Converting to Thrombin...'}
-          {thrombinBurst && !thrombinDetached && 'Thrombin releasing...'}
-          {thrombinDetached && '✓ Thrombin burst complete!'}
+          <span style={{ fontSize: 18, fontWeight: 800, color: '#FEE2E2' }}>PLT*</span>
+          <span style={{ fontSize: 10, color: '#FECACA', marginLeft: 8 }}>generare de trombină</span>
         </div>
       </div>
 
-      {/* CSS Animations */}
+      {/* Phase indicator */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 20,
+          left: 20,
+          padding: '12px 20px',
+          background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.9) 0%, rgba(185, 28, 28, 0.9) 100%)',
+          borderRadius: 12,
+          boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)',
+        }}
+      >
+        <div style={{ color: '#FFFFFF', fontSize: 10, fontWeight: 500, opacity: 0.9, letterSpacing: 2 }}>
+          FAZA 3
+        </div>
+        <div style={{ color: '#FFFFFF', fontSize: 18, fontWeight: 700 }}>
+          PROPAGARE
+        </div>
+        <div style={{ color: '#FEE2E2', fontSize: 9, marginTop: 4 }}>
+          Generarea exploziei de trombină
+        </div>
+      </div>
+
+      {/* Cell label */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 20,
+          left: 20,
+          padding: '8px 16px',
+          background: 'rgba(0,0,0,0.7)',
+          borderRadius: 8,
+          border: '1px solid rgba(255,255,255,0.2)',
+        }}
+      >
+        <div style={{ color: '#FCA5A5', fontSize: 12, fontWeight: 700 }}>
+          TROMBOCIT ACTIVAT
+        </div>
+        <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 9 }}>
+          Asamblarea complexelor enzimatice
+        </div>
+      </div>
+
+      {/* Progress indicator */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 30,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          gap: 20,
+          padding: '12px 24px',
+          background: 'rgba(0,0,0,0.7)',
+          borderRadius: 12,
+        }}
+      >
+        <ProgressDot label="Tenase" done={tenaseFormed} color="#3B82F6" />
+        <ProgressDot label="FXa" done={fxaProduced} color="#EF4444" />
+        <ProgressDot label="Prothrombinase" done={prothrombinaseFormed} color="#EF4444" />
+        <ProgressDot label="Explozie Trombină" done={thrombinBurst} color="#991B1B" />
+      </div>
+
+      {/* CSS animations */}
       <style jsx>{`
-        @keyframes subtlePulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
+        @keyframes pulse-appear {
+          0% { transform: scale(0); opacity: 0; }
+          50% { transform: scale(1.3); }
+          100% { transform: scale(1); opacity: 1; }
         }
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-        @keyframes fadeIn {
-          0% { opacity: 0; transform: scale(0.9); }
-          100% { opacity: 1; transform: scale(1); }
-        }
-        @keyframes thrombinFloat {
+        @keyframes burst-out {
           0% {
             opacity: 0;
-            transform: translateY(0) scale(0.5) rotate(0deg);
+            transform: translate(-50%, -50%) scale(0.3);
           }
-          20% {
+          40% {
             opacity: 1;
-            transform: translateY(-50px) scale(1) rotate(10deg);
+            transform: translate(-50%, -50%) scale(1.2);
           }
           100% {
-            opacity: 0.3;
-            transform: translateY(-200px) scale(0.8) rotate(25deg);
+            opacity: 0.85;
+            transform: translate(-50%, -50%) scale(1);
+          }
+        }
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+        }
+        @keyframes thrombin-pulse {
+          0%, 100% {
+            transform: scale(1);
+            filter: drop-shadow(0 0 30px rgba(220, 38, 38, 1));
+          }
+          50% {
+            transform: scale(1.15);
+            filter: drop-shadow(0 0 45px rgba(220, 38, 38, 1));
+          }
+        }
+        @keyframes burst-label {
+          0% {
+            transform: scale(0.5) translateY(20px);
+            opacity: 0;
+          }
+          60% {
+            transform: scale(1.1) translateY(-5px);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(1) translateY(0);
+            opacity: 1;
           }
         }
       `}</style>
@@ -599,17 +562,26 @@ export function PropagationScene({
   );
 }
 
-function ProgressDot({ done, color }: { done: boolean; color: string }): React.ReactElement {
+function ProgressDot({ label, done, color }: { label: string; done: boolean; color: string }): React.ReactElement {
   return (
-    <div
-      style={{
-        width: 12,
-        height: 12,
-        borderRadius: '50%',
-        background: done ? color : 'rgba(146, 64, 14, 0.2)',
-        boxShadow: done ? `0 0 8px ${color}` : 'none',
-        transition: 'all 0.3s ease',
-      }}
-    />
+    <div style={{ textAlign: 'center' }}>
+      <div
+        style={{
+          width: 24,
+          height: 24,
+          borderRadius: '50%',
+          background: done ? color : 'rgba(255,255,255,0.2)',
+          margin: '0 auto 4px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 12,
+          color: '#FFFFFF',
+        }}
+      >
+        {done ? '✓' : ''}
+      </div>
+      <div style={{ fontSize: 9, color: done ? color : 'rgba(255,255,255,0.5)' }}>{label}</div>
+    </div>
   );
 }
