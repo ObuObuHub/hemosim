@@ -2,66 +2,83 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { PhospholipidMembrane } from '../visuals/PhospholipidMembrane';
-import { FactorTokenNew } from '../tokens/FactorTokenNew';
+import { ConsistentFactorToken, ThrombinSpark, PhospholipidMembraneConsistent } from '../tokens/ConsistentFactorToken';
 import type { FloatingFactor } from '@/types/game';
 
 interface AmplificationSceneProps {
   width: number;
   height: number;
   floatingFactors: FloatingFactor[];
-  vwfSplit: boolean;
-  fvActivated: boolean;
-  fviiiActivated: boolean;
-  fxiActivated: boolean;
+  // Activation states
+  fxiActivated: boolean;    // XI → XIa (by Thrombin)
+  fixActivated: boolean;    // IX → IXa (by XIa)
+  fviiiActivated: boolean;  // VIII → VIIIa (by Thrombin)
+  fvActivated: boolean;     // V → Va (by Thrombin)
   heldFactorId: string | null;
   onFactorCatch: (factorId: string, event: React.MouseEvent | React.TouchEvent) => void;
   onPhaseComplete: () => void;
 }
 
 /**
- * AMPLIFICATION PHASE - Cell-Based Model of Coagulation
+ * AMPLIFICATION PHASE - Consistent Design
  *
- * LAYOUT: Same structure as Initiation
- * - Bloodstream (top 75%)
- * - Platelet membrane (bottom 25%) with phospholipid bilayer
- * - Docking slots extend UP from membrane into bloodstream
- *
- * MEDICAL ACCURACY:
- * - Activated platelet exposes phosphatidylserine (PS) on membrane
- * - Thrombin activates cofactors on/near the platelet surface
- * - FV, FVIII, FXI all activated by thrombin
+ * REFERENCE DESIGN:
+ * - White/cream gradient at top
+ * - Thrombin spark (Pac-man) on LEFT side with arrow
+ * - Floating zymogens: FXIa (blue), FV (orange), FIX (blue), FVIII (purple)
+ * - FX/FXa (green) on right side
+ * - Xase Complex: FIXa + FVIIIa + FVa on membrane
+ * - Phospholipid membrane (tan/yellow) at bottom (30% height)
+ * - All factors are rounded pills (not 3D spheres)
  */
 export function AmplificationScene({
   width,
   height,
   floatingFactors,
-  vwfSplit,
-  fvActivated,
-  fviiiActivated,
   fxiActivated,
+  fixActivated,
+  fviiiActivated,
+  fvActivated,
   heldFactorId,
   onFactorCatch,
 }: AmplificationSceneProps): React.ReactElement {
   const [touchedFactorId, setTouchedFactorId] = useState<string | null>(null);
 
-  // Same layout as Initiation: membrane at bottom 25%
-  const membraneHeight = height * 0.25;
-  const bloodstreamHeight = height - membraneHeight;
-  const membraneY = bloodstreamHeight;
+  // Layout: fluid area (70%), membrane (30%)
+  const membraneHeight = height * 0.30;
+  const fluidHeight = height - membraneHeight;
+  const membraneY = fluidHeight;
 
-  // Docking positions along the membrane (like TF positions in Initiation)
-  const dockingPositions = useMemo(() => ({
-    // vWF-FVIII on the right
-    vwf: { x: width * 0.7, y: membraneY - 60 },
-    fviii: { x: width * 0.7, y: membraneY - 60 },
-    // FV on the left
-    fv: { x: width * 0.3, y: membraneY - 50 },
-    // FXI in the middle
-    fxi: { x: width * 0.5, y: membraneY - 70 },
+  // Thrombin spark position (left side, upper area)
+  const thrombinSparkPos = useMemo(() => ({
+    x: width * 0.15,
+    y: fluidHeight * 0.25,
+  }), [width, fluidHeight]);
+
+  // Xase complex docking positions on membrane (FIXa, FVIIIa, FVa cluster)
+  const xasePositions = useMemo(() => ({
+    fixa: {
+      x: width * 0.4,
+      y: membraneY - 20,
+    },
+    fviiia: {
+      x: width * 0.5,
+      y: membraneY - 20,
+    },
+    fva: {
+      x: width * 0.6,
+      y: membraneY - 20,
+    },
   }), [width, membraneY]);
 
-  const isHoldingThrombin = heldFactorId === 'FIIa';
+  // XIa position (for activating IX)
+  const xiaPos = useMemo(() => ({
+    x: width * 0.25,
+    y: membraneY - 60,
+  }), [width, membraneY]);
+
+  // Xase complex formed when FIXa + FVIIIa are both docked
+  const xaseComplexFormed = fixActivated && fviiiActivated;
 
   return (
     <div
@@ -70,54 +87,239 @@ export function AmplificationScene({
         width,
         height,
         overflow: 'hidden',
+        background: `linear-gradient(180deg, #FFFBEB 0%, #FEF3C7 ${fluidHeight * 0.3}px, #FDE68A ${fluidHeight * 0.6}px, #FCD34D ${membraneY}px)`,
       }}
     >
-      {/* Bloodstream area */}
+      {/* Fluid area with gradient background */}
       <div
         style={{
           position: 'absolute',
           top: 0,
           left: 0,
           width: '100%',
-          height: bloodstreamHeight,
-          background: 'linear-gradient(180deg, #7F1D1D 0%, #991B1B 50%, #B91C1C 100%)',
+          height: fluidHeight,
+          pointerEvents: 'none',
+        }}
+      />
+      {/* Thrombin Spark - Pac-man shape on left side */}
+      <div
+        style={{
+          position: 'absolute',
+          left: thrombinSparkPos.x,
+          top: thrombinSparkPos.y,
+          transform: 'translate(-50%, -50%)',
+          zIndex: 10,
         }}
       >
-        {/* Floating factors (thrombin) */}
-        {floatingFactors.map((factor) => (
-          <div
-            key={factor.id}
-            style={{
-              position: 'absolute',
-              left: factor.position.x,
-              top: factor.position.y,
-              transform: 'translate(-50%, -50%)',
-              cursor: 'grab',
-              padding: '8px',
-              margin: '-8px',
-              touchAction: 'none',
-            }}
-            onMouseDown={(e) => {
-              setTouchedFactorId(factor.id);
-              onFactorCatch(factor.id, e);
-            }}
-            onTouchStart={(e) => {
-              setTouchedFactorId(factor.id);
-              onFactorCatch(factor.id, e);
-            }}
-            onMouseUp={() => setTouchedFactorId(null)}
-            onTouchEnd={() => setTouchedFactorId(null)}
-          >
-            <FactorTokenNew
-              factorId={factor.factorId}
-              isActive={factor.factorId === 'FIIa'}
-              isTouched={touchedFactorId === factor.id}
-            />
-          </div>
-        ))}
+        <ThrombinSpark size={35} />
+
+        {/* Arrow pointing to floating factors */}
+        <svg
+          style={{
+            position: 'absolute',
+            left: 40,
+            top: 10,
+            width: 60,
+            height: 20,
+            pointerEvents: 'none',
+          }}
+        >
+          <defs>
+            <marker id="arrow-gray" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#9CA3AF" />
+            </marker>
+          </defs>
+          <line
+            x1={0}
+            y1={10}
+            x2={55}
+            y2={10}
+            stroke="#9CA3AF"
+            strokeWidth={2}
+            markerEnd="url(#arrow-gray)"
+          />
+        </svg>
       </div>
 
-      {/* Platelet membrane surface (bottom 25%) */}
+      {/* XIa - Left side (for activating IX) */}
+      {fxiActivated && (
+        <div
+          style={{
+            position: 'absolute',
+            left: xiaPos.x,
+            top: xiaPos.y,
+            transform: 'translate(-50%, -50%)',
+            zIndex: 15,
+          }}
+        >
+          <ConsistentFactorToken factorId="FXIa" />
+        </div>
+      )}
+
+      {/* Xase Complex - FIXa + FVIIIa + FVa on membrane */}
+      {fixActivated && (
+        <div
+          style={{
+            position: 'absolute',
+            left: xasePositions.fixa.x,
+            top: xasePositions.fixa.y,
+            transform: 'translate(-50%, -50%)',
+            zIndex: 15,
+          }}
+        >
+          <ConsistentFactorToken factorId="FIXa" />
+        </div>
+      )}
+
+      {fviiiActivated && (
+        <div
+          style={{
+            position: 'absolute',
+            left: xasePositions.fviiia.x,
+            top: xasePositions.fviiia.y,
+            transform: 'translate(-50%, -50%)',
+            zIndex: 15,
+          }}
+        >
+          <ConsistentFactorToken factorId="FVIIIa" />
+        </div>
+      )}
+
+      {fvActivated && (
+        <div
+          style={{
+            position: 'absolute',
+            left: xasePositions.fva.x,
+            top: xasePositions.fva.y,
+            transform: 'translate(-50%, -50%)',
+            zIndex: 15,
+          }}
+        >
+          <ConsistentFactorToken factorId="FVa" />
+        </div>
+      )}
+
+      {/* Xase Complex label when formed */}
+      {xaseComplexFormed && (
+        <div
+          style={{
+            position: 'absolute',
+            left: xasePositions.fviiia.x,
+            top: xasePositions.fviiia.y - 40,
+            transform: 'translateX(-50%)',
+            padding: '4px 10px',
+            background: 'rgba(139, 92, 246, 0.9)',
+            borderRadius: 6,
+            fontSize: 10,
+            fontWeight: 700,
+            color: '#FFFFFF',
+            whiteSpace: 'nowrap',
+            boxShadow: '0 2px 8px rgba(139, 92, 246, 0.4)',
+            zIndex: 20,
+          }}
+        >
+          Xase Complex
+        </div>
+      )}
+
+      {/* Floating zymogens */}
+      {floatingFactors.map((factor) => (
+        <div
+          key={factor.id}
+          style={{
+            position: 'absolute',
+            left: factor.position.x,
+            top: factor.position.y,
+            transform: 'translate(-50%, -50%)',
+            cursor: 'grab',
+            padding: '8px',
+            margin: '-8px',
+            touchAction: 'none',
+            zIndex: 20,
+          }}
+          onMouseDown={(e) => {
+            setTouchedFactorId(factor.id);
+            onFactorCatch(factor.id, e);
+          }}
+          onTouchStart={(e) => {
+            setTouchedFactorId(factor.id);
+            onFactorCatch(factor.id, e);
+          }}
+          onMouseUp={() => setTouchedFactorId(null)}
+          onTouchEnd={() => setTouchedFactorId(null)}
+        >
+          <ConsistentFactorToken
+            factorId={factor.factorId}
+            style={{
+              filter: touchedFactorId === factor.id ? 'brightness(1.2)' : 'none',
+              transition: 'filter 0.2s ease',
+            }}
+          />
+        </div>
+      ))}
+
+      {/* Ghost hints for docking positions */}
+      {!fixActivated && (
+        <div
+          style={{
+            position: 'absolute',
+            left: xasePositions.fixa.x,
+            top: xasePositions.fixa.y,
+            transform: 'translate(-50%, -50%)',
+            zIndex: 8,
+            pointerEvents: 'none',
+          }}
+        >
+          <ConsistentFactorToken factorId="FIX" isGhost />
+        </div>
+      )}
+
+      {!fviiiActivated && (
+        <div
+          style={{
+            position: 'absolute',
+            left: xasePositions.fviiia.x,
+            top: xasePositions.fviiia.y,
+            transform: 'translate(-50%, -50%)',
+            zIndex: 8,
+            pointerEvents: 'none',
+          }}
+        >
+          <ConsistentFactorToken factorId="FVIII" isGhost />
+        </div>
+      )}
+
+      {!fvActivated && (
+        <div
+          style={{
+            position: 'absolute',
+            left: xasePositions.fva.x,
+            top: xasePositions.fva.y,
+            transform: 'translate(-50%, -50%)',
+            zIndex: 8,
+            pointerEvents: 'none',
+          }}
+        >
+          <ConsistentFactorToken factorId="FV" isGhost />
+        </div>
+      )}
+
+      {!fxiActivated && (
+        <div
+          style={{
+            position: 'absolute',
+            left: xiaPos.x,
+            top: xiaPos.y,
+            transform: 'translate(-50%, -50%)',
+            zIndex: 8,
+            pointerEvents: 'none',
+          }}
+        >
+          <ConsistentFactorToken factorId="FXI" isGhost />
+        </div>
+      )}
+
+      {/* Phospholipid membrane - detailed bilayer at bottom */}
       <div
         style={{
           position: 'absolute',
@@ -125,171 +327,32 @@ export function AmplificationScene({
           left: 0,
           width: '100%',
           height: membraneHeight,
+          zIndex: 5,
         }}
       >
-        <PhospholipidMembrane
+        <PhospholipidMembraneConsistent
           width={width}
           height={membraneHeight}
           variant="platelet"
         />
 
-        {/* ═══════════════════════════════════════════════════════════════ */}
-        {/* DOCKING SLOTS - arranged along the platelet membrane            */}
-        {/* ═══════════════════════════════════════════════════════════════ */}
-
-        {/* FV SLOT (left side) */}
-        <div
-          style={{
-            position: 'absolute',
-            left: width * 0.3 - 25,
-            top: -50,
-          }}
-        >
-          {!fvActivated ? (
-            <div
-              style={{
-                opacity: isHoldingThrombin ? 0.7 : 0.3,
-                filter: isHoldingThrombin ? 'drop-shadow(0 0 12px rgba(153, 27, 27, 0.9))' : 'grayscale(50%)',
-                transform: isHoldingThrombin ? 'scale(1.05)' : 'scale(1)',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <FactorTokenNew factorId="FV" />
-            </div>
-          ) : (
-            <div style={{ filter: 'drop-shadow(0 0 15px rgba(59, 130, 246, 0.8))' }}>
-              <FactorTokenNew factorId="FVa" isActive />
-            </div>
-          )}
-        </div>
-
-        {/* FXI SLOT (center) */}
-        <div
-          style={{
-            position: 'absolute',
-            left: width * 0.5 - 25,
-            top: -70,
-          }}
-        >
-          {!fxiActivated ? (
-            <div
-              style={{
-                opacity: isHoldingThrombin ? 0.7 : 0.3,
-                filter: isHoldingThrombin ? 'drop-shadow(0 0 12px rgba(153, 27, 27, 0.9))' : 'grayscale(50%)',
-                transform: isHoldingThrombin ? 'scale(1.05)' : 'scale(1)',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <FactorTokenNew factorId="FXI" />
-            </div>
-          ) : (
-            <div style={{ filter: 'drop-shadow(0 0 15px rgba(236, 72, 153, 0.8))' }}>
-              <FactorTokenNew factorId="FXIa" isActive />
-            </div>
-          )}
-        </div>
-
-        {/* vWF-FVIII COMPLEX / FVIII SLOT (right side) */}
-        <div
-          style={{
-            position: 'absolute',
-            left: width * 0.7 - 40,
-            top: -60,
-          }}
-        >
-          {!vwfSplit ? (
-            // Combined vWF-FVIII complex
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-                filter: isHoldingThrombin ? 'drop-shadow(0 0 12px rgba(153, 27, 27, 0.9))' : 'none',
-                transform: isHoldingThrombin ? 'scale(1.05)' : 'scale(1)',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <div
-                style={{
-                  width: 50,
-                  height: 35,
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #D4A574 0%, #A67C52 100%)',
-                  border: '2px solid #8B6914',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 10,
-                  fontWeight: 700,
-                  color: '#FFFFFF',
-                }}
-              >
-                vWF
-              </div>
-              <div style={{ marginLeft: -15 }}>
-                <FactorTokenNew factorId="FVIII" />
-              </div>
-            </div>
-          ) : !fviiiActivated ? (
-            // vWF split, FVIII waiting for activation
-            <>
-              {/* Faded vWF drifting away */}
-              <div
-                style={{
-                  position: 'absolute',
-                  left: -60,
-                  top: -20,
-                  width: 40,
-                  height: 28,
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #D4A574 0%, #A67C52 100%)',
-                  border: '2px solid #8B6914',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 8,
-                  fontWeight: 700,
-                  color: '#FFFFFF',
-                  opacity: 0.3,
-                }}
-              >
-                vWF
-              </div>
-              {/* FVIII ghosted slot */}
-              <div
-                style={{
-                  opacity: isHoldingThrombin ? 0.7 : 0.3,
-                  filter: isHoldingThrombin ? 'drop-shadow(0 0 12px rgba(153, 27, 27, 0.9))' : 'grayscale(50%)',
-                  transform: isHoldingThrombin ? 'scale(1.05)' : 'scale(1)',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <FactorTokenNew factorId="FVIII" />
-              </div>
-            </>
-          ) : (
-            // FVIIIa activated
-            <div style={{ filter: 'drop-shadow(0 0 15px rgba(34, 197, 94, 0.8))' }}>
-              <FactorTokenNew factorId="FVIIIa" isActive />
-            </div>
-          )}
-        </div>
-
-        {/* PLT* label */}
+        {/* Membrane label */}
         <div
           style={{
             position: 'absolute',
             left: '50%',
-            top: 40,
+            bottom: 10,
             transform: 'translateX(-50%)',
-            padding: '6px 16px',
-            background: 'rgba(127, 29, 29, 0.8)',
-            borderRadius: 8,
-            border: '2px solid #DC2626',
+            padding: '4px 12px',
+            background: 'rgba(120, 113, 108, 0.85)',
+            borderRadius: 6,
+            fontSize: 9,
+            fontWeight: 600,
+            color: '#FEF3C7',
+            whiteSpace: 'nowrap',
           }}
         >
-          <span style={{ fontSize: 18, fontWeight: 800, color: '#FEE2E2' }}>PLT*</span>
-          <span style={{ fontSize: 10, color: '#FECACA', marginLeft: 8 }}>activated</span>
+          Phospholipid membrane on activated platelets
         </div>
       </div>
 
@@ -297,42 +360,23 @@ export function AmplificationScene({
       <div
         style={{
           position: 'absolute',
-          top: 20,
-          left: 20,
-          padding: '12px 20px',
-          background: 'linear-gradient(135deg, rgba(234, 179, 8, 0.9) 0%, rgba(202, 138, 4, 0.9) 100%)',
-          borderRadius: 12,
-          boxShadow: '0 4px 15px rgba(234, 179, 8, 0.4)',
+          top: 16,
+          left: 16,
+          padding: '10px 18px',
+          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.95) 0%, rgba(217, 119, 6, 0.95) 100%)',
+          borderRadius: 10,
+          boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
+          zIndex: 30,
         }}
       >
-        <div style={{ color: '#FFFFFF', fontSize: 10, fontWeight: 500, opacity: 0.9, letterSpacing: 2 }}>
+        <div style={{ color: '#FFFFFF', fontSize: 9, fontWeight: 600, opacity: 0.9, letterSpacing: 1.5 }}>
           PHASE 2
         </div>
-        <div style={{ color: '#FFFFFF', fontSize: 18, fontWeight: 700 }}>
+        <div style={{ color: '#FFFFFF', fontSize: 16, fontWeight: 700 }}>
           AMPLIFICATION
         </div>
-        <div style={{ color: '#FEF3C7', fontSize: 9, marginTop: 4 }}>
-          Activated platelet surface
-        </div>
-      </div>
-
-      {/* Cell label */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 20,
-          left: 20,
-          padding: '8px 16px',
-          background: 'rgba(0,0,0,0.7)',
-          borderRadius: 8,
-          border: '1px solid rgba(255,255,255,0.2)',
-        }}
-      >
-        <div style={{ color: '#FCA5A5', fontSize: 12, fontWeight: 700 }}>
-          ACTIVATED PLATELET
-        </div>
-        <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 9 }}>
-          Phosphatidylserine exposed • Cofactors binding
+        <div style={{ color: '#FEF3C7', fontSize: 8, marginTop: 3 }}>
+          Thrombin activates cofactors
         </div>
       </div>
 
@@ -340,20 +384,21 @@ export function AmplificationScene({
       <div
         style={{
           position: 'absolute',
-          bottom: 30,
+          bottom: membraneHeight + 10,
           left: '50%',
           transform: 'translateX(-50%)',
           display: 'flex',
-          gap: 20,
-          padding: '12px 24px',
-          background: 'rgba(0,0,0,0.7)',
-          borderRadius: 12,
+          gap: 12,
+          padding: '8px 16px',
+          background: 'rgba(0,0,0,0.75)',
+          borderRadius: 8,
+          zIndex: 30,
         }}
       >
-        <ProgressDot label="vWF split" done={vwfSplit} color="#D4A574" />
-        <ProgressDot label="FVa" done={fvActivated} color="#3B82F6" />
-        <ProgressDot label="FVIIIa" done={fviiiActivated} color="#22C55E" />
-        <ProgressDot label="FXIa" done={fxiActivated} color="#EC4899" />
+        <ProgressDot label="XIa" done={fxiActivated} color="#6366F1" />
+        <ProgressDot label="IXa" done={fixActivated} color="#3B82F6" />
+        <ProgressDot label="VIIIa" done={fviiiActivated} color="#8B5CF6" />
+        <ProgressDot label="Va" done={fvActivated} color="#F97316" />
       </div>
     </div>
   );
@@ -367,18 +412,19 @@ function ProgressDot({ label, done, color }: { label: string; done: boolean; col
           width: 24,
           height: 24,
           borderRadius: '50%',
-          background: done ? color : 'rgba(255,255,255,0.2)',
+          background: done ? color : 'rgba(255,255,255,0.15)',
           margin: '0 auto 4px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           fontSize: 12,
           color: '#FFFFFF',
+          border: done ? 'none' : '2px dashed rgba(255,255,255,0.3)',
         }}
       >
         {done ? '✓' : ''}
       </div>
-      <div style={{ fontSize: 9, color: done ? color : 'rgba(255,255,255,0.5)' }}>{label}</div>
+      <div style={{ fontSize: 9, color: done ? color : 'rgba(255,255,255,0.5)', fontWeight: 600 }}>{label}</div>
     </div>
   );
 }

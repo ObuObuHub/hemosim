@@ -2,10 +2,13 @@
 'use client';
 
 import { useState } from 'react';
-import { PhospholipidMembrane } from '../visuals/PhospholipidMembrane';
-import { TFProtein } from '../visuals/TFProtein';
 import { ActivationArrow } from '../visuals/ActivationArrow';
-import { FactorTokenNew } from '../tokens/FactorTokenNew';
+import {
+  ConsistentFactorToken,
+  ThrombinSpark,
+  TFReceptor,
+  PhospholipidMembraneConsistent,
+} from '../tokens/ConsistentFactorToken';
 import type {
   FloatingFactor,
   DockedComplex,
@@ -73,17 +76,18 @@ export function InitiationScene({
   // Track touched factor for visual feedback
   const [touchedFactorId, setTouchedFactorId] = useState<string | null>(null);
 
-  // Membrane takes only ~25% at the bottom, bloodstream is 75%
-  const membraneHeight = height * 0.25;
-  const bloodstreamHeight = height - membraneHeight;
-  const membraneY = bloodstreamHeight;
+  // Layout from reference (top to bottom):
+  // - Bloodstream gradient (70%)
+  // - Pink fibroblast tissue at bottom (30%)
+  const bloodstreamHeight = height * 0.7;
+  const fibroblastHeight = height * 0.3;
+  const fibroblastY = bloodstreamHeight;
 
-  // TF protein positions - extending UP into bloodstream for visibility
-  // Positioned at the membrane boundary, reaching into bloodstream
+  // TF receptor positions on fibroblast membrane
   const tfPositions = [
-    { x: width * 0.2, index: 0 },
+    { x: width * 0.25, index: 0 },
     { x: width * 0.5, index: 1 },
-    { x: width * 0.8, index: 2 },
+    { x: width * 0.75, index: 2 },
   ];
 
   return (
@@ -95,7 +99,9 @@ export function InitiationScene({
         overflow: 'hidden',
       }}
     >
-      {/* Bloodstream area */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* BLOODSTREAM - Gradient from white/cream to light pink          */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
       <div
         style={{
           position: 'absolute',
@@ -103,10 +109,17 @@ export function InitiationScene({
           left: 0,
           width: '100%',
           height: bloodstreamHeight,
-          background: 'linear-gradient(180deg, #7F1D1D 0%, #991B1B 50%, #B91C1C 100%)',
+          background: 'linear-gradient(180deg, #FFFBEB 0%, #FEF3C7 20%, #FED7AA 50%, #FED7E2 80%, #FFC9D6 100%)',
         }}
       >
-        {/* Floating factors */}
+        {/* Thrombin spark indicator in upper right */}
+        {fiiDockedState[0] && (
+          <div style={{ position: 'absolute', top: 20, right: 30 }}>
+            <ThrombinSpark size={35} />
+          </div>
+        )}
+
+        {/* Floating factors in bloodstream */}
         {floatingFactors.map((factor) => (
           <div
             key={factor.id}
@@ -131,244 +144,188 @@ export function InitiationScene({
             onMouseUp={() => setTouchedFactorId(null)}
             onTouchEnd={() => setTouchedFactorId(null)}
           >
-            <FactorTokenNew
+            <ConsistentFactorToken
               factorId={factor.factorId}
-              isTouched={touchedFactorId === factor.id}
+              style={{
+                filter: touchedFactorId === factor.id ? 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' : 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))',
+                transition: 'filter 0.2s ease',
+              }}
             />
           </div>
         ))}
-      </div>
 
-      {/* Membrane surface */}
-      <div
-        style={{
-          position: 'absolute',
-          top: membraneY,
-          left: 0,
-          width: '100%',
-          height: membraneHeight,
-        }}
-      >
-        <PhospholipidMembrane
-          width={width}
-          height={membraneHeight}
-          variant="fibroblast"
-        />
-
-        {/* TF complexes - clustered blobs like reference image */}
+        {/* Show activated factors floating near TF site */}
         {tfPositions.map((pos) => (
-          <div key={`tf-container-${pos.index}`}>
-            {/* FVII docking zone - ghosted silhouette */}
-            {!tfDockingState[pos.index] && (
-              <div
-                style={{
-                  position: 'absolute',
-                  left: pos.x - 5,
-                  top: -85,
-                  opacity: 0.25,
-                  filter: 'grayscale(50%)',
-                  pointerEvents: 'none',
-                }}
-              >
-                <FactorTokenNew factorId="FVII" />
-              </div>
-            )}
-
-            {/* TF protein (always visible) */}
-            <TFProtein
-              x={pos.x}
-              y={0}
-              hasVIIa={tfDockingState[pos.index]}
-            />
-
-            {/* VIIa blob sitting ON TOP of TF when docked (like reference) */}
-            {tfDockingState[pos.index] && (
-              <div
-                style={{
-                  position: 'absolute',
-                  left: pos.x - 5,
-                  top: -85,
-                  filter: 'drop-shadow(2px 3px 4px rgba(0,0,0,0.4))',
-                }}
-              >
-                <FactorTokenNew factorId="FVIIa" isActive />
-              </div>
-            )}
-
-            {/* FIX docking slot - ghosted silhouette */}
-            {tfDockingState[pos.index] && !fixDockingState[pos.index] && (
-              <div
-                style={{
-                  position: 'absolute',
-                  left: pos.x - 85,
-                  top: -45,
-                  opacity: 0.25,
-                  filter: 'grayscale(50%)',
-                  pointerEvents: 'none',
-                }}
-              >
-                <FactorTokenNew factorId="FIX" />
-              </div>
-            )}
-
-            {/* FIXa blob when docked (purple, left of complex) */}
-            {/* TEXTBOOK: FIXa will diffuse to platelet for Tenase in Propagation */}
+          <div key={`activated-${pos.index}`}>
+            {/* FIXa floating */}
             {fixDockingState[pos.index] && (
               <div
                 style={{
                   position: 'absolute',
-                  left: pos.x - 85,
-                  top: -45,
-                  filter: 'drop-shadow(2px 3px 4px rgba(0,0,0,0.4))',
+                  left: pos.x - 60,
+                  top: bloodstreamHeight * 0.6,
                 }}
               >
-                <FactorTokenNew factorId="FIXa" isActive />
+                <ConsistentFactorToken factorId="FIXa" />
               </div>
             )}
-
-            {/* FX docking slot - ghosted silhouette */}
-            {tfDockingState[pos.index] && !fxDockingState[pos.index] && (
-              <div
-                style={{
-                  position: 'absolute',
-                  left: pos.x + 45,
-                  top: -55,
-                  opacity: 0.25,
-                  filter: 'grayscale(50%)',
-                  pointerEvents: 'none',
-                }}
-              >
-                <FactorTokenNew factorId="FX" />
-              </div>
-            )}
-
-            {/* FXa blob when docked (Extrinsic Xase formed!) */}
+            {/* FXa floating */}
             {fxDockingState[pos.index] && (
               <div
                 style={{
                   position: 'absolute',
-                  left: pos.x + 45,
-                  top: -55,
-                  filter: 'drop-shadow(2px 3px 4px rgba(0,0,0,0.4))',
-                }}
-              >
-                <FactorTokenNew factorId="FXa" isActive />
-              </div>
-            )}
-
-            {/* FV docking slot - ghosted silhouette */}
-            {fxDockingState[pos.index] && !fvDockingState[pos.index] && (
-              <div
-                style={{
-                  position: 'absolute',
-                  left: pos.x + 95,
-                  top: -45,
-                  opacity: 0.25,
-                  filter: 'grayscale(50%)',
-                  pointerEvents: 'none',
-                }}
-              >
-                <FactorTokenNew factorId="FV" />
-              </div>
-            )}
-
-            {/* FVa blob when docked - PROTHROMBINASE FORMED! */}
-            {fvDockingState[pos.index] && (
-              <div
-                style={{
-                  position: 'absolute',
-                  left: pos.x + 95,
-                  top: -45,
-                  filter: 'drop-shadow(2px 3px 4px rgba(0,0,0,0.4))',
-                }}
-              >
-                <FactorTokenNew factorId="FVa" isActive />
-              </div>
-            )}
-
-            {/* ═══════════════════════════════════════════════════════ */}
-            {/* FII SUBSTRATE SLOT - Prothrombinase needs FII!         */}
-            {/* ═══════════════════════════════════════════════════════ */}
-            {fvDockingState[pos.index] && !fiiDockedState[pos.index] && (
-              <div
-                style={{
-                  position: 'absolute',
-                  left: pos.x + 145,
-                  top: -70,
-                  opacity: 0.25,
-                  filter: 'grayscale(50%)',
-                  pointerEvents: 'none',
-                }}
-              >
-                <FactorTokenNew factorId="FII" />
-              </div>
-            )}
-
-            {/* ═══════════════════════════════════════════════════════ */}
-            {/* THROMBIN (FIIa) - the product after FII conversion!    */}
-            {/* Pulsing glow indicates it can be grabbed and moved     */}
-            {/* ═══════════════════════════════════════════════════════ */}
-            {fiiDockedState[pos.index] && (
-              <div
-                style={{
-                  position: 'absolute',
-                  left: pos.x + 145,
-                  top: -75,
-                  cursor: 'grab',
-                  zIndex: 50,
-                  padding: '8px',
-                  margin: '-8px',
-                  touchAction: 'none',
-                }}
-                onMouseDown={(e) => {
-                  e.stopPropagation();
-                  console.log('🟢 THROMBIN CLICKED at index:', pos.index);
-                  onThrombinDragStart(pos.index, e);
-                }}
-                onTouchStart={(e) => {
-                  e.stopPropagation();
-                  console.log('🟢 THROMBIN TOUCHED at index:', pos.index);
-                  onThrombinDragStart(pos.index, e);
-                }}
-              >
-                {/* Pulsing glow effect to indicate draggability */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    inset: -25,
-                    background: 'radial-gradient(circle, rgba(153, 27, 27, 0.8) 0%, transparent 70%)',
-                    borderRadius: '50%',
-                    animation: 'pulse 1.2s ease-in-out infinite',
-                  }}
-                />
-                <div
-                  style={{
-                    filter: 'drop-shadow(0 0 18px rgba(153, 27, 27, 1))',
-                    animation: 'pulse 1.2s ease-in-out infinite',
-                  }}
-                >
-                  <FactorTokenNew factorId="FIIa" isActive />
-                </div>
-              </div>
-            )}
-
-            {/* Prothrombinase label when formed */}
-            {fvDockingState[pos.index] && (
-              <div
-                style={{
-                  position: 'absolute',
                   left: pos.x + 60,
-                  top: 10,
-                  padding: '3px 8px',
-                  background: 'rgba(59, 130, 246, 0.8)',
-                  borderRadius: 6,
-                  fontSize: 8,
-                  color: '#FFFFFF',
-                  fontWeight: 600,
-                  letterSpacing: 0.5,
+                  top: bloodstreamHeight * 0.5,
                 }}
               >
-                PROTHROMBINASE
+                <ConsistentFactorToken factorId="FXa" />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* TF-BEARING FIBROBLAST - Pink tissue at bottom                  */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      <div
+        style={{
+          position: 'absolute',
+          top: fibroblastY,
+          left: 0,
+          width: '100%',
+          height: fibroblastHeight,
+        }}
+      >
+        <svg width={width} height={fibroblastHeight} style={{ position: 'absolute', top: 0, left: 0 }}>
+          <defs>
+            <linearGradient id="fibroblast-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#FED7E2" />
+              <stop offset="50%" stopColor="#FBB6CE" />
+              <stop offset="100%" stopColor="#F9A8C0" />
+            </linearGradient>
+            <pattern id="tissue-texture" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse">
+              <circle cx="15" cy="15" r="2" fill="#EC4899" opacity={0.1} />
+            </pattern>
+          </defs>
+
+          {/* Fibroblast cell body - pink tissue matching reference */}
+          <rect x={0} y={0} width={width} height={fibroblastHeight} fill="url(#fibroblast-grad)" />
+          <rect x={0} y={0} width={width} height={fibroblastHeight} fill="url(#tissue-texture)" />
+        </svg>
+
+        {/* Membrane at top of fibroblast */}
+        <PhospholipidMembraneConsistent
+          width={width}
+          height={20}
+          variant="fibroblast"
+          style={{ position: 'absolute', top: 0, left: 0 }}
+        />
+
+        {/* TF Receptors embedded in membrane */}
+        {tfPositions.map((pos) => (
+          <div key={`tf-receptor-${pos.index}`}>
+            <TFReceptor
+              height={60}
+              style={{
+                position: 'absolute',
+                left: pos.x - 15,
+                top: -10,
+              }}
+            />
+
+            {/* FVIIa docked to TF */}
+            {tfDockingState[pos.index] && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: pos.x - 25,
+                  top: -25,
+                }}
+              >
+                <ConsistentFactorToken factorId="FVIIa" />
+              </div>
+            )}
+
+            {/* Ghost FVIIa waiting to dock */}
+            {!tfDockingState[pos.index] && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: pos.x - 25,
+                  top: -25,
+                }}
+              >
+                <ConsistentFactorToken factorId="FVII" isGhost />
+              </div>
+            )}
+
+            {/* Prothrombinase complex on right side of fibroblast */}
+            {fvDockingState[pos.index] && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: pos.x + 70,
+                  top: 30,
+                }}
+              >
+                {/* FXa + FVa + Prothrombin grouped together */}
+                <div style={{ position: 'relative' }}>
+                  {/* FXa */}
+                  <div style={{ position: 'absolute', left: 0, top: 0 }}>
+                    <ConsistentFactorToken factorId="FXa" />
+                  </div>
+                  {/* FVa */}
+                  <div style={{ position: 'absolute', left: 50, top: 0 }}>
+                    <ConsistentFactorToken factorId="FVa" />
+                  </div>
+                  {/* Prothrombin/Thrombin */}
+                  {fiiDockedState[pos.index] ? (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: 25,
+                        top: 40,
+                        cursor: 'grab',
+                      }}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        onThrombinDragStart(pos.index, e as unknown as React.MouseEvent);
+                      }}
+                      onTouchStart={(e) => {
+                        e.stopPropagation();
+                        onThrombinDragStart(pos.index, e as unknown as React.TouchEvent);
+                      }}
+                    >
+                      <ConsistentFactorToken
+                        factorId="FIIa"
+                        style={{
+                          animation: 'pulse 1.5s ease-in-out infinite',
+                          filter: 'drop-shadow(0 0 8px rgba(239, 68, 68, 0.6))',
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div style={{ position: 'absolute', left: 25, top: 40 }}>
+                      <ConsistentFactorToken factorId="FII" isGhost />
+                    </div>
+                  )}
+
+                  {/* Label */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: 0,
+                      top: -20,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: '#881337',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    Prothrombinase Complex
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -385,11 +342,11 @@ export function InitiationScene({
               transform: 'translate(-50%, -50%)',
             }}
           >
-            {complex.enzymeFactorId && (
-              <FactorTokenNew factorId={complex.enzymeFactorId} isActive />
-            )}
+            {complex.enzymeFactorId && <ConsistentFactorToken factorId={complex.enzymeFactorId} />}
             {complex.cofactorFactorId && (
-              <FactorTokenNew factorId={complex.cofactorFactorId} isActive />
+              <div style={{ marginLeft: 5 }}>
+                <ConsistentFactorToken factorId={complex.cofactorFactorId} />
+              </div>
             )}
           </div>
         ))}
@@ -409,110 +366,134 @@ export function InitiationScene({
       ))}
 
       {/* ═══════════════════════════════════════════════════════════════ */}
-      {/* RESTING PLATELET - uses same PhospholipidMembrane component    */}
-      {/* Positioned at top-middle, membrane facing down into bloodstream */}
+      {/* RESTING PLATELET - Positioned in bloodstream                   */}
       {/* ═══════════════════════════════════════════════════════════════ */}
       <div
         style={{
           position: 'absolute',
           left: plateletPosition.x - plateletPosition.width / 2,
-          top: 0,
+          top: bloodstreamHeight * 0.4,
           width: plateletPosition.width,
           transition: 'filter 0.3s ease',
           filter: isDraggingThrombin
-            ? 'drop-shadow(0 0 30px rgba(153, 27, 27, 0.9))'
-            : 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))',
+            ? 'drop-shadow(0 0 30px rgba(239, 68, 68, 0.9))'
+            : 'drop-shadow(0 4px 12px rgba(0,0,0,0.25))',
         }}
       >
-        {/* Reuse the same membrane component as fibroblast */}
-        <div style={{
-          animation: isDraggingThrombin ? 'pulse 0.8s ease-in-out infinite' : 'none',
-        }}>
-          <PhospholipidMembrane
-            width={plateletPosition.width}
-            height={plateletPosition.height}
-            variant="platelet"
-          />
-        </div>
-
-        {/* PLT label overlay */}
-        <div
+        <svg
+          width={plateletPosition.width}
+          height={plateletPosition.height}
           style={{
-            position: 'absolute',
-            bottom: 10,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            fontSize: 16,
-            fontWeight: 800,
-            color: isDraggingThrombin ? '#1E40AF' : '#9F1239',
-            textShadow: '0 1px 2px rgba(255,255,255,0.8)',
+            animation: isDraggingThrombin ? 'pulse 0.8s ease-in-out infinite' : 'none',
           }}
         >
-          PLT
-        </div>
+          <defs>
+            <radialGradient id="platelet-grad" cx="35%" cy="30%">
+              <stop offset="0%" stopColor="#FED7E2" />
+              <stop offset="50%" stopColor="#FBB6CE" />
+              <stop offset="100%" stopColor="#F687B3" />
+            </radialGradient>
+          </defs>
 
-        {/* Ghosted thrombin docking zone below */}
+          <ellipse
+            cx={plateletPosition.width / 2}
+            cy={plateletPosition.height / 2}
+            rx={plateletPosition.width / 2 - 5}
+            ry={plateletPosition.height / 2 - 5}
+            fill="url(#platelet-grad)"
+            stroke="#EC4899"
+            strokeWidth={3}
+          />
+
+          <text
+            x={plateletPosition.width / 2}
+            y={plateletPosition.height / 2 + 6}
+            textAnchor="middle"
+            fontSize={18}
+            fontWeight={800}
+            fill="#831843"
+          >
+            PLT
+          </text>
+        </svg>
+
+        {/* Ghosted thrombin docking zone */}
         <div
           style={{
             position: 'absolute',
-            bottom: -45,
+            bottom: -50,
             left: '50%',
             transform: 'translateX(-50%)',
-            opacity: isDraggingThrombin ? 0.7 : 0.25,
+            opacity: isDraggingThrombin ? 0.8 : 0.3,
             transition: 'opacity 0.3s ease',
           }}
         >
-          <FactorTokenNew factorId="FIIa" isActive />
+          <ConsistentFactorToken factorId="FIIa" isGhost />
         </div>
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════ */}
-      {/* PHASE INDICATOR - Educational label                            */}
+      {/* PHASE INDICATOR                                                 */}
       {/* ═══════════════════════════════════════════════════════════════ */}
       <div
         style={{
           position: 'absolute',
-          top: 20,
-          left: 20,
-          padding: '12px 20px',
-          background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.9) 0%, rgba(22, 163, 74, 0.9) 100%)',
-          borderRadius: 12,
-          boxShadow: '0 4px 15px rgba(34, 197, 94, 0.4)',
+          top: 15,
+          left: 15,
+          padding: '10px 18px',
+          background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.95) 0%, rgba(22, 163, 74, 0.95) 100%)',
+          borderRadius: 10,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+          border: '2px solid rgba(255,255,255,0.3)',
         }}
       >
-        <div style={{ color: '#FFFFFF', fontSize: 10, fontWeight: 500, opacity: 0.9, letterSpacing: 2 }}>
-          PHASE 1
+        <div style={{ color: '#FFFFFF', fontSize: 9, fontWeight: 600, opacity: 0.9, letterSpacing: 1.5 }}>
+          FAZA 1
         </div>
-        <div style={{ color: '#FFFFFF', fontSize: 18, fontWeight: 700 }}>
-          INITIATION
+        <div style={{ color: '#FFFFFF', fontSize: 16, fontWeight: 800, marginTop: 2 }}>
+          INIȚIERE
         </div>
-        <div style={{ color: '#DCFCE7', fontSize: 9, marginTop: 4 }}>
-          TF-bearing cell surface
+        <div style={{ color: '#DCFCE7', fontSize: 8, marginTop: 3, fontWeight: 500 }}>
+          Celulă purtătoare de TF
         </div>
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════ */}
-      {/* CELL LABEL - Fibroblast identification                         */}
+      {/* CELL LABEL - Fibroblast                                         */}
       {/* ═══════════════════════════════════════════════════════════════ */}
       <div
         style={{
           position: 'absolute',
-          bottom: 20,
-          left: 20,
-          padding: '8px 16px',
-          background: 'rgba(0,0,0,0.7)',
+          bottom: 15,
+          left: 15,
+          padding: '8px 14px',
+          background: 'rgba(136, 19, 55, 0.85)',
           borderRadius: 8,
-          border: '1px solid rgba(255,255,255,0.2)',
+          border: '2px solid rgba(251, 182, 206, 0.6)',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
         }}
       >
-        <div style={{ color: '#F9DC5C', fontSize: 12, fontWeight: 700 }}>
-          TF-BEARING FIBROBLAST
+        <div style={{ color: '#FED7E2', fontSize: 11, fontWeight: 700 }}>
+          TF expressing fibroblasts
         </div>
-        <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 9 }}>
-          Subendothelial surface exposed after injury
+        <div style={{ color: '#FEF3C7', fontSize: 8, marginTop: 2, fontWeight: 500 }}>
+          Subendoteliu expus după leziune
         </div>
       </div>
 
+      {/* CSS Animations */}
+      <style jsx>{`
+        @keyframes pulse {
+          0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.05);
+            opacity: 0.9;
+          }
+        }
+      `}</style>
     </div>
   );
 }

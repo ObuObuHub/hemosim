@@ -192,7 +192,7 @@ export function StabilizationScene({
               color: 'rgba(255,255,255,0.6)',
               whiteSpace: 'nowrap',
             }}>
-              {fibrinCount}/3 fibrin
+              {fibrinCount}/3 fibrină
             </div>
           </div>
         )}
@@ -313,7 +313,7 @@ export function StabilizationScene({
               animation: 'pulse 0.8s ease-in-out infinite',
             }}
           >
-            STABLE CLOT!
+            CHEAG STABIL!
           </div>
         )}
 
@@ -331,7 +331,7 @@ export function StabilizationScene({
           }}
         >
           <span style={{ fontSize: 18, fontWeight: 800, color: '#FEE2E2' }}>PLT*</span>
-          <span style={{ fontSize: 10, color: '#FECACA', marginLeft: 8 }}>fibrin stabilization</span>
+          <span style={{ fontSize: 10, color: '#FECACA', marginLeft: 8 }}>stabilizarea fibrinei</span>
         </div>
       </div>
 
@@ -348,13 +348,13 @@ export function StabilizationScene({
         }}
       >
         <div style={{ color: '#FFFFFF', fontSize: 10, fontWeight: 500, opacity: 0.9, letterSpacing: 2 }}>
-          PHASE 4
+          FAZA 4
         </div>
         <div style={{ color: '#FFFFFF', fontSize: 18, fontWeight: 700 }}>
-          STABILIZATION
+          STABILIZARE
         </div>
         <div style={{ color: '#DCFCE7', fontSize: 9, marginTop: 4 }}>
-          Fibrin mesh crosslinking
+          Reticularea plasei de fibrină
         </div>
       </div>
 
@@ -371,10 +371,10 @@ export function StabilizationScene({
         }}
       >
         <div style={{ color: '#86EFAC', fontSize: 12, fontWeight: 700 }}>
-          CLOT FORMATION
+          FORMAREA CHEAGULUI
         </div>
         <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 9 }}>
-          Fibrin polymerization + crosslinking
+          Polimerizarea fibrinei + reticulare
         </div>
       </div>
 
@@ -392,11 +392,11 @@ export function StabilizationScene({
           borderRadius: 12,
         }}
       >
-        <ProgressDot label="Fibrin 1" done={fibrinCount >= 1} color="#EAB308" />
-        <ProgressDot label="Fibrin 2" done={fibrinCount >= 2} color="#EAB308" />
-        <ProgressDot label="Fibrin 3" done={fibrinCount >= 3} color="#EAB308" />
+        <ProgressDot label="Fibrină 1" done={fibrinCount >= 1} color="#EAB308" />
+        <ProgressDot label="Fibrină 2" done={fibrinCount >= 2} color="#EAB308" />
+        <ProgressDot label="Fibrină 3" done={fibrinCount >= 3} color="#EAB308" />
         <ProgressDot label="FXIIIa" done={fxiiiActivated} color="#22C55E" />
-        <ProgressDot label="Crosslinked" done={meshCrosslinked} color="#22C55E" />
+        <ProgressDot label="Reticulat" done={meshCrosslinked} color="#22C55E" />
       </div>
 
       {/* CSS animations */}
