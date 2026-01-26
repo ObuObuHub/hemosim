@@ -6,7 +6,7 @@ import { LabInputPanel } from '@/components/LabInputPanel';
 import { InterpretationPanel } from '@/components/InterpretationPanel';
 import { MobileLayout } from '@/components/MobileLayout';
 import { DisclaimerPopup } from '@/components/DisclaimerPopup';
-import { InteractiveGame } from '@/components/InteractiveGame';
+import { CellularModelExplorer } from '@/components/learning/CellularModelExplorer';
 import { useCoagulationState } from '@/hooks/useCoagulationState';
 
 type DesktopTab = 'simulator' | 'interactiv';
@@ -104,7 +104,7 @@ export default function Home(): React.ReactElement {
                   : 'text-slate-600 hover:text-slate-800'
               }`}
             >
-              Interactiv
+              Învățare Interactivă
             </button>
           </nav>
 
@@ -211,7 +211,7 @@ export default function Home(): React.ReactElement {
             aria-labelledby="tab-interactiv"
             className="flex-1 overflow-hidden"
           >
-            <InteractiveGame className="h-full" />
+            <CellularModelExplorer className="h-full" />
           </div>
         )}
 

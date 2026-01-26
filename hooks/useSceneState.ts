@@ -9,7 +9,12 @@ import type {
   FloatingFactor,
   ActivationArrow,
   FibrinStrand,
+  KineticState,
+  DiffusingFIXaParticle,
+  DiffusingFIIaParticle,
+  TFPIXaComplexState,
 } from '@/types/game';
+import { INITIAL_KINETIC_STATE } from '@/types/game';
 
 // =============================================================================
 // STATE
@@ -24,6 +29,12 @@ export interface SceneState {
   objectives: SceneObjective[];
   thrombinCount: number;
   isTransitioning: boolean;
+
+  // Kinetic simulation state (Initiation phase)
+  kineticState: KineticState;
+  diffusingFIXaParticles: DiffusingFIXaParticle[];
+  diffusingFIIaParticles: DiffusingFIIaParticle[];
+  tfpiXaComplex: TFPIXaComplexState;
 }
 
 const initialState: SceneState = {
@@ -35,6 +46,18 @@ const initialState: SceneState = {
   objectives: [],
   thrombinCount: 0,
   isTransitioning: false,
+
+  // Kinetic simulation state
+  kineticState: INITIAL_KINETIC_STATE,
+  diffusingFIXaParticles: [],
+  diffusingFIIaParticles: [],
+  tfpiXaComplex: {
+    isForming: false,
+    formationProgress: 0,
+    isInhibiting: false,
+    inhibitionProgress: 0,
+    position: { x: 0, y: 0 },
+  },
 };
 
 // =============================================================================
@@ -59,7 +82,17 @@ type SceneAction =
   | { type: 'INCREMENT_THROMBIN' }
   | { type: 'SET_THROMBIN_COUNT'; count: number }
   | { type: 'SET_TRANSITIONING'; isTransitioning: boolean }
-  | { type: 'RESET' };
+  | { type: 'RESET' }
+  // Kinetic state actions
+  | { type: 'UPDATE_KINETIC_STATE'; kineticState: KineticState }
+  | { type: 'EXPOSE_TF' }
+  | { type: 'ADD_DIFFUSING_FIXA_PARTICLE'; particle: DiffusingFIXaParticle }
+  | { type: 'UPDATE_DIFFUSING_FIXA_PARTICLES'; particles: DiffusingFIXaParticle[] }
+  | { type: 'REMOVE_DIFFUSING_FIXA_PARTICLE'; particleId: string }
+  | { type: 'ADD_DIFFUSING_FIIA_PARTICLE'; particle: DiffusingFIIaParticle }
+  | { type: 'UPDATE_DIFFUSING_FIIA_PARTICLES'; particles: DiffusingFIIaParticle[] }
+  | { type: 'REMOVE_DIFFUSING_FIIA_PARTICLE'; particleId: string }
+  | { type: 'UPDATE_TFPI_XA_COMPLEX'; updates: Partial<TFPIXaComplexState> };
 
 // =============================================================================
 // REDUCER
@@ -160,6 +193,56 @@ function sceneReducer(state: SceneState, action: SceneAction): SceneState {
     case 'RESET':
       return initialState;
 
+    // Kinetic state actions
+    case 'UPDATE_KINETIC_STATE':
+      return { ...state, kineticState: action.kineticState };
+
+    case 'EXPOSE_TF':
+      return {
+        ...state,
+        kineticState: { ...state.kineticState, isTFExposed: true },
+      };
+
+    case 'ADD_DIFFUSING_FIXA_PARTICLE':
+      return {
+        ...state,
+        diffusingFIXaParticles: [...state.diffusingFIXaParticles, action.particle],
+      };
+
+    case 'UPDATE_DIFFUSING_FIXA_PARTICLES':
+      return { ...state, diffusingFIXaParticles: action.particles };
+
+    case 'REMOVE_DIFFUSING_FIXA_PARTICLE':
+      return {
+        ...state,
+        diffusingFIXaParticles: state.diffusingFIXaParticles.filter(
+          (p) => p.id !== action.particleId
+        ),
+      };
+
+    case 'ADD_DIFFUSING_FIIA_PARTICLE':
+      return {
+        ...state,
+        diffusingFIIaParticles: [...state.diffusingFIIaParticles, action.particle],
+      };
+
+    case 'UPDATE_DIFFUSING_FIIA_PARTICLES':
+      return { ...state, diffusingFIIaParticles: action.particles };
+
+    case 'REMOVE_DIFFUSING_FIIA_PARTICLE':
+      return {
+        ...state,
+        diffusingFIIaParticles: state.diffusingFIIaParticles.filter(
+          (p) => p.id !== action.particleId
+        ),
+      };
+
+    case 'UPDATE_TFPI_XA_COMPLEX':
+      return {
+        ...state,
+        tfpiXaComplex: { ...state.tfpiXaComplex, ...action.updates },
+      };
+
     default:
       return state;
   }
@@ -196,6 +279,16 @@ export interface SceneStateHook {
   // Thrombin
   incrementThrombin: () => void;
   setThrombinCount: (count: number) => void;
+  // Kinetic state management
+  updateKineticState: (kineticState: KineticState) => void;
+  exposeTF: () => void;
+  addDiffusingFIXaParticle: (particle: DiffusingFIXaParticle) => void;
+  updateDiffusingFIXaParticles: (particles: DiffusingFIXaParticle[]) => void;
+  removeDiffusingFIXaParticle: (particleId: string) => void;
+  addDiffusingFIIaParticle: (particle: DiffusingFIIaParticle) => void;
+  updateDiffusingFIIaParticles: (particles: DiffusingFIIaParticle[]) => void;
+  removeDiffusingFIIaParticle: (particleId: string) => void;
+  updateTFPIXaComplex: (updates: Partial<TFPIXaComplexState>) => void;
   // Helpers
   areAllObjectivesComplete: () => boolean;
   getObjectiveById: (objectiveId: string) => SceneObjective | undefined;
@@ -295,6 +388,58 @@ export function useSceneState(): SceneStateHook {
     dispatch({ type: 'SET_THROMBIN_COUNT', count });
   }, []);
 
+  // Kinetic state management
+  const updateKineticState = useCallback((kineticState: KineticState): void => {
+    dispatch({ type: 'UPDATE_KINETIC_STATE', kineticState });
+  }, []);
+
+  const exposeTF = useCallback((): void => {
+    dispatch({ type: 'EXPOSE_TF' });
+  }, []);
+
+  const addDiffusingFIXaParticle = useCallback(
+    (particle: DiffusingFIXaParticle): void => {
+      dispatch({ type: 'ADD_DIFFUSING_FIXA_PARTICLE', particle });
+    },
+    []
+  );
+
+  const updateDiffusingFIXaParticles = useCallback(
+    (particles: DiffusingFIXaParticle[]): void => {
+      dispatch({ type: 'UPDATE_DIFFUSING_FIXA_PARTICLES', particles });
+    },
+    []
+  );
+
+  const removeDiffusingFIXaParticle = useCallback((particleId: string): void => {
+    dispatch({ type: 'REMOVE_DIFFUSING_FIXA_PARTICLE', particleId });
+  }, []);
+
+  const addDiffusingFIIaParticle = useCallback(
+    (particle: DiffusingFIIaParticle): void => {
+      dispatch({ type: 'ADD_DIFFUSING_FIIA_PARTICLE', particle });
+    },
+    []
+  );
+
+  const updateDiffusingFIIaParticles = useCallback(
+    (particles: DiffusingFIIaParticle[]): void => {
+      dispatch({ type: 'UPDATE_DIFFUSING_FIIA_PARTICLES', particles });
+    },
+    []
+  );
+
+  const removeDiffusingFIIaParticle = useCallback((particleId: string): void => {
+    dispatch({ type: 'REMOVE_DIFFUSING_FIIA_PARTICLE', particleId });
+  }, []);
+
+  const updateTFPIXaComplex = useCallback(
+    (updates: Partial<TFPIXaComplexState>): void => {
+      dispatch({ type: 'UPDATE_TFPI_XA_COMPLEX', updates });
+    },
+    []
+  );
+
   // Helpers
   const areAllObjectivesComplete = useCallback((): boolean => {
     return state.objectives.length > 0 && state.objectives.every((o) => o.isComplete);
@@ -348,6 +493,16 @@ export function useSceneState(): SceneStateHook {
     // Thrombin
     incrementThrombin,
     setThrombinCount,
+    // Kinetic state management
+    updateKineticState,
+    exposeTF,
+    addDiffusingFIXaParticle,
+    updateDiffusingFIXaParticles,
+    removeDiffusingFIXaParticle,
+    addDiffusingFIIaParticle,
+    updateDiffusingFIIaParticles,
+    removeDiffusingFIIaParticle,
+    updateTFPIXaComplex,
     // Helpers
     areAllObjectivesComplete,
     getObjectiveById,

@@ -9,9 +9,9 @@ interface ZymogenTokenProps {
 }
 
 /**
- * Zymogen shape: Rounded oval/pill
- * Represents inactive enzyme precursors (FIX, FX, FII)
- * TEXTBOOK: Zymogens are dormant, smooth shapes
+ * Zymogen token - Medical textbook style
+ * Represents inactive enzyme precursors (FIX, FX, FII, etc.)
+ * Simple oval with clear label
  */
 export function ZymogenToken({
   color,
@@ -20,37 +20,24 @@ export function ZymogenToken({
   height = 35,
   style,
 }: ZymogenTokenProps): React.ReactElement {
-  const id = `zymogen-${label}`;
-
   return (
     <svg
       width={width}
       height={height}
       viewBox={`0 0 ${width} ${height}`}
       style={style}
-      className="zymogen-token"
+      role="img"
+      aria-label={`${label} - zymogen`}
     >
-      <defs>
-        <linearGradient id={`${id}-gradient`} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor={color} stopOpacity={0.9} />
-          <stop offset="50%" stopColor={color} stopOpacity={0.7} />
-          <stop offset="100%" stopColor={color} stopOpacity={0.9} />
-        </linearGradient>
-        <filter id={`${id}-shadow`}>
-          <feDropShadow dx="1" dy="2" stdDeviation="2" floodOpacity="0.3" />
-        </filter>
-      </defs>
-
-      {/* Rounded oval/pill shape */}
+      {/* Simple oval shape */}
       <ellipse
         cx={width / 2}
         cy={height / 2}
-        rx={width / 2 - 2}
-        ry={height / 2 - 2}
-        fill={`url(#${id}-gradient)`}
-        stroke={color}
+        rx={width / 2 - 3}
+        ry={height / 2 - 3}
+        fill={color}
+        stroke="#FFFFFF"
         strokeWidth={2}
-        filter={`url(#${id}-shadow)`}
       />
 
       {/* Label */}
@@ -61,7 +48,7 @@ export function ZymogenToken({
         fontSize={11}
         fontWeight={700}
         fill="#FFFFFF"
-        style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
+        style={{ fontFamily: 'system-ui, sans-serif' }}
       >
         {label}
       </text>

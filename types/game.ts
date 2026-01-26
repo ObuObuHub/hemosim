@@ -148,6 +148,8 @@ export interface FactorVisual {
   activeColor: string;
   width: number;
   height: number;
+  /** Vitamin K-dependent factors (II, VII, IX, X) have Gla domains for membrane binding */
+  hasGlaDomain?: boolean;
 }
 
 /**
@@ -412,6 +414,100 @@ export interface AnimationState {
     type: 'success' | 'error' | 'info' | 'phase';
     expiresAt: number;
   } | null;
+}
+
+// =============================================================================
+// KINETIC STATE (Realistic Coagulation Simulation - Hoffman-Monroe Model)
+// =============================================================================
+
+/**
+ * Kinetic state for realistic coagulation simulation
+ * Based on the Hoffman-Monroe cell-based model of coagulation
+ *
+ * Concentrations are in relative units (0-100) for visualization
+ * Real nM values are approximated for educational purposes
+ */
+export interface KineticState {
+  // Concentrations (relative units 0-100, displayed as ~nM)
+  tfVIIaComplex: number;      // TF-VIIa complex activity level
+  fxaLocal: number;           // FXa generated on TF-cell membrane
+  fixaLocal: number;          // FIXa generated locally on TF-cell
+  fixaDiffused: number;       // FIXa that has diffused to platelet
+  traceVa: number;            // Trace Va activity (seed for prothrombinase)
+  thrombinSpark: number;      // Thrombin produced during initiation (the "spark")
+  tfpiInhibition: number;     // TFPI inhibition progress (0-1, 1 = fully inhibited)
+
+  // Activation states
+  isTFExposed: boolean;       // Has TF been exposed (injury simulation)
+  isTFVIIaActive: boolean;    // Is TF-VIIa complex actively producing?
+  isProthrombinaseFormed: boolean; // Has minimal prothrombinase formed?
+  isTFPIActivated: boolean;   // Has TFPI shut down TF-VIIa?
+  isPlateletReady: boolean;   // Is platelet ready for handoff?
+
+  // Feedback tracking
+  feedbackVActivated: boolean;  // Has thrombin activated FV?
+  feedbackVIIIActivated: boolean; // Has thrombin activated FVIII?
+
+  // Timing (seconds elapsed in simulation)
+  elapsedTime: number;
+}
+
+/**
+ * Initial kinetic state for new game
+ */
+export const INITIAL_KINETIC_STATE: KineticState = {
+  tfVIIaComplex: 0,
+  fxaLocal: 0,
+  fixaLocal: 0,
+  fixaDiffused: 0,
+  traceVa: 5, // Trace Va always present (seed)
+  thrombinSpark: 0,
+  tfpiInhibition: 0,
+
+  isTFExposed: false,
+  isTFVIIaActive: false,
+  isProthrombinaseFormed: false,
+  isTFPIActivated: false,
+  isPlateletReady: false,
+
+  feedbackVActivated: false,
+  feedbackVIIIActivated: false,
+
+  elapsedTime: 0,
+};
+
+/**
+ * Diffusing FIXa particle for visualization
+ */
+export interface DiffusingFIXaParticle {
+  id: string;
+  position: { x: number; y: number };
+  targetPosition: { x: number; y: number };
+  progress: number; // 0-1, animation progress
+  opacity: number;
+}
+
+/**
+ * Diffusing FIIa (thrombin) particle for visualization
+ * Auto-floats from TF-cell membrane to platelet after FII → FIIa conversion
+ */
+export interface DiffusingFIIaParticle {
+  id: string;
+  position: { x: number; y: number };
+  targetPosition: { x: number; y: number };
+  progress: number; // 0-1, animation progress
+  opacity: number;
+}
+
+/**
+ * TFPI-Xa complex visualization state
+ */
+export interface TFPIXaComplexState {
+  isForming: boolean;
+  formationProgress: number; // 0-1
+  isInhibiting: boolean;
+  inhibitionProgress: number; // 0-1
+  position: { x: number; y: number };
 }
 
 // =============================================================================

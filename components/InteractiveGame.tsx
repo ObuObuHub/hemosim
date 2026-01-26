@@ -6,7 +6,8 @@ import type { ReactElement } from 'react';
 import { useSceneState } from '@/hooks/useSceneState';
 import { InitiationScene, AmplificationScene, PropagationScene, StabilizationScene } from '@/components/game/scenes';
 import { FactorTokenNew } from '@/components/game/tokens/FactorTokenNew';
-import type { FloatingFactor } from '@/types/game';
+import type { FloatingFactor, DiffusingFIXaParticle, DiffusingFIIaParticle } from '@/types/game';
+import { updateKinetics, isInitiationComplete, KINETIC_CONSTANTS } from '@/engine/game/kinetic-engine';
 
 interface HeldFactor {
   id: string;
@@ -34,6 +35,13 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
     removeActivationArrow,
     setObjectives,
     areAllObjectivesComplete,
+    // Kinetic state management
+    updateKineticState,
+    exposeTF,
+    addDiffusingFIXaParticle,
+    updateDiffusingFIXaParticles,
+    addDiffusingFIIaParticle,
+    updateDiffusingFIIaParticles,
   } = useSceneState();
 
   const lastFrameTimeRef = useRef<number>(0);
@@ -43,6 +51,15 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
   // Refs for game loop to avoid dependency array issues
   const floatingFactorsRef = useRef(state.floatingFactors);
   const updateFloatingFactorsRef = useRef(updateFloatingFactors);
+
+  // Refs for kinetic simulation
+  const kineticStateRef = useRef(state.kineticState);
+  const updateKineticStateRef = useRef(updateKineticState);
+  const diffusingParticlesRef = useRef(state.diffusingFIXaParticles);
+  const updateDiffusingParticlesRef = useRef(updateDiffusingFIXaParticles);
+  const diffusingFIIaParticlesRef = useRef(state.diffusingFIIaParticles);
+  const updateDiffusingFIIaParticlesRef = useRef(updateDiffusingFIIaParticles);
+  const lastKineticUpdateRef = useRef<number>(0);
 
   // Container dimensions (responsive to parent size)
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
@@ -75,6 +92,26 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
     updateFloatingFactorsRef.current = updateFloatingFactors;
   }, [updateFloatingFactors]);
 
+  // Keep kinetic refs in sync
+  useEffect(() => {
+    kineticStateRef.current = state.kineticState;
+  }, [state.kineticState]);
+  useEffect(() => {
+    updateKineticStateRef.current = updateKineticState;
+  }, [updateKineticState]);
+  useEffect(() => {
+    diffusingParticlesRef.current = state.diffusingFIXaParticles;
+  }, [state.diffusingFIXaParticles]);
+  useEffect(() => {
+    updateDiffusingParticlesRef.current = updateDiffusingFIXaParticles;
+  }, [updateDiffusingFIXaParticles]);
+  useEffect(() => {
+    diffusingFIIaParticlesRef.current = state.diffusingFIIaParticles;
+  }, [state.diffusingFIIaParticles]);
+  useEffect(() => {
+    updateDiffusingFIIaParticlesRef.current = updateDiffusingFIIaParticles;
+  }, [updateDiffusingFIIaParticles]);
+
   const GAME_WIDTH = dimensions.width;
   const GAME_HEIGHT = dimensions.height;
   const gameWidthRef = useRef(GAME_WIDTH);
@@ -85,7 +122,10 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
   // Held factor state for drag-and-drop
   const [heldFactor, setHeldFactor] = useState<HeldFactor | null>(null);
 
-  // Initialize scene objectives
+  // Debug log for on-screen display (moved up to fix variable access order)
+  const [debugLog, setDebugLog] = useState<string[]>(['Game started']);
+
+  // Initialize scene objectives and auto-expose TF for kinetic simulation
   useEffect(() => {
     if (state.currentScene === 'initiation') {
       setObjectives([
@@ -93,8 +133,13 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
         { id: 'dock-fv', description: 'Andochează FV pentru a forma Protrombinaza', isComplete: false },
         { id: 'deliver-thrombin', description: 'Livrează trombina la trombocit', isComplete: false },
       ]);
+      // Auto-expose TF to start kinetic simulation immediately
+      if (!state.kineticState.isTFExposed) {
+        exposeTF();
+        setDebugLog((prev) => [...prev.slice(-4), 'TF auto-expus! Simulare cinetică pornită.']);
+      }
     }
-  }, [state.currentScene, setObjectives]);
+  }, [state.currentScene, setObjectives, state.kineticState.isTFExposed, exposeTF]);
 
   // Check for scene transition (objectives-based)
   useEffect(() => {
@@ -109,39 +154,28 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
     }
   }, [state.currentScene, areAllObjectivesComplete, setScene]);
 
-  // Track which TF proteins have FVII docked (forms TF+VIIa)
+  // Track docking state for single TF complex (simplified for mobile)
   const [tfDockingState, setTfDockingState] = useState<Record<number, boolean>>({
-    0: false, 1: false, 2: false,
+    0: false,
   });
 
-  // Track which TF+VIIa complexes have FIX docked (activated to FIXa)
   const [fixDockingState, setFixDockingState] = useState<Record<number, boolean>>({
-    0: false, 1: false, 2: false,
+    0: false,
   });
 
-  // Track which TF+VIIa complexes have FX docked (activated to FXa)
   const [fxDockingState, setFxDockingState] = useState<Record<number, boolean>>({
-    0: false, 1: false, 2: false,
+    0: false,
   });
 
-  // Track which complexes have FV docked (forms Prothrombinase with FXa!)
   const [fvDockingState, setFvDockingState] = useState<Record<number, boolean>>({
-    0: false, 1: false, 2: false,
+    0: false,
   });
 
-  // Track FII docked to Prothrombinase (converts to Thrombin!)
   const [fiiDockedState, setFiiDockedState] = useState<Record<number, boolean>>({
-    0: false, 1: false, 2: false,
+    0: false,
   });
 
-  // Track dragged thrombin for delivering to platelet
-  const [draggedThrombin, setDraggedThrombin] = useState<{
-    fromIndex: number;
-    position: { x: number; y: number };
-  } | null>(null);
-
-  // Debug log for on-screen display
-  const [debugLog, setDebugLog] = useState<string[]>(['Game started']);
+  // draggedThrombin removed - thrombin now auto-floats to platelet
 
   // AMPLIFICATION PHASE STATE
   const [ampVwfSplit, setAmpVwfSplit] = useState(false);
@@ -247,52 +281,16 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
     height: 70,
   }), [GAME_WIDTH]);
 
-  // TF positions
+  // Single TF position (centered for mobile)
   const tfPositions = useMemo(() => [
-    { x: GAME_WIDTH * 0.2, index: 0 },
-    { x: GAME_WIDTH * 0.5, index: 1 },
-    { x: GAME_WIDTH * 0.8, index: 2 },
+    { x: GAME_WIDTH * 0.5, index: 0 },
   ], [GAME_WIDTH]);
 
-  // Spawn floating factors for initiation
-  useEffect(() => {
-    if (state.currentScene !== 'initiation') return;
-
-    const spawnFactor = (): void => {
-      const pool: string[] = [];
-      const hasTFVIIa = Object.values(tfDockingState).some(v => v);
-      const hasFXa = Object.values(fxDockingState).some(v => v);
-      const hasProthrombinase = Object.values(fvDockingState).some(v => v);
-      const needsMoreTFVIIa = Object.values(tfDockingState).filter(v => !v).length > 0;
-      const needsMoreFXa = Object.values(fxDockingState).filter(v => !v).length > 0;
-      const needsMoreProthrombinase = Object.values(fvDockingState).filter(v => !v).length > 0;
-      const needsThrombin = Object.values(fiiDockedState).filter(v => !v).length > 0;
-
-      if (needsMoreTFVIIa) pool.push('FVII', 'FVII', 'FVII');
-      if (hasTFVIIa) {
-        pool.push('FIX', 'FIX');
-        if (needsMoreFXa) pool.push('FX', 'FX', 'FX');
-      }
-      if (hasFXa && needsMoreProthrombinase) pool.push('FV', 'FV', 'FV');
-      if (hasProthrombinase && needsThrombin) pool.push('FII', 'FII', 'FII', 'FII');
-      if (pool.length === 0) pool.push('FVII');
-
-      const factorId = pool[Math.floor(Math.random() * pool.length)];
-      const bloodstreamHeight = GAME_HEIGHT * 0.75;
-      const factor: FloatingFactor = {
-        id: `floating-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        factorId,
-        position: { x: -50, y: 120 + Math.random() * (bloodstreamHeight - 180) },
-        velocity: { x: 50 + Math.random() * 30, y: (Math.random() - 0.5) * 20 },
-        isVulnerableTo: [],
-      };
-      addFloatingFactor(factor);
-    };
-
-    spawnFactor();
-    const interval = setInterval(spawnFactor, 2000);
-    return () => clearInterval(interval);
-  }, [state.currentScene, addFloatingFactor, GAME_HEIGHT, tfDockingState, fxDockingState, fvDockingState, fiiDockedState]);
+  // Conveyor belt drag state for initiation phase
+  const [conveyorDragFactor, setConveyorDragFactor] = useState<{
+    factorId: string;
+    position: { x: number; y: number };
+  } | null>(null);
 
   // Spawn floating thrombin for AMPLIFICATION phase
   useEffect(() => {
@@ -426,6 +424,214 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
     return () => cancelAnimationFrame(animationFrameRef.current);
   }, []); // Empty dependency array - uses refs for all values
 
+  // Kinetic simulation loop for Initiation phase
+  useEffect(() => {
+    if (state.currentScene !== 'initiation') return;
+
+    const kineticLoop = (timestamp: number): void => {
+      if (lastKineticUpdateRef.current === 0) {
+        lastKineticUpdateRef.current = timestamp;
+      }
+
+      const deltaTime = (timestamp - lastKineticUpdateRef.current) / 1000;
+      lastKineticUpdateRef.current = timestamp;
+
+      // Only update if TF is exposed
+      const currentKinetic = kineticStateRef.current;
+      if (!currentKinetic.isTFExposed) {
+        requestAnimationFrame(kineticLoop);
+        return;
+      }
+
+      // Check docking states to determine what's available
+      const hasFVIIDocked = Object.values(tfDockingState).some((v) => v);
+      const hasFXDocked = Object.values(fxDockingState).some((v) => v);
+      const hasFVDocked = Object.values(fvDockingState).some((v) => v);
+      const hasFIIDocked = Object.values(fiiDockedState).some((v) => v);
+
+      // Run kinetic simulation
+      const { state: newKineticState } = updateKinetics(
+        currentKinetic,
+        deltaTime,
+        hasFVIIDocked,
+        hasFXDocked,
+        hasFVDocked,
+        hasFIIDocked
+      );
+
+      // Update kinetic state if changed
+      if (
+        newKineticState.tfVIIaComplex !== currentKinetic.tfVIIaComplex ||
+        newKineticState.fxaLocal !== currentKinetic.fxaLocal ||
+        newKineticState.fixaLocal !== currentKinetic.fixaLocal ||
+        newKineticState.thrombinSpark !== currentKinetic.thrombinSpark ||
+        newKineticState.tfpiInhibition !== currentKinetic.tfpiInhibition ||
+        newKineticState.fixaDiffused !== currentKinetic.fixaDiffused
+      ) {
+        updateKineticStateRef.current(newKineticState);
+      }
+
+      requestAnimationFrame(kineticLoop);
+    };
+
+    const animationId = requestAnimationFrame(kineticLoop);
+    return () => cancelAnimationFrame(animationId);
+  }, [state.currentScene, tfDockingState, fxDockingState, fvDockingState, fiiDockedState]);
+
+  // Spawn FIXa diffusing particle immediately when FIX is docked
+  useEffect(() => {
+    if (state.currentScene !== 'initiation') return;
+    if (!fixDockingState[0]) return;
+
+    // Spawn FIXa particle that floats to platelet
+    const startX = GAME_WIDTH * 0.5 - 85; // Position where FIX was docked
+    const startY = GAME_HEIGHT * 0.75 - 45;
+
+    const particle: DiffusingFIXaParticle = {
+      id: `fixa-particle-${Date.now()}`,
+      position: { x: startX, y: startY },
+      targetPosition: { x: plateletPosition.x, y: plateletPosition.y + plateletPosition.height },
+      progress: 0,
+      opacity: 1,
+    };
+    addDiffusingFIXaParticle(particle);
+    setDebugLog((prev) => [...prev.slice(-4), 'FIXa plutește spre trombocit...']);
+  }, [state.currentScene, fixDockingState, GAME_WIDTH, GAME_HEIGHT, plateletPosition, addDiffusingFIXaParticle]);
+
+  // Continue spawning additional FIXa particles based on kinetic simulation
+  useEffect(() => {
+    if (state.currentScene !== 'initiation') return;
+    if (!fixDockingState[0]) return; // Only spawn if FIX is docked
+    if (state.kineticState.fixaLocal < KINETIC_CONSTANTS.FIXA_DIFFUSION_THRESHOLD) return;
+
+    const spawnParticle = (): void => {
+      const startX = GAME_WIDTH * 0.5 - 85;
+      const startY = GAME_HEIGHT * 0.75 - 45;
+
+      const particle: DiffusingFIXaParticle = {
+        id: `fixa-particle-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        position: { x: startX + (Math.random() - 0.5) * 30, y: startY },
+        targetPosition: { x: plateletPosition.x, y: plateletPosition.y + plateletPosition.height },
+        progress: 0,
+        opacity: 1,
+      };
+      addDiffusingFIXaParticle(particle);
+    };
+
+    const interval = setInterval(spawnParticle, 1500);
+    return () => clearInterval(interval);
+  }, [
+    state.currentScene,
+    fixDockingState,
+    state.kineticState.fixaLocal,
+    GAME_WIDTH,
+    GAME_HEIGHT,
+    plateletPosition,
+    addDiffusingFIXaParticle,
+  ]);
+
+  // Animate diffusing FIXa particles
+  useEffect(() => {
+    if (state.diffusingFIXaParticles.length === 0) return;
+
+    const animateParticles = (): void => {
+      const updatedParticles = diffusingParticlesRef.current
+        .map((particle) => {
+          const newProgress = particle.progress + 0.02;
+          const t = Math.min(newProgress, 1);
+
+          // Lerp position
+          const newX = particle.position.x + (particle.targetPosition.x - particle.position.x) * 0.05;
+          const newY = particle.position.y + (particle.targetPosition.y - particle.position.y) * 0.05;
+
+          return {
+            ...particle,
+            position: { x: newX, y: newY },
+            progress: newProgress,
+            opacity: t > 0.8 ? 1 - (t - 0.8) * 5 : 1,
+          };
+        })
+        .filter((p) => p.progress < 1);
+
+      updateDiffusingParticlesRef.current(updatedParticles);
+    };
+
+    const interval = setInterval(animateParticles, 50);
+    return () => clearInterval(interval);
+  }, [state.diffusingFIXaParticles.length]);
+
+  // Spawn FIIa diffusing particle when FII is docked (thrombin produced)
+  useEffect(() => {
+    if (state.currentScene !== 'initiation') return;
+    if (!fiiDockedState[0]) return;
+
+    // Spawn a single thrombin particle that floats to platelet
+    const startX = GAME_WIDTH * 0.5 + 145; // Position where FII was docked
+    const startY = GAME_HEIGHT * 0.75 - 75;
+
+    const particle: DiffusingFIIaParticle = {
+      id: `fiia-particle-${Date.now()}`,
+      position: { x: startX, y: startY },
+      targetPosition: { x: plateletPosition.x, y: plateletPosition.y + plateletPosition.height },
+      progress: 0,
+      opacity: 1,
+    };
+    addDiffusingFIIaParticle(particle);
+    setDebugLog((prev) => [...prev.slice(-4), 'FIIa (trombină) plutește spre trombocit...']);
+  }, [state.currentScene, fiiDockedState, GAME_WIDTH, GAME_HEIGHT, plateletPosition, addDiffusingFIIaParticle]);
+
+  // Animate diffusing FIIa particles and auto-activate platelet on arrival
+  useEffect(() => {
+    if (state.diffusingFIIaParticles.length === 0) return;
+
+    const animateParticles = (): void => {
+      let particleArrived = false;
+
+      const updatedParticles = diffusingFIIaParticlesRef.current
+        .map((particle) => {
+          const newProgress = particle.progress + 0.015; // Slightly slower than FIXa
+          const t = Math.min(newProgress, 1);
+
+          // Lerp position
+          const newX = particle.position.x + (particle.targetPosition.x - particle.position.x) * 0.04;
+          const newY = particle.position.y + (particle.targetPosition.y - particle.position.y) * 0.04;
+
+          // Check if particle arrived at platelet
+          if (newProgress >= 0.95) {
+            particleArrived = true;
+          }
+
+          return {
+            ...particle,
+            position: { x: newX, y: newY },
+            progress: newProgress,
+            opacity: t > 0.85 ? 1 - (t - 0.85) * 6.67 : 1,
+          };
+        })
+        .filter((p) => p.progress < 1);
+
+      updateDiffusingFIIaParticlesRef.current(updatedParticles);
+
+      // Auto-transition to Amplification when thrombin reaches platelet
+      if (particleArrived && state.currentScene === 'initiation') {
+        setDebugLog((prev) => [...prev.slice(-4), 'Trombina a ajuns! → Amplificare']);
+        setTimeout(() => setScene('amplification'), 800);
+      }
+    };
+
+    const interval = setInterval(animateParticles, 50);
+    return () => clearInterval(interval);
+  }, [state.diffusingFIIaParticles.length, state.currentScene, setScene]);
+
+  // Auto-transition to Amplification when kinetic conditions are met (fallback)
+  useEffect(() => {
+    if (state.currentScene !== 'initiation') return;
+    if (!isInitiationComplete(state.kineticState)) return;
+
+    setDebugLog((prev) => [...prev.slice(-4), 'Kinetic: Ready for Amplification!']);
+    setTimeout(() => setScene('amplification'), 1000);
+  }, [state.currentScene, state.kineticState, setScene]);
+
   // Unified position extraction from mouse or touch events
   const getEventPosition = useCallback((event: React.MouseEvent | React.TouchEvent): { x: number; y: number } | null => {
     const rect = containerRef.current?.getBoundingClientRect();
@@ -453,6 +659,19 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
     };
   }, []);
 
+  // Handle conveyor belt drag start
+  const handleConveyorDragStart = useCallback(
+    (factorId: string, event: React.MouseEvent | React.TouchEvent): void => {
+      event.preventDefault();
+      const position = getEventPosition(event);
+      if (!position) return;
+
+      setConveyorDragFactor({ factorId, position });
+      setDebugLog((prev) => [...prev.slice(-4), `Dragging ${factorId} from conveyor`]);
+    },
+    [getEventPosition]
+  );
+
   // Handlers
   const handleFactorCatch = useCallback((factorId: string, event: React.MouseEvent | React.TouchEvent): void => {
     event.preventDefault();
@@ -472,7 +691,7 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
   }, [state.floatingFactors, removeFloatingFactor, getEventPosition]);
 
   const handleMove = useCallback((event: React.MouseEvent | React.TouchEvent): void => {
-    if (!heldFactor && !draggedThrombin) return;
+    if (!heldFactor && !conveyorDragFactor) return;
 
     const position = getEventPosition(event);
     if (!position) return;
@@ -481,31 +700,70 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
       setHeldFactor(prev => prev ? { ...prev, position } : null);
     }
 
-    if (draggedThrombin) {
-      setDraggedThrombin(prev => prev ? { ...prev, position } : null);
+    if (conveyorDragFactor) {
+      setConveyorDragFactor(prev => prev ? { ...prev, position } : null);
     }
-  }, [heldFactor, draggedThrombin, getEventPosition]);
+  }, [heldFactor, conveyorDragFactor, getEventPosition]);
 
   const handleEnd = useCallback((): void => {
-    // Handle thrombin drop on platelet
-    if (draggedThrombin) {
-      const dropX = draggedThrombin.position.x;
-      const dropY = draggedThrombin.position.y;
-      const plateletCenterX = plateletPosition.x;
-      const isOnPlatelet = dropX > plateletCenterX - 150 && dropX < plateletCenterX + 150 && dropY < 180;
+    // Handle conveyor belt factor drop
+    if (conveyorDragFactor) {
+      const dropX = conveyorDragFactor.position.x;
+      const dropY = conveyorDragFactor.position.y;
+      const membraneY = GAME_HEIGHT * 0.75;
+      const tfX = GAME_WIDTH * 0.5;
+      let docked = false;
 
-      setDebugLog(prev => [...prev.slice(-4), `Drop: y=${Math.round(dropY)}, onPlt=${isOnPlatelet}`]);
-
-      if (isOnPlatelet) {
-        setDebugLog(prev => [...prev.slice(-4), `SUCCESS! Going to Amplification...`]);
-        setTimeout(() => setScene('amplification'), 800);
-      } else {
-        setDebugLog(prev => [...prev.slice(-4), `Miss - drop on platelet (top area)`]);
+      // Check docking based on factor type and drop position
+      if (conveyorDragFactor.factorId === 'FVII' && !tfDockingState[0]) {
+        if (Math.abs(dropX - tfX) < 80 && dropY > membraneY - 120 && dropY < membraneY + 50) {
+          setTfDockingState({ 0: true });
+          setDebugLog((prev) => [...prev.slice(-4), 'FVII andocat → TF-VIIa format!']);
+          docked = true;
+        }
       }
 
-      setDraggedThrombin(null);
+      if (conveyorDragFactor.factorId === 'FIX' && tfDockingState[0] && !fixDockingState[0]) {
+        if (Math.abs(dropX - (tfX - 85)) < 70 && dropY > membraneY - 100 && dropY < membraneY + 50) {
+          setFixDockingState({ 0: true });
+          setDebugLog((prev) => [...prev.slice(-4), 'FIX andocat → FIXa generat!']);
+          docked = true;
+        }
+      }
+
+      if (conveyorDragFactor.factorId === 'FX' && tfDockingState[0] && !fxDockingState[0]) {
+        if (Math.abs(dropX - (tfX + 45)) < 70 && dropY > membraneY - 100 && dropY < membraneY + 50) {
+          setFxDockingState({ 0: true });
+          setDebugLog((prev) => [...prev.slice(-4), 'FX andocat → FXa generat!']);
+          docked = true;
+        }
+      }
+
+      if (conveyorDragFactor.factorId === 'FV' && fxDockingState[0] && !fvDockingState[0]) {
+        if (Math.abs(dropX - (tfX + 95)) < 80 && dropY > membraneY - 120 && dropY < membraneY + 50) {
+          setFvDockingState({ 0: true });
+          setDebugLog((prev) => [...prev.slice(-4), 'FV andocat → Protrombinază formată!']);
+          docked = true;
+        }
+      }
+
+      if (conveyorDragFactor.factorId === 'FII' && fvDockingState[0] && !fiiDockedState[0]) {
+        if (Math.abs(dropX - (tfX + 145)) < 90 && dropY > membraneY - 150 && dropY < membraneY + 50) {
+          setFiiDockedState({ 0: true });
+          setDebugLog((prev) => [...prev.slice(-4), 'FII andocat → TROMBINĂ generată!']);
+          docked = true;
+        }
+      }
+
+      if (!docked) {
+        setDebugLog((prev) => [...prev.slice(-4), `${conveyorDragFactor.factorId} ratat - încearcă din nou`]);
+      }
+
+      setConveyorDragFactor(null);
       return;
     }
+
+    // Thrombin drag removed - now auto-floats to platelet
 
     if (!heldFactor) return;
 
@@ -643,17 +901,14 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
       velocity: { x: 30, y: 0 },
     });
     setHeldFactor(null);
-  }, [heldFactor, draggedThrombin, addFloatingFactor, tfPositions, tfDockingState, fixDockingState, fxDockingState, fvDockingState, fiiDockedState, plateletPosition, setScene, GAME_HEIGHT, state.currentScene, ampVwfSplit, ampFvActivated, ampFviiiActivated, ampFxiActivated, ampDockingPositions, propTenaseFormed, propProthrombinaseFormed, propThrombinBurst, propDockingPositions, stabFibrinCount, stabFxiiiActivated, stabDockingPositions]);
+  }, [heldFactor, conveyorDragFactor, addFloatingFactor, tfPositions, tfDockingState, fixDockingState, fxDockingState, fvDockingState, fiiDockedState, setScene, GAME_HEIGHT, GAME_WIDTH, state.currentScene, ampVwfSplit, ampFvActivated, ampFviiiActivated, ampFxiActivated, ampDockingPositions, propTenaseFormed, propProthrombinaseFormed, propThrombinBurst, propDockingPositions, stabFibrinCount, stabFxiiiActivated, stabDockingPositions]);
 
   const handleFactorDock = useCallback((_factorId: string, _complexId: string): void => {}, []);
 
-  const handleThrombinDragStart = useCallback((fromIndex: number, event: React.MouseEvent | React.TouchEvent): void => {
-    event.preventDefault();
-    setDebugLog(prev => [...prev.slice(-4), `Thrombin drag started`]);
-    const position = getEventPosition(event);
-    if (!position) return;
-    setDraggedThrombin({ fromIndex, position });
-  }, [getEventPosition]);
+  // handleThrombinDragStart removed - thrombin now auto-floats
+  const handleThrombinDragStart = useCallback((_fromIndex: number, _event: React.MouseEvent | React.TouchEvent): void => {
+    // No-op - thrombin now auto-floats to platelet
+  }, []);
 
   const handleThrombinDrag = useCallback((_thrombinId: string, _targetX: number, _targetY: number): void => {}, []);
 
@@ -661,14 +916,23 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
     removeActivationArrow(arrowId);
   }, [removeActivationArrow]);
 
+  // Handle TF exposure (click to simulate injury)
+  const handleTFClick = useCallback((): void => {
+    if (!state.kineticState.isTFExposed) {
+      exposeTF();
+      setDebugLog((prev) => [...prev.slice(-4), 'TF expus! Simulare cinetică pornită.']);
+    }
+  }, [state.kineticState.isTFExposed, exposeTF]);
+
   // Reset game function
   const resetGame = useCallback((): void => {
     setScene('initiation');
-    setTfDockingState({ 0: false, 1: false, 2: false });
-    setFixDockingState({ 0: false, 1: false, 2: false });
-    setFxDockingState({ 0: false, 1: false, 2: false });
-    setFvDockingState({ 0: false, 1: false, 2: false });
-    setFiiDockedState({ 0: false, 1: false, 2: false });
+    setTfDockingState({ 0: false });
+    setFixDockingState({ 0: false });
+    setFxDockingState({ 0: false });
+    setFvDockingState({ 0: false });
+    setFiiDockedState({ 0: false });
+    setConveyorDragFactor(null);
     setAmpVwfSplit(false);
     setAmpFvActivated(false);
     setAmpFviiiActivated(false);
@@ -681,8 +945,10 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
     setStabFxiiiActivated(false);
     setStabMeshCrosslinked(false);
     updateFloatingFactors([]);
+    updateDiffusingFIXaParticles([]);
+    updateDiffusingFIIaParticles([]);
     setDebugLog(['Game reset']);
-  }, [setScene, updateFloatingFactors]);
+  }, [setScene, updateFloatingFactors, updateDiffusingFIXaParticles, updateDiffusingFIIaParticles]);
 
   return (
     <div
@@ -694,7 +960,7 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
         overflow: 'hidden',
         backgroundColor: '#0F172A',
         position: 'relative',
-        cursor: heldFactor || draggedThrombin ? 'grabbing' : 'default',
+        cursor: heldFactor || conveyorDragFactor ? 'grabbing' : 'default',
         userSelect: 'none',
         WebkitUserSelect: 'none',
         touchAction: 'none',
@@ -711,7 +977,7 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
         <InitiationScene
           width={GAME_WIDTH}
           height={GAME_HEIGHT}
-          floatingFactors={state.floatingFactors}
+          floatingFactors={[]} // No floating factors - using palette instead
           dockedComplexes={state.dockedComplexes}
           activationArrows={state.activationArrows}
           tfDockingState={tfDockingState}
@@ -720,12 +986,21 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
           fvDockingState={fvDockingState}
           fiiDockedState={fiiDockedState}
           plateletPosition={plateletPosition}
-          isDraggingThrombin={draggedThrombin !== null}
+          isDraggingThrombin={false}
           onFactorCatch={handleFactorCatch}
           onFactorDock={handleFactorDock}
           onThrombinDrag={handleThrombinDrag}
           onThrombinDragStart={handleThrombinDragStart}
           onArrowComplete={handleArrowComplete}
+          // Kinetic props
+          kineticState={state.kineticState}
+          diffusingFIXaParticles={state.diffusingFIXaParticles}
+          diffusingFIIaParticles={state.diffusingFIIaParticles}
+          tfpiXaComplex={state.tfpiXaComplex}
+          onTFClick={handleTFClick}
+          // Conveyor belt props
+          onConveyorDragStart={handleConveyorDragStart}
+          draggingFactorId={conveyorDragFactor?.factorId ?? null}
         />
       )}
 
@@ -793,6 +1068,25 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
         </div>
       )}
 
+      {/* Dragged conveyor factor */}
+      {conveyorDragFactor && (
+        <div
+          style={{
+            position: 'absolute',
+            left: conveyorDragFactor.position.x,
+            top: conveyorDragFactor.position.y,
+            transform: 'translate(-50%, -50%)',
+            pointerEvents: 'none',
+            zIndex: 100,
+            filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.4))',
+          }}
+        >
+          <div style={{ transform: 'scale(1.2)' }}>
+            <FactorTokenNew factorId={conveyorDragFactor.factorId} />
+          </div>
+        </div>
+      )}
+
       {/* Debug panel - hidden on mobile */}
       <div className="hidden md:block" style={{ position: 'absolute', top: 10, right: 10, zIndex: 1000, background: 'rgba(0,0,0,0.8)', padding: 12, borderRadius: 8 }}>
         <button onClick={() => { setAmpVwfSplit(false); setAmpFvActivated(false); setAmpFviiiActivated(false); setAmpFxiActivated(false); updateFloatingFactors([]); setDebugLog(prev => [...prev.slice(-4), 'Forced → Amplification (reset)']); setScene('amplification'); }} style={{ padding: '6px 12px', background: '#EAB308', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', marginRight: 4, fontSize: 11 }}>Amp</button>
@@ -802,15 +1096,7 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
         <div style={{ color: '#FCD34D', fontSize: 10, marginTop: 8, maxWidth: 200 }}>{debugLog.map((log, i) => <div key={i}>• {log}</div>)}</div>
       </div>
 
-      {/* Dragged thrombin */}
-      {draggedThrombin && (
-        <div style={{ position: 'absolute', left: draggedThrombin.position.x, top: draggedThrombin.position.y, transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 100 }}>
-          <div style={{ position: 'absolute', inset: -25, background: 'radial-gradient(circle, rgba(153, 27, 27, 0.9) 0%, transparent 70%)', borderRadius: '50%', animation: 'pulse 0.4s ease-in-out infinite' }} />
-          <div style={{ filter: 'drop-shadow(0 0 20px rgba(153, 27, 27, 1))' }}>
-            <FactorTokenNew factorId="FIIa" isActive />
-          </div>
-        </div>
-      )}
+      {/* Dragged thrombin removed - now uses auto-floating FIIa particles */}
     </div>
   );
 }

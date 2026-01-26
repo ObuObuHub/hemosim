@@ -7,9 +7,11 @@ import { MobileInterpretation } from './MobileInterpretation';
 import { MobileTabBar } from './MobileTabBar';
 import { CascadeCanvas } from './CascadeCanvas';
 import { InteractiveGame } from './InteractiveGame';
+import { ThreePanelGame } from './game/ThreePanelGame';
 import { SCENARIO_AFFECTED_FACTORS, formatFactorsForDisplay } from '@/engine/interpreter';
 
 type TabId = 'labs' | 'cascade' | 'interactiv' | 'results';
+type GameViewMode = 'sequential' | 'textbook';
 
 interface MobileLayoutProps {
   state: AppState;
@@ -36,6 +38,7 @@ export function MobileLayout({
 }: MobileLayoutProps): React.ReactElement {
   const [activeTab, setActiveTab] = useState<TabId>('cascade');
   const [showScenarios, setShowScenarios] = useState(false);
+  const [gameViewMode, setGameViewMode] = useState<GameViewMode>('sequential');
 
   const handleToggleScenarios = useCallback(() => {
     setShowScenarios(prev => !prev);
@@ -165,12 +168,45 @@ export function MobileLayout({
         {/* Interactiv Tab */}
         {activeTab === 'interactiv' && (
           <div
-            className="absolute inset-0 mobile-tab-panel"
+            className="absolute inset-0 mobile-tab-panel flex flex-col"
             role="tabpanel"
             id="tabpanel-interactiv"
             aria-labelledby="tab-interactiv"
           >
-            <InteractiveGame className="h-full w-full" />
+            {/* Game view mode toggle */}
+            <div className="flex-shrink-0 flex items-center justify-center gap-2 py-2 bg-slate-900 border-b border-slate-700">
+              <button
+                type="button"
+                onClick={() => setGameViewMode('sequential')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all min-h-[36px] ${
+                  gameViewMode === 'sequential'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'bg-slate-700 text-slate-300 active:bg-slate-600'
+                }`}
+              >
+                Secvențial
+              </button>
+              <button
+                type="button"
+                onClick={() => setGameViewMode('textbook')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all min-h-[36px] ${
+                  gameViewMode === 'textbook'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'bg-slate-700 text-slate-300 active:bg-slate-600'
+                }`}
+              >
+                Textbook
+              </button>
+            </div>
+
+            {/* Game content */}
+            <div className="flex-1 min-h-0">
+              {gameViewMode === 'sequential' ? (
+                <InteractiveGame className="h-full w-full" />
+              ) : (
+                <ThreePanelGame className="h-full w-full" />
+              )}
+            </div>
           </div>
         )}
 

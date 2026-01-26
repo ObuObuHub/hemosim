@@ -26,49 +26,56 @@ export const FACTOR_VISUALS: Record<string, FactorVisual> = {
   // Zymogens (inactive) → Enzymes (active)
   // TEXTBOOK COLORS - based on standard coagulation cascade diagrams
   // COLORS BASED ON REFERENCE IMAGE
+  // Vitamin K-dependent factors (II, VII, IX, X) have Gla domains for membrane binding
+  // TEXTBOOK STANDARD COLORS (based on Hoffman-Monroe cell-based model diagrams)
+  // Vitamin K-dependent factors (II, VII, IX, X) have Gla domains for membrane binding
   FVII: {
     factorId: 'FVII',
     inactiveShape: 'zymogen',
     activeShape: 'enzyme',
-    inactiveColor: '#DC2626', // red (like reference - VIIa is red/orange)
-    activeColor: '#EF4444',   // bright red when activated
+    inactiveColor: '#1D4ED8', // Blue (zymogen in plasma)
+    activeColor: '#DC2626',   // Red when activated (TF-VIIa complex)
     width: 55,
     height: 40,
+    hasGlaDomain: true,
   },
   FIX: {
     factorId: 'FIX',
     inactiveShape: 'zymogen',
     activeShape: 'enzyme',
-    inactiveColor: '#7C3AED', // purple (like reference - IX is purple)
-    activeColor: '#8B5CF6',   // bright purple when activated
+    inactiveColor: '#0891B2', // Cyan (matches reference: FIXa is light blue/cyan)
+    activeColor: '#06B6D4',   // Bright cyan when activated
     width: 60,
     height: 45,
+    hasGlaDomain: true,
   },
   FX: {
     factorId: 'FX',
     inactiveShape: 'zymogen',
     activeShape: 'enzyme',
-    inactiveColor: '#DC2626', // red (like reference - X is red)
-    activeColor: '#EF4444',   // bright red when activated (Xa)
+    inactiveColor: '#15803D', // Green (matches reference: FX/Xa is green)
+    activeColor: '#22C55E',   // Bright green when activated (Xa)
     width: 60,
     height: 45,
+    hasGlaDomain: true,
   },
   FII: {
     factorId: 'FII',
     inactiveShape: 'zymogen',
     activeShape: 'enzyme',
-    inactiveColor: '#EAB308', // YELLOW (like reference - II/Prothrombin is yellow)
-    activeColor: '#991B1B',   // DARK RED (Thrombin/IIa - matches reference chart)
+    inactiveColor: '#7C2D12', // Maroon (prothrombin - matches reference)
+    activeColor: '#DC2626',   // Bright red (Thrombin/IIa - matches reference)
     width: 60,
     height: 45,
+    hasGlaDomain: true,
   },
-  // Cofactors - larger shapes
+  // Cofactors - larger shapes (non-enzymatic, accelerate reactions)
   FV: {
     factorId: 'FV',
     inactiveShape: 'cofactor',
     activeShape: 'cofactor',
-    inactiveColor: '#2563EB', // BLUE (like reference - V is blue)
-    activeColor: '#3B82F6',   // bright blue when activated
+    inactiveColor: '#C2410C', // Orange-brown (inactive in plasma)
+    activeColor: '#F97316',   // ORANGE when activated (FVa - matches reference: Va is orange)
     width: 70,
     height: 50,
   },
@@ -76,8 +83,8 @@ export const FACTOR_VISUALS: Record<string, FactorVisual> = {
     factorId: 'FVIII',
     inactiveShape: 'cofactor',
     activeShape: 'cofactor',
-    inactiveColor: '#22C55E', // GREEN (like reference - VIII is green)
-    activeColor: '#4ADE80',   // bright green when activated
+    inactiveColor: '#22C55E', // Green (bound to vWF in plasma)
+    activeColor: '#A855F7',   // PURPLE when activated (FVIIIa - matches reference: VIIIa is purple/magenta)
     width: 70,
     height: 50,
   },
