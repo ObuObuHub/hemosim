@@ -1,52 +1,53 @@
 // components/game/frames/SparkFrame.tsx
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { PhospholipidMembrane } from '../visuals/PhospholipidMembrane';
 import { FactorTokenNew } from '../tokens/FactorTokenNew';
 import { TFProtein } from '../visuals/TFProtein';
-import type { SparkState, PlayMode } from '@/hooks/useCascadeState';
+import type { SparkState, PlayMode, IIaMigrationState } from '@/hooks/useCascadeState';
 
 interface SparkFrameProps {
   width: number;
   height: number;
   state: SparkState;
   onDockFactor: (factorId: string) => void;
-  showFixaMigration?: boolean;
   showFiiaMigration?: boolean;
   mode?: PlayMode;
+  /** IIa cross-frame migration state - when 'migrating', FIIa is rendered at container level */
+  iiaMigrationState?: IIaMigrationState;
 }
 
 /**
  * SPARK FRAME - "Inițiere" - TF-bearing cell membrane
  *
- * Faza 1 din modelul celular Hoffman-Monroe:
- * Faza de inițiere pe suprafața celulei TF-bearing.
+ * Biological visualization: Factors materialize from plasma and interact.
+ * No ghost slots - factors appear when biologically relevant.
  *
- * Shows:
- * 1. TF + FVII form TF-VIIa complex
- * 2. TF-VIIa activates FIX → FIXa
- * 3. TF-VIIa activates FX → FXa
- * 4. FXa + FVa → Prothrombinase → FII → FIIa (thrombin spark)
+ * Flow:
+ * 1. TF exposed on membrane → FVII materializes → docks to form TF-VIIa
+ * 2. TF-VIIa activates FIX → FIXa migrates to platelet (slow)
+ * 3. TF-VIIa activates FX → FXa + FVa → Prothrombinase
+ * 4. Prothrombinase converts FII → FIIa (trace thrombin)
+ * 5. FIIa migrates to platelet (fast) for amplification
  */
 export function SparkFrame({
   width,
   height,
   state,
   onDockFactor,
-  showFixaMigration = false,
   showFiiaMigration = false,
   mode = 'manual',
+  iiaMigrationState = 'inactive',
 }: SparkFrameProps): React.ReactElement {
   const isAutoMode = mode === 'auto';
+
   // Layout calculations
   const layout = useMemo(() => {
     const membraneHeight = height * 0.28;
     const bloodstreamHeight = height - membraneHeight;
     const membraneY = bloodstreamHeight;
 
-    // Use percentage-based positioning for responsive layout
-    // Cascade flows: TF+FVII → FIX/FX → FXa+FVa → FII
     return {
       membraneHeight,
       membraneY,
@@ -54,20 +55,113 @@ export function SparkFrame({
       centerX: width / 2,
       positions: {
         // TF anchored at membrane (left side)
-        tf: { x: width * 0.12, y: membraneY - 20 },
-        // FVII docks with TF from above
-        fvii: { x: width * 0.12, y: membraneY - 90 },
-        // FIX - activated by TF-VIIa, positioned center-left
-        fix: { x: width * 0.32, y: membraneY - 70 },
-        // FX - activated by TF-VIIa, positioned center
-        fx: { x: width * 0.50, y: membraneY - 65 },
-        // FV cofactor - binds with FXa, positioned center-right
-        fv: { x: width * 0.68, y: membraneY - 60 },
-        // FII (prothrombin) - converted to FIIa, positioned right
-        fii: { x: width * 0.85, y: membraneY - 70 },
+        tf: { x: width * 0.10, y: membraneY - 20 },
+        // FVII docks ON TOP of TF (like the reference image)
+        fvii: { x: width * 0.10, y: membraneY - 85 },
+        // FIX floats in plasma, activated by TF-VIIa
+        fix: { x: width * 0.35, y: membraneY - 60 },
+        // FX floats in plasma, activated by TF-VIIa
+        fx: { x: width * 0.52, y: membraneY - 55 },
+        // FV binds with FXa
+        fv: { x: width * 0.68, y: membraneY - 55 },
+        // FII converted to FIIa
+        fii: { x: width * 0.84, y: membraneY - 60 },
+        // FIXa hold position (top-right corner)
+        fixaHold: { x: width * 0.90, y: bloodstreamHeight * 0.18 },
+        // FIIa hold position (top-right, below FIXa)
+        fiiaHold: { x: width * 0.90, y: bloodstreamHeight * 0.45 },
       },
     };
   }, [width, height]);
+
+  // Animation states
+  const [fviiMaterializing, setFviiMaterializing] = useState(false);
+  const [fixMaterialized, setFixMaterialized] = useState(false);
+  const [fixActivating, setFixActivating] = useState(false);
+  const [fxMaterialized, setFxMaterialized] = useState(false);
+  const [fxActivating, setFxActivating] = useState(false);
+  const [fvMaterialized, setFvMaterialized] = useState(false);
+  const [fiiMaterialized, setFiiMaterialized] = useState(false);
+  const [fiiActivating, setFiiActivating] = useState(false);
+
+  // FIXa and FIIa migration states
+  const fixaIsHeld = state.fixaMigrationState === 'held_for_migration';
+  const fixaIsMigrating = state.fixaMigrationState === 'migrating';
+  // IIa migration state is now controlled from parent via prop
+  const fiiaIsHeld = iiaMigrationState === 'held_for_migration';
+  const fiiaIsMigrating = iiaMigrationState === 'migrating';
+  const fiiaArrived = iiaMigrationState === 'arrived';
+
+  // Materialize FIX and FX after TF-VIIa forms
+  useEffect(() => {
+    if (state.tfVIIaDocked && !fixMaterialized) {
+      setTimeout(() => setFixMaterialized(true), 300);
+      setTimeout(() => setFxMaterialized(true), 500);
+    }
+  }, [state.tfVIIaDocked, fixMaterialized]);
+
+  // Materialize FV after FX docks
+  useEffect(() => {
+    if (state.fxDocked && !fvMaterialized) {
+      setTimeout(() => setFvMaterialized(true), 300);
+    }
+  }, [state.fxDocked, fvMaterialized]);
+
+  // Materialize FII after FV docks
+  useEffect(() => {
+    if (state.fvDocked && !fiiMaterialized) {
+      setTimeout(() => setFiiMaterialized(true), 300);
+    }
+  }, [state.fvDocked, fiiMaterialized]);
+
+  // FIIa migration is now controlled by iiaMigrationState prop from parent
+  // The parent (CellularModelExplorer) triggers holdFiiaForMigration when thrombin is produced
+
+  // Handler: FVII materializes and docks to TF
+  const handleFVIIDock = (): void => {
+    if (state.tfVIIaDocked || isAutoMode || fviiMaterializing) return;
+    setFviiMaterializing(true);
+    setTimeout(() => {
+      onDockFactor('TF+FVII');
+      setFviiMaterializing(false);
+    }, 800);
+  };
+
+  // Handler: FIX activation
+  const handleFIXActivate = (): void => {
+    if (state.fixDocked || !state.tfVIIaDocked || isAutoMode || fixActivating) return;
+    setFixActivating(true);
+    setTimeout(() => {
+      onDockFactor('FIX');
+      setFixActivating(false);
+    }, 600);
+  };
+
+  // Handler: FX activation
+  const handleFXActivate = (): void => {
+    if (state.fxDocked || !state.tfVIIaDocked || isAutoMode || fxActivating) return;
+    setFxActivating(true);
+    setTimeout(() => {
+      onDockFactor('FX');
+      setFxActivating(false);
+    }, 600);
+  };
+
+  // Handler: FV binding
+  const handleFVBind = (): void => {
+    if (state.fvDocked || !state.fxDocked || isAutoMode) return;
+    onDockFactor('FV');
+  };
+
+  // Handler: FII activation
+  const handleFIIActivate = (): void => {
+    if (state.fiiDocked || !state.fvDocked || isAutoMode || fiiActivating) return;
+    setFiiActivating(true);
+    setTimeout(() => {
+      onDockFactor('FII');
+      setFiiActivating(false);
+    }, 600);
+  };
 
   return (
     <div
@@ -79,7 +173,7 @@ export function SparkFrame({
         overflow: 'hidden',
       }}
     >
-      {/* Bloodstream area - clinical light background */}
+      {/* Plasma background */}
       <div
         style={{
           position: 'absolute',
@@ -87,16 +181,16 @@ export function SparkFrame({
           left: 0,
           width: '100%',
           height: layout.bloodstreamHeight,
-          background: '#F8FAFC',
-          borderBottom: '2px solid #E2E8F0',
+          background: 'linear-gradient(180deg, #F1F5F9 0%, #F8FAFC 100%)',
         }}
       />
-      {/* Bloodstream label */}
+
+      {/* Plasma label */}
       <div
         style={{
           position: 'absolute',
           top: 8,
-          right: 12,
+          left: 12,
           fontSize: 10,
           fontWeight: 500,
           color: '#94A3B8',
@@ -106,7 +200,7 @@ export function SparkFrame({
         Plasmă
       </div>
 
-      {/* Membrane surface with PhospholipidMembrane */}
+      {/* Membrane */}
       <div
         style={{
           position: 'absolute',
@@ -121,7 +215,6 @@ export function SparkFrame({
           height={layout.membraneHeight}
           variant="fibroblast"
         />
-        {/* Phase label inside membrane */}
         <div
           style={{
             position: 'absolute',
@@ -149,13 +242,12 @@ export function SparkFrame({
         </div>
       </div>
 
-
       {/* TF Protein - always visible at membrane */}
       <div
         style={{
           position: 'absolute',
           left: layout.positions.tf.x,
-          top: layout.membraneY - 10,
+          top: layout.membraneY + 5,
         }}
       >
         <TFProtein
@@ -166,106 +258,314 @@ export function SparkFrame({
         />
       </div>
 
-      {/* FVII Ghost Slot / Docked VIIa */}
-      <GhostSlot
-        x={layout.positions.fvii.x}
-        y={layout.positions.fvii.y}
-        factorId="FVII"
-        isDocked={state.tfVIIaDocked}
-        isHighlighted={false}
-        onClick={() => !state.tfVIIaDocked && onDockFactor('TF+FVII')}
-        disabled={isAutoMode}
-      />
+      {/* ================================================================= */}
+      {/* FVII - Materializes from plasma, docks ON TOP of TF */}
+      {/* ================================================================= */}
 
-      {/* FIX Ghost Slot / Docked FIXa */}
-      <GhostSlot
-        x={layout.positions.fix.x}
-        y={layout.positions.fix.y}
-        factorId="FIX"
-        isDocked={state.fixDocked}
-        isHighlighted={false}
-        onClick={() => !state.fixDocked && state.tfVIIaDocked && onDockFactor('FIX')}
-        disabled={!state.tfVIIaDocked || isAutoMode}
-        showActivated={state.fixDocked}
-      />
-
-      {/* FX Ghost Slot / Docked FXa */}
-      <GhostSlot
-        x={layout.positions.fx.x}
-        y={layout.positions.fx.y}
-        factorId="FX"
-        isDocked={state.fxDocked}
-        isHighlighted={false}
-        onClick={() => !state.fxDocked && state.tfVIIaDocked && onDockFactor('FX')}
-        disabled={!state.tfVIIaDocked || isAutoMode}
-        showActivated={state.fxDocked}
-      />
-
-      {/* FV Ghost Slot / Docked FVa (cofactor) */}
-      <GhostSlot
-        x={layout.positions.fv.x}
-        y={layout.positions.fv.y}
-        factorId="FV"
-        isDocked={state.fvDocked}
-        isHighlighted={false}
-        onClick={() => !state.fvDocked && state.fxDocked && onDockFactor('FV')}
-        disabled={!state.fxDocked || isAutoMode}
-        showActivated={state.fvDocked}
-      />
-
-      {/* FII Ghost Slot / Docked FIIa (thrombin) */}
-      <GhostSlot
-        x={layout.positions.fii.x}
-        y={layout.positions.fii.y}
-        factorId="FII"
-        isDocked={state.fiiDocked}
-        isHighlighted={false}
-        onClick={() => !state.fiiDocked && state.fvDocked && onDockFactor('FII')}
-        disabled={!state.fvDocked || isAutoMode}
-        showActivated={state.thrombinProduced}
-      />
-
-      {/* Prothrombinase Complex Assembly Box - visual enclosure around FXa + FVa */}
-      {state.fxDocked && state.fvDocked && (
+      {/* FVII clickable target (before dock) */}
+      {!state.tfVIIaDocked && !fviiMaterializing && (
         <div
           style={{
             position: 'absolute',
-            left: layout.positions.fx.x - 35,
-            top: layout.positions.fx.y - 30,
-            width: (layout.positions.fv.x - layout.positions.fx.x) + 70,
-            height: 65,
-            border: '2px dashed #3B82F6',
-            borderRadius: 8,
-            background: 'rgba(59, 130, 246, 0.05)',
-            animation: 'complexPulse 2s ease-in-out infinite',
-            pointerEvents: 'none',
-            zIndex: 4,
+            left: layout.positions.fvii.x - 22,
+            top: layout.positions.fvii.y - 50,
+            cursor: 'pointer',
+            animation: 'factorFloat 3s ease-in-out infinite',
+            zIndex: 15,
           }}
-        />
+          onClick={handleFVIIDock}
+        >
+          <div style={{ opacity: 0.4, filter: 'grayscale(30%)' }}>
+            <FactorTokenNew factorId="FVII" isActive={false} enableHover={true} />
+          </div>
+        </div>
       )}
 
-      {/* Prothrombinase complex label - clinical style */}
+      {/* FVII materializing animation */}
+      {fviiMaterializing && (
+        <div
+          style={{
+            position: 'absolute',
+            left: layout.positions.fvii.x - 22,
+            top: layout.positions.fvii.y - 80,
+            zIndex: 25,
+            animation: 'materializeAndDock 1.2s ease-out forwards',
+          }}
+        >
+          <FactorTokenNew factorId="FVII" isActive={false} enableHover={false} />
+        </div>
+      )}
+
+
+      {/* ================================================================= */}
+      {/* FIX - Materializes after TF-VIIa forms */}
+      {/* ================================================================= */}
+
+      {/* FIX floating in plasma (materialized, not yet activated) */}
+      {fixMaterialized && !state.fixDocked && !fixActivating && !fixaIsHeld && !fixaIsMigrating && (
+        <div
+          style={{
+            position: 'absolute',
+            left: layout.positions.fix.x - 22,
+            top: layout.positions.fix.y - 18,
+            cursor: state.tfVIIaDocked && !isAutoMode ? 'pointer' : 'default',
+            animation: 'factorMaterialize 0.8s ease-out, factorFloat 3s ease-in-out 0.8s infinite',
+            zIndex: 10,
+          }}
+          onClick={handleFIXActivate}
+        >
+          <FactorTokenNew factorId="FIX" isActive={false} enableHover={state.tfVIIaDocked} />
+          {/* Membrane anchor (Ca2+ / GLA domain) */}
+          <MembraneAnchor y={layout.membraneY - layout.positions.fix.y + 18} />
+        </div>
+      )}
+
+      {/* FIX activating (glow effect) */}
+      {fixActivating && (
+        <div
+          style={{
+            position: 'absolute',
+            left: layout.positions.fix.x - 22,
+            top: layout.positions.fix.y - 18,
+            zIndex: 25,
+            animation: 'activationGlow 1.5s ease-in-out forwards',
+          }}
+        >
+          <FactorTokenNew factorId="FIX" isActive={false} enableHover={false} />
+          <ActivationSpark />
+        </div>
+      )}
+
+      {/* FIXa at original position briefly before sliding up (hidden once arrived at platelet) */}
+      {state.fixDocked && !fixaIsHeld && !fixaIsMigrating && state.fixaMigrationState !== 'arrived' && (
+        <div
+          style={{
+            position: 'absolute',
+            left: layout.positions.fix.x - 22,
+            top: layout.positions.fix.y - 18,
+            zIndex: 15,
+          }}
+        >
+          <FactorTokenNew factorId="FIXa" isActive={true} enableHover={false} />
+        </div>
+      )}
+
+      {/* FIXa held at top-right for migration */}
+      {(fixaIsHeld || fixaIsMigrating) && (
+        <div
+          style={{
+            position: 'absolute',
+            left: layout.positions.fixaHold.x - 22,
+            top: layout.positions.fixaHold.y - 18,
+            zIndex: 20,
+            animation: 'slideToHold 1s ease-out',
+          }}
+        >
+          <FactorTokenNew factorId="FIXa" isActive={true} enableHover={false} />
+        </div>
+      )}
+
+      {/* ================================================================= */}
+      {/* FX - Materializes after TF-VIIa forms */}
+      {/* ================================================================= */}
+
+      {/* FX floating in plasma */}
+      {fxMaterialized && !state.fxDocked && !fxActivating && (
+        <div
+          style={{
+            position: 'absolute',
+            left: layout.positions.fx.x - 22,
+            top: layout.positions.fx.y - 18,
+            cursor: state.tfVIIaDocked && !isAutoMode ? 'pointer' : 'default',
+            animation: 'factorMaterialize 0.8s ease-out, factorFloat 3.5s ease-in-out 0.8s infinite',
+            zIndex: 10,
+          }}
+          onClick={handleFXActivate}
+        >
+          <FactorTokenNew factorId="FX" isActive={false} enableHover={state.tfVIIaDocked} />
+          <MembraneAnchor y={layout.membraneY - layout.positions.fx.y + 18} />
+        </div>
+      )}
+
+      {/* FX activating */}
+      {fxActivating && (
+        <div
+          style={{
+            position: 'absolute',
+            left: layout.positions.fx.x - 22,
+            top: layout.positions.fx.y - 18,
+            zIndex: 25,
+            animation: 'activationGlow 1.5s ease-in-out forwards',
+          }}
+        >
+          <FactorTokenNew factorId="FX" isActive={false} enableHover={false} />
+          <ActivationSpark />
+        </div>
+      )}
+
+      {/* FXa docked */}
+      {state.fxDocked && (
+        <div
+          style={{
+            position: 'absolute',
+            left: layout.positions.fx.x - 22,
+            top: layout.positions.fx.y - 18,
+            zIndex: 15,
+            filter: 'drop-shadow(2px 3px 4px rgba(0,0,0,0.3))',
+          }}
+        >
+          <FactorTokenNew factorId="FXa" isActive={true} enableHover={false} />
+          <MembraneAnchor y={layout.membraneY - layout.positions.fx.y + 18} active />
+        </div>
+      )}
+
+      {/* ================================================================= */}
+      {/* FV - Materializes after FXa forms, binds to create Prothrombinase */}
+      {/* ================================================================= */}
+
+      {/* FV floating in plasma */}
+      {fvMaterialized && !state.fvDocked && (
+        <div
+          style={{
+            position: 'absolute',
+            left: layout.positions.fv.x - 22,
+            top: layout.positions.fv.y - 18,
+            cursor: state.fxDocked && !isAutoMode ? 'pointer' : 'default',
+            animation: 'factorMaterialize 0.8s ease-out, factorFloat 4s ease-in-out 0.8s infinite',
+            zIndex: 10,
+          }}
+          onClick={handleFVBind}
+        >
+          <FactorTokenNew factorId="FV" isActive={false} enableHover={state.fxDocked} />
+        </div>
+      )}
+
+      {/* FVa bound (cofactor) */}
       {state.fvDocked && (
         <div
           style={{
             position: 'absolute',
-            left: (layout.positions.fx.x + layout.positions.fv.x) / 2 - 45,
-            top: layout.membraneY - 18,
-            padding: '3px 8px',
-            background: '#FFFFFF',
-            border: '1px solid #3B82F6',
-            borderRadius: 4,
-            fontSize: 9,
-            color: '#3B82F6',
-            fontWeight: 600,
-            zIndex: 6,
+            left: layout.positions.fv.x - 22,
+            top: layout.positions.fv.y - 18,
+            zIndex: 15,
+            filter: 'drop-shadow(2px 3px 4px rgba(0,0,0,0.3))',
           }}
         >
-          Prothrombinase
+          <FactorTokenNew factorId="FVa" isActive={true} enableHover={false} />
         </div>
       )}
 
+      {/* Prothrombinase complex box */}
+      {state.fxDocked && state.fvDocked && (
+        <>
+          <div
+            style={{
+              position: 'absolute',
+              left: layout.positions.fx.x - 35,
+              top: layout.positions.fx.y - 30,
+              width: (layout.positions.fv.x - layout.positions.fx.x) + 70,
+              height: 60,
+              border: '2px dashed #3B82F6',
+              borderRadius: 8,
+              background: 'rgba(59, 130, 246, 0.05)',
+              animation: 'complexPulse 2s ease-in-out infinite',
+              pointerEvents: 'none',
+              zIndex: 4,
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              left: (layout.positions.fx.x + layout.positions.fv.x) / 2 - 40,
+              top: layout.positions.fx.y - 45,
+              padding: '3px 8px',
+              background: '#FFFFFF',
+              border: '1px solid #3B82F6',
+              borderRadius: 4,
+              fontSize: 9,
+              color: '#3B82F6',
+              fontWeight: 600,
+              zIndex: 6,
+            }}
+          >
+            Protrombinază
+          </div>
+        </>
+      )}
+
+      {/* ================================================================= */}
+      {/* FII → FIIa (Trace Thrombin) */}
+      {/* ================================================================= */}
+
+      {/* FII floating in plasma */}
+      {fiiMaterialized && !state.fiiDocked && !fiiActivating && !fiiaIsHeld && (
+        <div
+          style={{
+            position: 'absolute',
+            left: layout.positions.fii.x - 22,
+            top: layout.positions.fii.y - 18,
+            cursor: state.fvDocked && !isAutoMode ? 'pointer' : 'default',
+            animation: 'factorMaterialize 0.8s ease-out, factorFloat 3s ease-in-out 0.8s infinite',
+            zIndex: 10,
+          }}
+          onClick={handleFIIActivate}
+        >
+          <FactorTokenNew factorId="FII" isActive={false} enableHover={state.fvDocked} />
+          <MembraneAnchor y={layout.membraneY - layout.positions.fii.y + 18} />
+        </div>
+      )}
+
+      {/* FII activating */}
+      {fiiActivating && (
+        <div
+          style={{
+            position: 'absolute',
+            left: layout.positions.fii.x - 22,
+            top: layout.positions.fii.y - 18,
+            zIndex: 25,
+            animation: 'activationGlow 1.5s ease-in-out forwards',
+          }}
+        >
+          <FactorTokenNew factorId="FII" isActive={false} enableHover={false} />
+          <ActivationSpark color="#DC2626" />
+        </div>
+      )}
+
+      {/* FIIa at original position briefly (before migration starts) */}
+      {state.thrombinProduced && iiaMigrationState === 'inactive' && (
+        <div
+          style={{
+            position: 'absolute',
+            left: layout.positions.fii.x - 22,
+            top: layout.positions.fii.y - 18,
+            zIndex: 15,
+          }}
+        >
+          <FactorTokenNew factorId="FIIa" isActive={true} enableHover={false} />
+        </div>
+      )}
+
+      {/* FIIa held at hold position for migration (waiting to start cross-frame animation) */}
+      {fiiaIsHeld && (
+        <div
+          style={{
+            position: 'absolute',
+            left: layout.positions.fiiaHold.x - 22,
+            top: layout.positions.fiiaHold.y - 18,
+            zIndex: 20,
+            animation: 'slideToHold 1s ease-out',
+          }}
+        >
+          <FactorTokenNew factorId="FIIa" isActive={true} enableHover={false} />
+        </div>
+      )}
+
+      {/* When fiiaIsMigrating = true, FIIa is rendered at container level (CellularModelExplorer) */}
+      {/* The token appears to fly across the frame boundary to ExplosionFrame */}
+
+      {/* ================================================================= */}
       {/* Activation Arrows - SVG overlay */}
+      {/* ================================================================= */}
       <svg
         style={{
           position: 'absolute',
@@ -274,168 +574,118 @@ export function SparkFrame({
           width: '100%',
           height: '100%',
           pointerEvents: 'none',
-          zIndex: 10,
+          zIndex: 12,
         }}
       >
-        {/* TF-VIIa → FIX arrow (curved, textbook style) */}
-        {state.tfVIIaDocked && !state.fixDocked && (
+        {/* TF-VIIa → FIX activation arrow */}
+        {state.tfVIIaDocked && fixMaterialized && !state.fixDocked && (
           <ActivationArrowSVG
             fromX={layout.positions.fvii.x + 25}
-            fromY={layout.positions.fvii.y}
-            toX={layout.positions.fix.x - 15}
-            toY={layout.positions.fix.y}
+            fromY={layout.positions.fvii.y - 10}
+            toX={layout.positions.fix.x - 20}
+            toY={layout.positions.fix.y - 5}
             color="#DC2626"
             label="activează"
-            curved={true}
           />
         )}
 
-        {/* TF-VIIa → FX arrow (curved, textbook style) */}
-        {state.tfVIIaDocked && !state.fxDocked && (
+        {/* TF-VIIa → FX activation arrow */}
+        {state.tfVIIaDocked && fxMaterialized && !state.fxDocked && (
           <ActivationArrowSVG
             fromX={layout.positions.fvii.x + 25}
-            fromY={layout.positions.fvii.y + 15}
-            toX={layout.positions.fx.x - 15}
-            toY={layout.positions.fx.y}
+            fromY={layout.positions.fvii.y + 5}
+            toX={layout.positions.fx.x - 20}
+            toY={layout.positions.fx.y - 5}
             color="#DC2626"
             label="activează"
-            curved={true}
           />
         )}
 
-        {/* FXa complexes with FVa (assembly arrow) */}
-        {state.fxDocked && !state.fvDocked && (
+        {/* FXa → FVa binding arrow */}
+        {state.fxDocked && fvMaterialized && !state.fvDocked && (
           <ActivationArrowSVG
-            fromX={layout.positions.fx.x + 25}
-            fromY={layout.positions.fx.y}
-            toX={layout.positions.fv.x - 15}
-            toY={layout.positions.fv.y}
+            fromX={layout.positions.fx.x + 30}
+            fromY={layout.positions.fx.y - 5}
+            toX={layout.positions.fv.x - 20}
+            toY={layout.positions.fv.y - 5}
             color="#22C55E"
             label="leagă"
             curved={false}
           />
         )}
 
-        {/* Prothrombinase → FII arrow (catalysis) */}
-        {state.fvDocked && !state.fiiDocked && (
+        {/* Prothrombinase → FII cleavage arrow */}
+        {state.fvDocked && fiiMaterialized && !state.fiiDocked && (
           <ActivationArrowSVG
             fromX={layout.positions.fv.x + 30}
-            fromY={layout.positions.fv.y}
-            toX={layout.positions.fii.x - 15}
-            toY={layout.positions.fii.y}
+            fromY={layout.positions.fv.y - 5}
+            toX={layout.positions.fii.x - 20}
+            toY={layout.positions.fii.y - 5}
             color="#3B82F6"
             label="clivează"
             curved={false}
           />
         )}
 
-        {/* FIXa Migration Arrow - slow, toward ExplosionFrame */}
-        {showFixaMigration && state.fixDocked && (
-          <MigrationArrowSVG
-            fromX={layout.positions.fix.x + 30}
-            fromY={layout.positions.fix.y}
-            toX={width - 20}
-            label="FIXa"
-            speed="slow"
-            color="#F59E0B"
-          />
-        )}
 
-        {/* FIIa Migration Arrow - fast, toward ExplosionFrame */}
-        {showFiiaMigration && state.thrombinProduced && (
-          <MigrationArrowSVG
-            fromX={layout.positions.fii.x + 30}
-            fromY={layout.positions.fii.y}
-            toX={width - 20}
-            label="FIIa"
-            speed="fast"
-            color="#DC2626"
+        {/* FIIa Migration - Multiple targets in adjacent panel */}
+        {fiiaIsHeld && showFiiaMigration && (
+          <ThrombinMigrationPaths
+            fromX={layout.positions.fiiaHold.x}
+            fromY={layout.positions.fiiaHold.y}
+            toX={width + 20}
+            panelHeight={layout.bloodstreamHeight}
           />
         )}
       </svg>
 
-      {/* Trace Thrombin indicator - medical accuracy: initiation produces ~1-2 nM thrombin */}
-      {state.thrombinProduced && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: layout.membraneHeight + 12,
-            right: 12,
-            padding: '10px 14px',
-            background: '#FFFFFF',
-            border: '2px solid #DC2626',
-            borderRadius: 8,
-            zIndex: 15,
-            boxShadow: '0 2px 8px rgba(220, 38, 38, 0.2)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, #DC2626 0%, #991B1B 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 8,
-                fontWeight: 700,
-                color: '#FFFFFF',
-                border: '2px solid #FEE2E2',
-              }}
-            >
-              IIa
-            </div>
-            <div>
-              <div style={{ color: '#DC2626', fontSize: 11, fontWeight: 700 }}>
-                TROMBINĂ URMĂ
-              </div>
-              <div style={{ color: '#64748B', fontSize: 9, marginTop: 2 }}>
-                ~1-2 nM · Declanșează amplificarea
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Removed trace thrombin indicator box - the FIIa token + migration paths are sufficient */}
 
-      {/* CSS Animations */}
+      {/* CSS Animations - Simple, GPU-optimized */}
       <style>{`
-        @keyframes thrombinPulse {
-          0%, 100% { box-shadow: 0 4px 20px rgba(153, 27, 27, 0.6); }
-          50% { box-shadow: 0 4px 30px rgba(239, 68, 68, 0.8); }
+        @keyframes factorFloat {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-6px); }
         }
-        @keyframes thrombinPulseEnhanced {
-          0%, 100% {
-            box-shadow: 0 4px 20px rgba(153, 27, 27, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.1);
-            transform: scale(1);
-          }
-          50% {
-            box-shadow: 0 4px 30px rgba(239, 68, 68, 0.8), 0 0 40px rgba(239, 68, 68, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.1);
-            transform: scale(1.02);
-          }
+
+        @keyframes factorMaterialize {
+          from { opacity: 0; transform: translateY(-20px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes ghostGlow {
-          0%, 100% { filter: drop-shadow(0 0 8px rgba(74, 222, 128, 0.6)); }
-          50% { filter: drop-shadow(0 0 16px rgba(74, 222, 128, 0.9)); }
+
+        @keyframes materializeAndDock {
+          from { opacity: 0; transform: translateY(-40px); }
+          to { opacity: 1; transform: translateY(62px); }
         }
-        @keyframes statusPulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.6; transform: scale(0.9); }
+
+        @keyframes activationGlow {
+          0%, 100% { filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.4)); }
+          50% { filter: drop-shadow(0 0 16px rgba(6, 182, 212, 0.7)); }
         }
-        @keyframes arrowMove {
-          0%, 100% { transform: translateX(0); opacity: 1; }
-          50% { transform: translateX(4px); opacity: 0.7; }
+
+        @keyframes slideToHold {
+          from { opacity: 0; transform: translateY(60px); }
+          to { opacity: 1; transform: translateY(0); }
         }
+
+        @keyframes sparkBurst {
+          from { transform: translate(-50%, -50%) scale(0.3); opacity: 0.8; }
+          to { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+        }
+
         @keyframes complexPulse {
-          0%, 100% {
-            border-color: rgba(59, 130, 246, 0.6);
-            box-shadow: 0 0 8px rgba(59, 130, 246, 0.2);
-          }
-          50% {
-            border-color: rgba(59, 130, 246, 1);
-            box-shadow: 0 0 16px rgba(59, 130, 246, 0.4);
-          }
+          0%, 100% { border-color: rgba(59, 130, 246, 0.4); box-shadow: 0 0 8px rgba(59, 130, 246, 0.15); }
+          50% { border-color: rgba(59, 130, 246, 0.8); box-shadow: 0 0 16px rgba(59, 130, 246, 0.3); }
+        }
+
+        @keyframes dashMove {
+          from { stroke-dashoffset: 18; }
+          to { stroke-dashoffset: 0; }
+        }
+
+        @keyframes anchorPulse {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 0.7; }
         }
       `}</style>
     </div>
@@ -443,62 +693,67 @@ export function SparkFrame({
 }
 
 // =============================================================================
-// GHOST SLOT COMPONENT
+// MEMBRANE ANCHOR - Visual representation of Ca2+/GLA domain binding
 // =============================================================================
 
-interface GhostSlotProps {
-  x: number;
-  y: number;
-  factorId: string;
-  isDocked: boolean;
-  isHighlighted: boolean;
-  onClick: () => void;
-  disabled: boolean;
-  showActivated?: boolean;
-}
-
-function GhostSlot({
-  x,
-  y,
-  factorId,
-  isDocked,
-  isHighlighted,
-  onClick,
-  disabled,
-  showActivated = false,
-}: GhostSlotProps): React.ReactElement {
-  // Get the activated factor ID (e.g., FVII -> FVIIa)
-  const activatedFactorId = `${factorId}a`;
-
+function MembraneAnchor({ y, active = false }: { y: number; active?: boolean }): React.ReactElement {
   return (
     <div
       style={{
         position: 'absolute',
-        left: x - 25,
-        top: y - 20,
-        cursor: disabled || isDocked ? 'default' : 'pointer',
-        opacity: disabled && !isDocked ? 0.25 : isDocked ? 1 : isHighlighted ? 0.8 : 0.35,
-        filter: isDocked
-          ? 'drop-shadow(2px 3px 4px rgba(0,0,0,0.4))'
-          : isHighlighted
-          ? 'drop-shadow(0 0 12px rgba(74, 222, 128, 0.8))'
-          : 'grayscale(50%)',
-        transform: isHighlighted && !isDocked ? 'scale(1.15)' : 'scale(1)',
-        transition: 'all 0.2s ease',
-        zIndex: isDocked ? 5 : 3,
+        left: '50%',
+        top: 18,
+        width: 2,
+        height: y - 5,
+        background: active
+          ? 'linear-gradient(180deg, rgba(34, 197, 94, 0.8) 0%, rgba(34, 197, 94, 0.2) 100%)'
+          : 'linear-gradient(180deg, rgba(148, 163, 184, 0.5) 0%, rgba(148, 163, 184, 0.1) 100%)',
+        transform: 'translateX(-50%)',
       }}
-      onClick={disabled || isDocked ? undefined : onClick}
     >
-      <FactorTokenNew
-        factorId={showActivated && isDocked ? activatedFactorId : factorId}
-        isActive={showActivated && isDocked}
-      />
+      {/* Gla label */}
+      <span
+        style={{
+          position: 'absolute',
+          bottom: -2,
+          left: 6,
+          fontSize: 7,
+          fontWeight: 600,
+          color: '#1E293B',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        Gla
+      </span>
     </div>
   );
 }
 
 // =============================================================================
-// ACTIVATION ARROW SVG COMPONENT
+// ACTIVATION SPARK - Glowing effect during enzymatic activation
+// =============================================================================
+
+function ActivationSpark({ color = '#06B6D4' }: { color?: string }): React.ReactElement {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        width: 70,
+        height: 70,
+        borderRadius: '50%',
+        background: `radial-gradient(circle, ${color}80 0%, ${color}00 70%)`,
+        transform: 'translate(-50%, -50%)',
+        animation: 'sparkBurst 0.7s ease-out forwards',
+        pointerEvents: 'none',
+      }}
+    />
+  );
+}
+
+// =============================================================================
+// ACTIVATION ARROW SVG
 // =============================================================================
 
 interface ActivationArrowSVGProps {
@@ -520,12 +775,9 @@ function ActivationArrowSVG({
   label,
   curved = true,
 }: ActivationArrowSVGProps): React.ReactElement {
-  const markerId = `arrowhead-spark-${fromX}-${fromY}-${toX}-${toY}`;
-
-  // Calculate curved path (quadratic bezier)
-  // Control point is above the midpoint for a nice arc
+  const markerId = `arrow-${fromX}-${fromY}-${toX}-${toY}`;
   const midX = (fromX + toX) / 2;
-  const midY = Math.min(fromY, toY) - 30; // Arc above the points
+  const midY = Math.min(fromY, toY) - 35;
   const pathD = curved
     ? `M ${fromX} ${fromY} Q ${midX} ${midY} ${toX} ${toY}`
     : `M ${fromX} ${fromY} L ${toX} ${toY}`;
@@ -551,96 +803,70 @@ function ActivationArrowSVG({
         strokeDasharray="6 3"
         fill="none"
         markerEnd={`url(#${markerId})`}
-        opacity={0.85}
-        style={{
-          animation: 'dashMove 1s linear infinite',
-        }}
+        opacity={0.8}
+        style={{ animation: 'dashMove 1s linear infinite' }}
       />
-      {/* Label on the arrow */}
       {label && (
         <text
           x={midX}
-          y={curved ? midY - 5 : (fromY + toY) / 2 - 8}
+          y={curved ? midY - 5 : (fromY + toY) / 2 - 10}
           textAnchor="middle"
-          fontSize={9}
+          fontSize={10}
           fontWeight={600}
           fill={color}
-          style={{ textShadow: '0 1px 2px rgba(255,255,255,0.8)' }}
+          style={{ textShadow: '0 1px 2px rgba(255,255,255,0.9)' }}
         >
           {label}
         </text>
       )}
-      <style>{`
-        @keyframes dashMove {
-          from { stroke-dashoffset: 18; }
-          to { stroke-dashoffset: 0; }
-        }
-      `}</style>
     </g>
   );
 }
 
 // =============================================================================
-// MIGRATION ARROW SVG COMPONENT
+// MIGRATION PATH - Animated path showing factor migration to platelet
 // =============================================================================
 
-interface MigrationArrowSVGProps {
+interface MigrationPathProps {
   fromX: number;
   fromY: number;
   toX: number;
+  color: string;
   label: string;
   speed: 'slow' | 'fast';
-  color: string;
 }
 
-function MigrationArrowSVG({
+function MigrationPath({
   fromX,
   fromY,
   toX,
+  color,
   label,
   speed,
-  color,
-}: MigrationArrowSVGProps): React.ReactElement {
-  const markerId = `migration-arrow-${label}-${fromX}-${fromY}`;
+}: MigrationPathProps): React.ReactElement {
   const duration = speed === 'slow' ? '3s' : '1.5s';
 
   return (
     <g>
-      <defs>
-        <marker
-          id={markerId}
-          markerWidth="10"
-          markerHeight="8"
-          refX="10"
-          refY="4"
-          orient="auto"
-        >
-          <polygon points="0 0, 10 4, 0 8" fill={color} />
-        </marker>
-      </defs>
-      {/* Main arrow line */}
+      {/* Dashed path line */}
       <line
         x1={fromX}
         y1={fromY}
         x2={toX}
         y2={fromY}
         stroke={color}
-        strokeWidth={2.5}
+        strokeWidth={2}
         strokeDasharray="8 4"
-        markerEnd={`url(#${markerId})`}
-        opacity={0.9}
-        style={{
-          animation: `migrationDash ${duration} linear infinite`,
-        }}
+        opacity={0.3}
       />
-      {/* Traveling particle */}
+
+      {/* Animated token along path */}
       <circle
-        r={5}
+        r={10}
         fill={color}
+        stroke="#FFFFFF"
+        strokeWidth={2}
         opacity={0.9}
-        style={{
-          animation: `migrateParticle ${duration} ease-in-out infinite`,
-        }}
       >
         <animateMotion
           dur={duration}
@@ -648,31 +874,86 @@ function MigrationArrowSVG({
           path={`M${fromX},${fromY} L${toX},${fromY}`}
         />
       </circle>
-      {/* Label above the arrow */}
+
+      {/* Token label */}
       <text
-        x={(fromX + toX) / 2}
-        y={fromY - 12}
-        fill={color}
-        fontSize={10}
-        fontWeight={600}
         textAnchor="middle"
-        style={{
-          filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.3))',
-        }}
+        dy={4}
+        fill="#FFFFFF"
+        fontSize={7}
+        fontWeight={700}
       >
-        {label} →
+        <animateMotion
+          dur={duration}
+          repeatCount="indefinite"
+          path={`M${fromX},${fromY} L${toX},${fromY}`}
+        />
+        {label.replace('F', '')}
       </text>
-      <style>{`
-        @keyframes migrationDash {
-          from { stroke-dashoffset: 24; }
-          to { stroke-dashoffset: 0; }
-        }
-        @keyframes migrateParticle {
-          0% { opacity: 0.9; }
-          50% { opacity: 1; }
-          100% { opacity: 0.9; }
-        }
-      `}</style>
+    </g>
+  );
+}
+
+// =============================================================================
+// THROMBIN MIGRATION PATHS - FIIa migrates to multiple targets
+// =============================================================================
+
+interface ThrombinMigrationPathsProps {
+  fromX: number;
+  fromY: number;
+  toX: number;
+  panelHeight: number;
+}
+
+function ThrombinMigrationPaths({
+  fromX,
+  fromY,
+  toX,
+  panelHeight,
+}: ThrombinMigrationPathsProps): React.ReactElement {
+  // Target positions in the adjacent panel (spread vertically)
+  // PAR is first and highlighted - activates platelet surface change immediately
+  const targets = [
+    { label: 'PAR', y: panelHeight * 0.15, color: '#7C3AED', delay: '0s', primary: true },      // Platelet receptor - PRIMARY
+    { label: 'FXI', y: panelHeight * 0.35, color: '#F59E0B', delay: '0.3s', primary: false },   // Factor XI
+    { label: 'FV', y: panelHeight * 0.55, color: '#10B981', delay: '0.5s', primary: false },    // Factor V
+    { label: 'FVIII', y: panelHeight * 0.75, color: '#3B82F6', delay: '0.7s', primary: false }, // Factor VIII-vWF
+  ];
+
+  return (
+    <g>
+      {/* Migration paths to each target - minimal, just animated dots */}
+      {targets.map((target) => {
+        const midX = fromX + (toX - fromX) * 0.5;
+        const pathD = `M ${fromX} ${fromY} Q ${midX} ${(fromY + target.y) / 2} ${toX} ${target.y}`;
+
+        return (
+          <g key={target.label}>
+            <path
+              d={pathD}
+              stroke={target.color}
+              strokeWidth={target.primary ? 2 : 1.5}
+              strokeDasharray="4 3"
+              fill="none"
+              opacity={target.primary ? 0.4 : 0.2}
+            />
+            <circle
+              r={target.primary ? 7 : 5}
+              fill={target.color}
+              stroke="#FFFFFF"
+              strokeWidth={1.5}
+              opacity={0.9}
+            >
+              <animateMotion
+                dur={target.primary ? '1.5s' : '2s'}
+                repeatCount="indefinite"
+                begin={target.delay}
+                path={pathD}
+              />
+            </circle>
+          </g>
+        );
+      })}
     </g>
   );
 }
