@@ -136,7 +136,8 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
       // Auto-expose TF to start kinetic simulation immediately
       if (!state.kineticState.isTFExposed) {
         exposeTF();
-        setDebugLog((prev) => [...prev.slice(-4), 'TF auto-expus! Simulare cinetică pornită.']);
+        // Defer debug log update to avoid cascading renders
+        setTimeout(() => setDebugLog((prev) => [...prev.slice(-4), 'TF auto-expus! Simulare cinetică pornită.']), 0);
       }
     }
   }, [state.currentScene, setObjectives, state.kineticState.isTFExposed, exposeTF]);
@@ -195,7 +196,7 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
   useEffect(() => {
     if (state.currentScene === 'amplification' &&
         ampVwfSplit && ampFvActivated && ampFviiiActivated && ampFxiActivated) {
-      setDebugLog(prev => [...prev.slice(-4), 'All activated! → Propagation']);
+      setTimeout(() => setDebugLog(prev => [...prev.slice(-4), 'All activated! → Propagation']), 0);
       setTimeout(() => setScene('propagation'), 1000);
     }
   }, [state.currentScene, ampVwfSplit, ampFvActivated, ampFviiiActivated, ampFxiActivated, setScene]);
@@ -238,7 +239,7 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
   // Check for propagation phase completion
   useEffect(() => {
     if (state.currentScene === 'propagation' && propThrombinBurst) {
-      setDebugLog(prev => [...prev.slice(-4), 'EXPLOZIE DE TROMBINĂ! → Stabilizare']);
+      setTimeout(() => setDebugLog(prev => [...prev.slice(-4), 'EXPLOZIE DE TROMBINĂ! → Stabilizare']), 0);
       setTimeout(() => setScene('stabilization'), 2000);
     }
   }, [state.currentScene, propThrombinBurst, setScene]);
@@ -268,7 +269,7 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
   // Check for stabilization phase completion
   useEffect(() => {
     if (state.currentScene === 'stabilization' && stabMeshCrosslinked) {
-      setDebugLog(prev => [...prev.slice(-4), 'CHEAG STABIL! → Victorie']);
+      setTimeout(() => setDebugLog(prev => [...prev.slice(-4), 'CHEAG STABIL! → Victorie']), 0);
       setTimeout(() => setScene('victory'), 2000);
     }
   }, [state.currentScene, stabMeshCrosslinked, setScene]);
@@ -495,7 +496,7 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
       opacity: 1,
     };
     addDiffusingFIXaParticle(particle);
-    setDebugLog((prev) => [...prev.slice(-4), 'FIXa plutește spre trombocit...']);
+    setTimeout(() => setDebugLog((prev) => [...prev.slice(-4), 'FIXa plutește spre trombocit...']), 0);
   }, [state.currentScene, fixDockingState, GAME_WIDTH, GAME_HEIGHT, plateletPosition, addDiffusingFIXaParticle]);
 
   // Continue spawning additional FIXa particles based on kinetic simulation
@@ -577,7 +578,7 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
       opacity: 1,
     };
     addDiffusingFIIaParticle(particle);
-    setDebugLog((prev) => [...prev.slice(-4), 'FIIa (trombină) plutește spre trombocit...']);
+    setTimeout(() => setDebugLog((prev) => [...prev.slice(-4), 'FIIa (trombină) plutește spre trombocit...']), 0);
   }, [state.currentScene, fiiDockedState, GAME_WIDTH, GAME_HEIGHT, plateletPosition, addDiffusingFIIaParticle]);
 
   // Animate diffusing FIIa particles and auto-activate platelet on arrival
@@ -614,7 +615,7 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
 
       // Auto-transition to Amplification when thrombin reaches platelet
       if (particleArrived && state.currentScene === 'initiation') {
-        setDebugLog((prev) => [...prev.slice(-4), 'Trombina a ajuns! → Amplificare']);
+        setTimeout(() => setDebugLog((prev) => [...prev.slice(-4), 'Trombina a ajuns! → Amplificare']), 0);
         setTimeout(() => setScene('amplification'), 800);
       }
     };
@@ -628,7 +629,7 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
     if (state.currentScene !== 'initiation') return;
     if (!isInitiationComplete(state.kineticState)) return;
 
-    setDebugLog((prev) => [...prev.slice(-4), 'Kinetic: Ready for Amplification!']);
+    setTimeout(() => setDebugLog((prev) => [...prev.slice(-4), 'Kinetic: Ready for Amplification!']), 0);
     setTimeout(() => setScene('amplification'), 1000);
   }, [state.currentScene, state.kineticState, setScene]);
 
@@ -901,16 +902,12 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
       velocity: { x: 30, y: 0 },
     });
     setHeldFactor(null);
-  }, [heldFactor, conveyorDragFactor, addFloatingFactor, tfPositions, tfDockingState, fixDockingState, fxDockingState, fvDockingState, fiiDockedState, setScene, GAME_HEIGHT, GAME_WIDTH, state.currentScene, ampVwfSplit, ampFvActivated, ampFviiiActivated, ampFxiActivated, ampDockingPositions, propTenaseFormed, propProthrombinaseFormed, propThrombinBurst, propDockingPositions, stabFibrinCount, stabFxiiiActivated, stabDockingPositions]);
+  }, [heldFactor, conveyorDragFactor, addFloatingFactor, tfPositions, tfDockingState, fixDockingState, fxDockingState, fvDockingState, fiiDockedState, GAME_HEIGHT, GAME_WIDTH, state.currentScene, ampVwfSplit, ampFvActivated, ampFviiiActivated, ampFxiActivated, ampDockingPositions, propTenaseFormed, propProthrombinaseFormed, propThrombinBurst, propDockingPositions, stabFibrinCount, stabFxiiiActivated, stabDockingPositions]);
 
-  const handleFactorDock = useCallback((_factorId: string, _complexId: string): void => {}, []);
-
-  // handleThrombinDragStart removed - thrombin now auto-floats
-  const handleThrombinDragStart = useCallback((_fromIndex: number, _event: React.MouseEvent | React.TouchEvent): void => {
-    // No-op - thrombin now auto-floats to platelet
-  }, []);
-
-  const handleThrombinDrag = useCallback((_thrombinId: string, _targetX: number, _targetY: number): void => {}, []);
+  // No-op handlers for API compatibility
+  const handleFactorDock = useCallback((): void => {}, []);
+  const handleThrombinDragStart = useCallback((): void => {}, []);
+  const handleThrombinDrag = useCallback((): void => {}, []);
 
   const handleArrowComplete = useCallback((arrowId: string): void => {
     removeActivationArrow(arrowId);

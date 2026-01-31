@@ -89,8 +89,6 @@ export function SparkFrame({
   const fixaIsMigrating = state.fixaMigrationState === 'migrating';
   // IIa migration state is now controlled from parent via prop
   const fiiaIsHeld = iiaMigrationState === 'held_for_migration';
-  const fiiaIsMigrating = iiaMigrationState === 'migrating';
-  const fiiaArrived = iiaMigrationState === 'arrived';
 
   // Materialize FIX and FX after TF-VIIa forms
   useEffect(() => {
@@ -316,7 +314,7 @@ export function SparkFrame({
         >
           <FactorTokenNew factorId="FIX" isActive={false} enableHover={state.tfVIIaDocked} />
           {/* Membrane anchor (Ca2+ / GLA domain) */}
-          <MembraneAnchor y={layout.membraneY - layout.positions.fix.y + 18} />
+          <MembraneAnchor />
         </div>
       )}
 
@@ -383,7 +381,7 @@ export function SparkFrame({
           onClick={handleFXActivate}
         >
           <FactorTokenNew factorId="FX" isActive={false} enableHover={state.tfVIIaDocked} />
-          <MembraneAnchor y={layout.membraneY - layout.positions.fx.y + 18} />
+          <MembraneAnchor />
         </div>
       )}
 
@@ -415,7 +413,7 @@ export function SparkFrame({
           }}
         >
           <FactorTokenNew factorId="FXa" isActive={true} enableHover={false} />
-          <MembraneAnchor y={layout.membraneY - layout.positions.fx.y + 18} active />
+          <MembraneAnchor />
         </div>
       )}
 
@@ -511,7 +509,7 @@ export function SparkFrame({
           onClick={handleFIIActivate}
         >
           <FactorTokenNew factorId="FII" isActive={false} enableHover={state.fvDocked} />
-          <MembraneAnchor y={layout.membraneY - layout.positions.fii.y + 18} />
+          <MembraneAnchor />
         </div>
       )}
 
@@ -696,37 +694,9 @@ export function SparkFrame({
 // MEMBRANE ANCHOR - Visual representation of Ca2+/GLA domain binding
 // =============================================================================
 
-function MembraneAnchor({ y, active = false }: { y: number; active?: boolean }): React.ReactElement {
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        left: '50%',
-        top: 18,
-        width: 2,
-        height: y - 5,
-        background: active
-          ? 'linear-gradient(180deg, rgba(34, 197, 94, 0.8) 0%, rgba(34, 197, 94, 0.2) 100%)'
-          : 'linear-gradient(180deg, rgba(148, 163, 184, 0.5) 0%, rgba(148, 163, 184, 0.1) 100%)',
-        transform: 'translateX(-50%)',
-      }}
-    >
-      {/* Gla label */}
-      <span
-        style={{
-          position: 'absolute',
-          bottom: -2,
-          left: 6,
-          fontSize: 7,
-          fontWeight: 600,
-          color: '#1E293B',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        Gla
-      </span>
-    </div>
-  );
+function MembraneAnchor(): React.ReactElement {
+  // Removed the gray vertical line - only keeping for layout compatibility
+  return <div style={{ height: 0 }} />;
 }
 
 // =============================================================================
@@ -823,76 +793,6 @@ function ActivationArrowSVG({
   );
 }
 
-// =============================================================================
-// MIGRATION PATH - Animated path showing factor migration to platelet
-// =============================================================================
-
-interface MigrationPathProps {
-  fromX: number;
-  fromY: number;
-  toX: number;
-  color: string;
-  label: string;
-  speed: 'slow' | 'fast';
-}
-
-function MigrationPath({
-  fromX,
-  fromY,
-  toX,
-  color,
-  label,
-  speed,
-}: MigrationPathProps): React.ReactElement {
-  const duration = speed === 'slow' ? '3s' : '1.5s';
-
-  return (
-    <g>
-      {/* Dashed path line */}
-      <line
-        x1={fromX}
-        y1={fromY}
-        x2={toX}
-        y2={fromY}
-        stroke={color}
-        strokeWidth={2}
-        strokeDasharray="8 4"
-        opacity={0.3}
-      />
-
-      {/* Animated token along path */}
-      <circle
-        r={10}
-        fill={color}
-        stroke="#FFFFFF"
-        strokeWidth={2}
-        opacity={0.9}
-      >
-        <animateMotion
-          dur={duration}
-          repeatCount="indefinite"
-          path={`M${fromX},${fromY} L${toX},${fromY}`}
-        />
-      </circle>
-
-      {/* Token label */}
-      <text
-        textAnchor="middle"
-        dy={4}
-        fill="#FFFFFF"
-        fontSize={7}
-        fontWeight={700}
-      >
-        <animateMotion
-          dur={duration}
-          repeatCount="indefinite"
-          path={`M${fromX},${fromY} L${toX},${fromY}`}
-        />
-        {label.replace('F', '')}
-      </text>
-    </g>
-  );
-}
 
 // =============================================================================
 // THROMBIN MIGRATION PATHS - FIIa migrates to multiple targets

@@ -23,8 +23,8 @@ export function SceneContainer({
     if (currentScene !== displayedScene) {
       let fadeInTimer: ReturnType<typeof setTimeout> | null = null;
 
-      // Fade out
-      setOpacity(0);
+      // Fade out (deferred to avoid cascading renders)
+      const fadeStartTimer = setTimeout(() => setOpacity(0), 0);
 
       // After fade out completes, switch scene and fade in
       const fadeOutTimer = setTimeout(() => {
@@ -37,6 +37,7 @@ export function SceneContainer({
       }, 300);
 
       return () => {
+        clearTimeout(fadeStartTimer);
         clearTimeout(fadeOutTimer);
         if (fadeInTimer) clearTimeout(fadeInTimer);
       };

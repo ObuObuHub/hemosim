@@ -1,7 +1,7 @@
 // components/game/frames/ExplosionFrame.tsx
 'use client';
 
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect } from 'react';
 import { PhospholipidMembrane } from '../visuals/PhospholipidMembrane';
 import { PARReceptor } from '../visuals/PARReceptor';
 import { FactorTokenNew } from '../tokens/FactorTokenNew';
@@ -97,16 +97,7 @@ export function ExplosionFrame({
   const isClotting = state.phase === 'clotting';
   const isStable = state.phase === 'stable';
 
-  // Track burst effect for animations
-  const [showBurstEffect, setShowBurstEffect] = useState(false);
-  useEffect(() => {
-    if (state.thrombinBurst) {
-      setShowBurstEffect(true);
-    }
-  }, [state.thrombinBurst]);
-
   // Check prerequisites for complex formation (not phase-based)
-  const allCofactorsDocked = state.fvaDocked && state.fviiaDocked;
   const canFormTenase = state.fixaArrived && state.fviiaDocked && !state.tenaseFormed && !isAutoMode;
   const canProduceFXaButton = state.tenaseFormed && !state.fxaProduced && !isAutoMode;
   const canFormProthrombinase = state.fxaProduced && state.fvaDocked && !state.prothrombinaseFormed && !isAutoMode;
@@ -275,55 +266,63 @@ export function ExplosionFrame({
         >
           {state.plateletActivated ? (
             /* Activated platelet - organic shape with pseudopods */
-            <svg
-              width="200"
-              height="110"
-              viewBox="0 0 200 110"
-              style={{ animation: 'plateletMorph 1.5s ease-out' }}
-            >
-              <defs>
-                <linearGradient id="activatedPlateletGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#F1F5F9" />
-                  <stop offset="50%" stopColor="#E2E8F0" />
-                  <stop offset="100%" stopColor="#CBD5E1" />
-                </linearGradient>
-                <filter id="plateletGlow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="1.5" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-              {/* Organic activated platelet shape with pseudopods - curved, natural */}
-              <path
-                d="M100,10
-                   C115,8 125,15 135,5
-                   C140,12 138,25 145,30
-                   C155,32 170,28 175,40
-                   C178,50 168,55 175,65
-                   C170,75 155,72 150,80
-                   C145,90 140,95 130,100
-                   C120,105 110,98 100,102
-                   C90,98 80,105 70,100
-                   C60,95 55,90 50,80
-                   C45,72 30,75 25,65
-                   C32,55 22,50 25,40
-                   C30,28 45,32 55,30
-                   C62,25 60,12 65,5
-                   C75,15 85,8 100,10
-                   Z"
-                fill="url(#activatedPlateletGrad)"
-                stroke="#94A3B8"
-                strokeWidth={3}
-                filter="url(#plateletGlow)"
-              />
-              <text x="100" y="58" textAnchor="middle" fontSize="13" fontWeight="600" fill="#64748B">
-                Trombocit activat
-              </text>
-            </svg>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <svg
+                width="200"
+                height="110"
+                viewBox="0 0 200 110"
+                style={{ animation: 'plateletMorph 1.5s ease-out' }}
+              >
+                <defs>
+                  <linearGradient id="activatedPlateletGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#F1F5F9" />
+                    <stop offset="50%" stopColor="#E2E8F0" />
+                    <stop offset="100%" stopColor="#CBD5E1" />
+                  </linearGradient>
+                  <filter id="plateletGlow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="1.5" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                </defs>
+                {/* Organic activated platelet shape with pseudopods - curved, natural */}
+                <path
+                  d="M100,10
+                     C115,8 125,15 135,5
+                     C140,12 138,25 145,30
+                     C155,32 170,28 175,40
+                     C178,50 168,55 175,65
+                     C170,75 155,72 150,80
+                     C145,90 140,95 130,100
+                     C120,105 110,98 100,102
+                     C90,98 80,105 70,100
+                     C60,95 55,90 50,80
+                     C45,72 30,75 25,65
+                     C32,55 22,50 25,40
+                     C30,28 45,32 55,30
+                     C62,25 60,12 65,5
+                     C75,15 85,8 100,10
+                     Z"
+                  fill="url(#activatedPlateletGrad)"
+                  stroke="#94A3B8"
+                  strokeWidth={3}
+                  filter="url(#plateletGlow)"
+                />
+                <text x="100" y="45" textAnchor="middle" fontSize="12" fontWeight="600" fill="#64748B">
+                  Trombocit activat
+                </text>
+                <text x="100" y="60" textAnchor="middle" fontSize="8" fill="#94A3B8">
+                  Formare pseudopode
+                </text>
+                <text x="100" y="73" textAnchor="middle" fontSize="8" fill="#94A3B8">
+                  Expunere fosfatidilserină
+                </text>
+              </svg>
+            </div>
           ) : (
-            /* Inactive platelet - round/ellipse shape with "Trombocit inactiv" */
+            /* Inactive platelet - round/ellipse shape */
             <div
               style={{
                 width: 180,
@@ -337,7 +336,7 @@ export function ExplosionFrame({
                 boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
               }}
             >
-              <span style={{ fontSize: 15, color: '#64748B', fontWeight: 600 }}>
+              <span style={{ fontSize: 14, color: '#64748B', fontWeight: 600 }}>
                 Trombocit inactiv
               </span>
             </div>
@@ -350,10 +349,8 @@ export function ExplosionFrame({
       {isActive && !isClotting && !isStable && (
         <UnifiedPlateletView
           width={width}
-          height={height}
           membraneY={layout.membraneY}
           bloodstreamHeight={layout.bloodstreamHeight}
-          topZoneEnd={layout.topZoneEnd}
           tenaseX={layout.tenaseX}
           prothrombinaseX={layout.prothrombinaseX}
           complexY={layout.complexY}
@@ -443,6 +440,29 @@ export function ExplosionFrame({
             >
               <div style={{ color: '#059669', fontSize: 11, fontWeight: 500 }}>
                 Cross-linking în curs...
+              </div>
+            </div>
+          )}
+
+          {/* Stable clot indicator */}
+          {state.fibrinCrosslinked && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 20,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                padding: '8px 16px',
+                background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                border: '2px solid #10B981',
+                borderRadius: 8,
+                boxShadow: '0 4px 16px rgba(5, 150, 105, 0.3)',
+                zIndex: 30,
+                textAlign: 'center',
+              }}
+            >
+              <div style={{ color: '#FFFFFF', fontSize: 12, fontWeight: 700, letterSpacing: 0.5 }}>
+                CHEAG STABIL
               </div>
             </div>
           )}
@@ -547,10 +567,8 @@ export function ExplosionFrame({
 
 interface UnifiedPlateletViewProps {
   width: number;
-  height: number;
   membraneY: number;
   bloodstreamHeight: number;
-  topZoneEnd: number;
   tenaseX: number;
   prothrombinaseX: number;
   complexY: number;
@@ -571,10 +589,8 @@ interface UnifiedPlateletViewProps {
 
 function UnifiedPlateletView({
   width,
-  height,
   membraneY,
   bloodstreamHeight,
-  topZoneEnd,
   tenaseX,
   prothrombinaseX,
   complexY,
@@ -595,7 +611,6 @@ function UnifiedPlateletView({
   // ===== TOP ZONE: Cofactor Activation =====
   const topRowY = bloodstreamHeight * 0.15;
   const thrombinY = bloodstreamHeight * 0.32;
-  const activatedRowY = topZoneEnd - 20;
 
   // PAR receptor position (moved slightly left)
   const parX = width * 0.05;
@@ -613,6 +628,10 @@ function UnifiedPlateletView({
 
   // Dramatic thrombin burst - waves of FIIa converging on fibrinogen
   const burstWaves = useMemo(() => {
+    // Deterministic offset based on index (avoids Math.random during render)
+    const deterministicOffset = (idx: number, scale: number): number =>
+      Math.sin(idx * 7.3) * scale * 0.5;
+
     const waves: Array<{
       id: number;
       startX: number;
@@ -649,12 +668,12 @@ function UnifiedPlateletView({
     // Wave 2: Secondary burst (12 particles)
     for (let i = 0; i < 12; i++) {
       const spreadAngle = ((i - 5.5) / 11) * Math.PI * 0.8;
-      const targetX = centerX + Math.cos(spreadAngle) * 50 + (Math.random() - 0.5) * 20;
-      const targetY = centerY + Math.sin(spreadAngle) * 30 + (Math.random() - 0.5) * 15;
+      const targetX = centerX + Math.cos(spreadAngle) * 50 + deterministicOffset(i, 20);
+      const targetY = centerY + Math.sin(spreadAngle) * 30 + deterministicOffset(i + 100, 15);
       waves.push({
         id: 8 + i,
-        startX: sourceX + (Math.random() - 0.5) * 20,
-        startY: sourceY + (Math.random() - 0.5) * 15,
+        startX: sourceX + deterministicOffset(i + 200, 20),
+        startY: sourceY + deterministicOffset(i + 300, 15),
         endX: targetX,
         endY: targetY,
         delay: 1.0 + i * 0.12,
@@ -666,12 +685,12 @@ function UnifiedPlateletView({
     // Wave 3: Sustained flow (10 particles)
     for (let i = 0; i < 10; i++) {
       const spreadAngle = ((i - 4.5) / 9) * Math.PI * 0.5;
-      const targetX = centerX + Math.cos(spreadAngle) * 40 + (Math.random() - 0.5) * 30;
-      const targetY = centerY + Math.sin(spreadAngle) * 25 + (Math.random() - 0.5) * 20;
+      const targetX = centerX + Math.cos(spreadAngle) * 40 + deterministicOffset(i + 400, 30);
+      const targetY = centerY + Math.sin(spreadAngle) * 25 + deterministicOffset(i + 500, 20);
       waves.push({
         id: 20 + i,
-        startX: sourceX + (Math.random() - 0.5) * 15,
-        startY: sourceY + (Math.random() - 0.5) * 10,
+        startX: sourceX + deterministicOffset(i + 600, 15),
+        startY: sourceY + deterministicOffset(i + 700, 10),
         endX: targetX,
         endY: targetY,
         delay: 2.5 + i * 0.18,
@@ -773,36 +792,44 @@ function UnifiedPlateletView({
             top: topRowY,
             transform: 'translate(-50%, -50%)',
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
-            gap: 4,
-            padding: '6px 10px',
-            background: 'rgba(255,255,255,0.95)',
-            borderRadius: 8,
-            border: state.parCleavageState === 'activated' && !isAutoMode ? '2px solid #22C55E' : '2px solid #E2E8F0',
-            cursor: state.parCleavageState === 'activated' && !isAutoMode ? 'pointer' : 'default',
-            opacity: state.parCleavageState === 'activated' ? 1 : 0.5,
             zIndex: 10,
           }}
-          onClick={() => state.parCleavageState === 'activated' && !isAutoMode && onActivateFactor('vWF-VIII')}
         >
-          <FactorTokenNew factorId="FVIII" isActive={false} enableHover={state.parCleavageState === 'activated'} />
-          <span style={{ color: '#64748B', fontSize: 9 }}>─</span>
           <div
             style={{
-              width: 24,
-              height: 24,
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 7,
-              fontWeight: 700,
-              color: '#FFFFFF',
-              border: '2px solid white',
+              gap: 4,
+              padding: '6px 10px',
+              background: 'rgba(255,255,255,0.95)',
+              borderRadius: 8,
+              border: state.parCleavageState === 'activated' && !isAutoMode ? '2px solid #22C55E' : '2px solid #E2E8F0',
+              cursor: state.parCleavageState === 'activated' && !isAutoMode ? 'pointer' : 'default',
+              opacity: state.parCleavageState === 'activated' ? 1 : 0.5,
             }}
+            onClick={() => state.parCleavageState === 'activated' && !isAutoMode && onActivateFactor('vWF-VIII')}
           >
-            vWF
+            <FactorTokenNew factorId="FVIII" isActive={false} enableHover={state.parCleavageState === 'activated'} />
+            <span style={{ color: '#64748B', fontSize: 9 }}>─</span>
+            <div
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 7,
+                fontWeight: 700,
+                color: '#FFFFFF',
+                border: '2px solid white',
+              }}
+            >
+              vWF
+            </div>
           </div>
         </div>
       )}
@@ -848,11 +875,10 @@ function UnifiedPlateletView({
             zIndex: 25,
             animation: 'cofactorDock 1s ease-out forwards',
             ['--dock-distance' as string]: `${complexY - topRowY - 10}px`,
+            transform: 'translateX(-50%)',
           }}
         >
-          <div style={{ transform: 'translateX(-50%)' }}>
-            <FactorTokenNew factorId="FVIIIa" isActive={true} enableHover={false} />
-          </div>
+          <FactorTokenNew factorId="FVIIIa" isActive={true} enableHover={false} />
         </div>
       )}
 
@@ -866,16 +892,14 @@ function UnifiedPlateletView({
             zIndex: 25,
             animation: 'cofactorDock 1s ease-out forwards',
             ['--dock-distance' as string]: `${complexY - topRowY - 10}px`,
+            transform: 'translateX(-50%)',
           }}
         >
-          <div style={{ transform: 'translateX(-50%)' }}>
-            <FactorTokenNew factorId="FVa" isActive={true} enableHover={false} />
-          </div>
+          <FactorTokenNew factorId="FVa" isActive={true} enableHover={false} />
         </div>
       )}
 
       {/* FXIa - docks to platelet membrane in the middle after activation */}
-      {/* Medical note: FXIa binds to platelet membrane via GPIb receptor */}
       {state.fxiActivated && (
         <div
           style={{
@@ -883,25 +907,11 @@ function UnifiedPlateletView({
             left: (tenaseX + prothrombinaseX) / 2,
             top: membraneY - 28,
             transform: 'translate(-50%, -50%)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
             zIndex: 12,
             animation: 'dockToMembrane 1s ease-out',
           }}
         >
           <FactorTokenNew factorId="FXIa" isActive={true} enableHover={false} />
-          {/* GPIb anchor indicator */}
-          <div
-            style={{
-              marginTop: 2,
-              width: 2,
-              height: 12,
-              background: 'linear-gradient(180deg, #EC4899 0%, #DB2777 100%)',
-              borderRadius: 1,
-            }}
-          />
-          <div style={{ fontSize: 5, color: '#EC4899', fontWeight: 600, marginTop: 1 }}>GPIb</div>
         </div>
       )}
 
@@ -914,6 +924,7 @@ function UnifiedPlateletView({
         isClickable={state.parCleavageState === 'thrombin-bound' && !isAutoMode}
         scale={0.85}
       />
+
 
       {/* Thrombin activation arrows - sequential: PAR first, then others after PAR activation */}
       {state.thrombinArrived && !state.thrombinBurst && (
@@ -1113,10 +1124,14 @@ function UnifiedPlateletView({
             markerEnd="url(#fxa-flow-arrow)"
             style={{ animation: 'dashFlow 1s linear infinite' }}
           />
+          {/* Enhanced FXa label with substrate info */}
           <g transform={`translate(${(tenaseX + prothrombinaseX) / 2}, ${complexY - 50})`}>
-            <rect x={-30} y={-12} width={60} height={24} rx={5} fill="#DCFCE7" stroke="#22C55E" strokeWidth={2} />
-            <text x={0} y={5} textAnchor="middle" fontSize={11} fontWeight={700} fill="#15803D">
+            <rect x={-35} y={-16} width={70} height={32} rx={5} fill="#DCFCE7" stroke="#22C55E" strokeWidth={2} />
+            <text x={0} y={0} textAnchor="middle" fontSize={11} fontWeight={700} fill="#15803D">
               FXa →
+            </text>
+            <text x={0} y={12} textAnchor="middle" fontSize={6} fill="#166534">
+              FX → FXa produs
             </text>
           </g>
         </svg>
@@ -1339,101 +1354,28 @@ function UnifiedPlateletView({
           </g>
         )}
 
-        {/* TENASE membrane anchoring - medically accurate */}
-        {/* FVIIIa (cofactor, left): C2 domain - direct PS binding */}
-        {/* FIXa (enzyme, right): Gla domain + Ca²⁺ */}
+        {/* TENASE membrane anchoring - simplified */}
         {state.tenaseFormed && (
           <g>
-            {/* FVIIIa - C2 domain anchor (cofactor, no Gla) */}
-            <line x1={tenaseX - 18} y1={complexY + 45} x2={tenaseX - 18} y2={membraneY - 12} stroke="#A855F7" strokeWidth={2} opacity={0.6} />
-            <rect x={tenaseX - 24} y={membraneY - 20} width={12} height={8} rx={2} fill="#A855F7" stroke="#7C3AED" strokeWidth={1} />
-            <text x={tenaseX - 18} y={membraneY - 14} textAnchor="middle" fontSize={5} fill="#FFF" fontWeight={600}>C2</text>
-
-            {/* FIXa - Gla domain + Ca²⁺ bridge (enzyme, vitamin K-dependent) */}
-            {/* Ca²⁺ acts as ionic bridge between Gla domain and PS membrane */}
-            <line x1={tenaseX + 18} y1={complexY + 45} x2={tenaseX + 18} y2={membraneY - 22} stroke="#22C55E" strokeWidth={2} strokeDasharray="3 2" opacity={0.7} />
-
-            {/* Gla domain */}
-            <circle cx={tenaseX + 18} cy={membraneY - 22} r={6} fill="#22C55E" stroke="#15803D" strokeWidth={1.5} />
-            <text x={tenaseX + 18} y={membraneY - 19} textAnchor="middle" fontSize={5} fill="#FFF" fontWeight={700}>Gla</text>
-
-            {/* Ca²⁺ ionic bridge - multiple ions forming coordination complex */}
-            {/* Internal Ca²⁺ (stabilizes Gla fold) + External Ca²⁺ (anchors to PS) */}
-            <g>
-              {/* Bridge connector line */}
-              <line x1={tenaseX + 18} y1={membraneY - 16} x2={tenaseX + 18} y2={membraneY - 6} stroke="#F59E0B" strokeWidth={3} strokeLinecap="round" />
-              {/* Ca²⁺ ions as locking pins */}
-              <circle cx={tenaseX + 14} cy={membraneY - 11} r={2.5} fill="#F59E0B" stroke="#D97706" strokeWidth={1} />
-              <circle cx={tenaseX + 22} cy={membraneY - 11} r={2.5} fill="#F59E0B" stroke="#D97706" strokeWidth={1} />
-              {/* Central coordination point touching PS */}
-              <rect x={tenaseX + 14} y={membraneY - 7} width={8} height={4} rx={1} fill="#F59E0B" stroke="#D97706" strokeWidth={1}>
-                <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite" />
-              </rect>
-            </g>
-            <text x={tenaseX + 30} y={membraneY - 10} fontSize={5} fill="#D97706" fontWeight={700}>Ca²⁺</text>
-            <text x={tenaseX + 30} y={membraneY - 4} fontSize={4} fill="#D97706" fontWeight={500}>punte</text>
+            {/* Simple anchor lines to membrane */}
+            <line x1={tenaseX - 12} y1={complexY + 40} x2={tenaseX - 12} y2={membraneY - 5} stroke="#A855F7" strokeWidth={2} opacity={0.5} />
+            <line x1={tenaseX + 12} y1={complexY + 40} x2={tenaseX + 12} y2={membraneY - 5} stroke="#06B6D4" strokeWidth={2} opacity={0.5} />
+            {/* Ca²⁺ indicator */}
+            <text x={tenaseX} y={membraneY - 8} textAnchor="middle" fontSize={6} fill="#F59E0B" fontWeight={600}>Ca²⁺</text>
           </g>
         )}
 
-        {/* PROTHROMBINASE membrane anchoring - medically accurate */}
-        {/* FVa (cofactor, left): C2 domain - direct PS binding */}
-        {/* FXa (enzyme, right): Gla domain + Ca²⁺ */}
+        {/* PROTHROMBINASE membrane anchoring - simplified */}
         {state.prothrombinaseFormed && (
           <g>
-            {/* FVa - C2 domain anchor (cofactor, no Gla) */}
-            <line x1={prothrombinaseX - 18} y1={complexY + 45} x2={prothrombinaseX - 18} y2={membraneY - 12} stroke="#F97316" strokeWidth={2} opacity={0.6} />
-            <rect x={prothrombinaseX - 24} y={membraneY - 20} width={12} height={8} rx={2} fill="#F97316" stroke="#EA580C" strokeWidth={1} />
-            <text x={prothrombinaseX - 18} y={membraneY - 14} textAnchor="middle" fontSize={5} fill="#FFF" fontWeight={600}>C2</text>
-
-            {/* FXa - Gla domain + Ca²⁺ bridge (enzyme, vitamin K-dependent) */}
-            {/* Ca²⁺ acts as ionic bridge between Gla domain and PS membrane */}
-            <line x1={prothrombinaseX + 18} y1={complexY + 45} x2={prothrombinaseX + 18} y2={membraneY - 22} stroke="#22C55E" strokeWidth={2} strokeDasharray="3 2" opacity={0.7} />
-
-            {/* Gla domain */}
-            <circle cx={prothrombinaseX + 18} cy={membraneY - 22} r={6} fill="#22C55E" stroke="#15803D" strokeWidth={1.5} />
-            <text x={prothrombinaseX + 18} y={membraneY - 19} textAnchor="middle" fontSize={5} fill="#FFF" fontWeight={700}>Gla</text>
-
-            {/* Ca²⁺ ionic bridge - multiple ions forming coordination complex */}
-            <g>
-              {/* Bridge connector line */}
-              <line x1={prothrombinaseX + 18} y1={membraneY - 16} x2={prothrombinaseX + 18} y2={membraneY - 6} stroke="#F59E0B" strokeWidth={3} strokeLinecap="round" />
-              {/* Ca²⁺ ions as locking pins */}
-              <circle cx={prothrombinaseX + 14} cy={membraneY - 11} r={2.5} fill="#F59E0B" stroke="#D97706" strokeWidth={1} />
-              <circle cx={prothrombinaseX + 22} cy={membraneY - 11} r={2.5} fill="#F59E0B" stroke="#D97706" strokeWidth={1} />
-              {/* Central coordination point touching PS */}
-              <rect x={prothrombinaseX + 14} y={membraneY - 7} width={8} height={4} rx={1} fill="#F59E0B" stroke="#D97706" strokeWidth={1}>
-                <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" begin="0.5s" repeatCount="indefinite" />
-              </rect>
-            </g>
-            <text x={prothrombinaseX + 30} y={membraneY - 10} fontSize={5} fill="#D97706" fontWeight={700}>Ca²⁺</text>
-            <text x={prothrombinaseX + 30} y={membraneY - 4} fontSize={4} fill="#D97706" fontWeight={500}>punte</text>
+            {/* Simple anchor lines to membrane */}
+            <line x1={prothrombinaseX - 12} y1={complexY + 40} x2={prothrombinaseX - 12} y2={membraneY - 5} stroke="#F97316" strokeWidth={2} opacity={0.5} />
+            <line x1={prothrombinaseX + 12} y1={complexY + 40} x2={prothrombinaseX + 12} y2={membraneY - 5} stroke="#22C55E" strokeWidth={2} opacity={0.5} />
+            {/* Ca²⁺ indicator */}
+            <text x={prothrombinaseX} y={membraneY - 8} textAnchor="middle" fontSize={6} fill="#F59E0B" fontWeight={600}>Ca²⁺</text>
           </g>
         )}
 
-        {/* FXIa membrane anchoring - binds via GPIb receptor (middle position) */}
-        {/* Medical note: FXI/FXIa binds to platelet GPIbα, not via Gla domain */}
-        {state.fxiActivated && (
-          <g>
-            <circle
-              cx={(tenaseX + prothrombinaseX) / 2}
-              cy={membraneY - 3}
-              r={4}
-              fill="#EC4899"
-              opacity={0.7}
-              style={{ animation: 'psPulse 2s ease-in-out infinite' }}
-            />
-            <text
-              x={(tenaseX + prothrombinaseX) / 2}
-              y={membraneY + 7}
-              textAnchor="middle"
-              fontSize={4}
-              fill="#EC4899"
-              fontWeight={600}
-            >
-              GPIb
-            </text>
-          </g>
-        )}
       </svg>
 
       {/* CSS Animations */}
@@ -1634,12 +1576,20 @@ function ComplexAssemblySlot({
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'center', gap: 10, alignItems: 'center', marginTop: 6 }}>
-        <div style={{ transform: cofactor.ready ? 'scale(1.1)' : 'scale(1)', opacity: cofactor.ready ? 1 : 0.3 }}>
-          <FactorTokenNew factorId={cofactor.id} isActive={cofactor.ready} enableHover={false} />
+        {/* Cofactor with role label */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ transform: cofactor.ready ? 'scale(1.1)' : 'scale(1)', opacity: cofactor.ready ? 1 : 0.3 }}>
+            <FactorTokenNew factorId={cofactor.id} isActive={cofactor.ready} enableHover={false} />
+          </div>
+          <span style={{ fontSize: 5, color: '#94A3B8', marginTop: 2 }}>cofactor</span>
         </div>
         <div style={{ color: '#94A3B8', fontSize: 12, fontWeight: 600 }}>+</div>
-        <div style={{ transform: enzyme.ready ? 'scale(0.9)' : 'scale(1)', opacity: enzyme.ready ? 1 : 0.3 }}>
-          <FactorTokenNew factorId={enzyme.id} isActive={enzyme.ready} enableHover={false} />
+        {/* Enzyme with role label */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ transform: enzyme.ready ? 'scale(0.9)' : 'scale(1)', opacity: enzyme.ready ? 1 : 0.3 }}>
+            <FactorTokenNew factorId={enzyme.id} isActive={enzyme.ready} enableHover={false} />
+          </div>
+          <span style={{ fontSize: 5, color: '#94A3B8', marginTop: 2 }}>enzimă</span>
         </div>
       </div>
 
@@ -1701,27 +1651,35 @@ function TenaseComplex({
         TENAZĂ
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 6 }}>
-        {/* FVIIIa - Cofactor (C2 domain, no Gla) */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ transform: 'scale(1.1)' }}>
-            <FactorTokenNew factorId="FVIIIa" isActive={true} enableHover={false} />
-          </div>
-          <div style={{ fontSize: 6, color: '#A855F7', marginTop: 2, fontWeight: 500 }}>C2</div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+        <div style={{ transform: 'scale(1.1)' }}>
+          <FactorTokenNew factorId="FVIIIa" isActive={true} enableHover={false} />
         </div>
-        {/* FIXa - Enzyme (Gla domain, vitamin K-dependent) */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ transform: 'scale(0.85)' }}>
-            <FactorTokenNew factorId="FIXa" isActive={true} enableHover={false} />
-          </div>
-          <div style={{ fontSize: 6, color: '#22C55E', marginTop: 2, fontWeight: 500 }}>Gla</div>
+        <div style={{ transform: 'scale(0.85)' }}>
+          <FactorTokenNew factorId="FIXa" isActive={true} enableHover={false} />
         </div>
+      </div>
+
+      {/* Educational: Enzyme-cofactor roles */}
+      <div
+        style={{
+          marginTop: 4,
+          display: 'flex',
+          justifyContent: 'center',
+          gap: 12,
+          fontSize: 5,
+          color: '#64748B',
+        }}
+      >
+        <span title="FVIIIa = cofactor, reorganizează bucla 99 a FIXa">cofactor</span>
+        <span title="FIXa = serină protează, enzima activă">enzimă</span>
       </div>
 
       {isProducing && canProduce && !isAutoMode && (
         <div
           style={{
-            marginTop: 8,
+            marginTop: 6,
             padding: '3px 8px',
             background: '#06B6D4',
             borderRadius: 4,
@@ -1779,27 +1737,34 @@ function ProthrombinaseComplex({
         PROTROMBINAZĂ
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 6 }}>
-        {/* FVa - Cofactor (C2 domain, no Gla) */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ transform: 'scale(1.1)' }}>
-            <FactorTokenNew factorId="FVa" isActive={true} enableHover={false} />
-          </div>
-          <div style={{ fontSize: 6, color: '#F97316', marginTop: 2, fontWeight: 500 }}>C2</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+        <div style={{ transform: 'scale(1.1)' }}>
+          <FactorTokenNew factorId="FVa" isActive={true} enableHover={false} />
         </div>
-        {/* FXa - Enzyme (Gla domain, vitamin K-dependent) */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ transform: 'scale(0.85)' }}>
-            <FactorTokenNew factorId="FXa" isActive={true} enableHover={false} />
-          </div>
-          <div style={{ fontSize: 6, color: '#22C55E', marginTop: 2, fontWeight: 500 }}>Gla</div>
+        <div style={{ transform: 'scale(0.85)' }}>
+          <FactorTokenNew factorId="FXa" isActive={true} enableHover={false} />
         </div>
+      </div>
+
+      {/* Educational: Enzyme-cofactor roles */}
+      <div
+        style={{
+          marginTop: 4,
+          display: 'flex',
+          justifyContent: 'center',
+          gap: 12,
+          fontSize: 5,
+          color: '#64748B',
+        }}
+      >
+        <span title="FVa = cofactor, pozitionează FXa și protrombina">cofactor</span>
+        <span title="FXa = serină protează, enzima activă">enzimă</span>
       </div>
 
       {isProducing && canBurst && !isAutoMode && (
         <div
           style={{
-            marginTop: 8,
+            marginTop: 6,
             padding: '3px 8px',
             background: '#3B82F6',
             borderRadius: 4,

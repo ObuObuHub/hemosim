@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { PHASE_INFO, type PhaseInfoData } from './FactorInfo';
+import { PHASE_INFO } from './FactorInfo';
 
 interface PhaseExplanationProps {
   currentPhase: 'initiation' | 'amplification' | 'propagation' | 'burst';

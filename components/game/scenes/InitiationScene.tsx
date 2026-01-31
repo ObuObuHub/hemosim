@@ -77,7 +77,6 @@ interface InitiationSceneProps {
 export function InitiationScene({
   width,
   height,
-  floatingFactors,
   dockedComplexes,
   activationArrows,
   tfDockingState,
@@ -87,15 +86,11 @@ export function InitiationScene({
   fiiDockedState,
   plateletPosition,
   isDraggingThrombin,
-  onFactorCatch,
-  onThrombinDragStart,
   onArrowComplete,
   // Kinetic props
   kineticState,
   diffusingFIXaParticles = [],
   diffusingFIIaParticles = [],
-  tfpiXaComplex,
-  onTFClick,
   // Conveyor belt drag & drop
   onConveyorDragStart,
   draggingFactorId,

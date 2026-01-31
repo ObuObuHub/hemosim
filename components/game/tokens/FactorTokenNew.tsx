@@ -116,7 +116,7 @@ export function FactorTokenNew({
   if (!enableHover) {
     if (hasGlaDomain) {
       return (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0 }}>
           {tokenContent}
           <GlaDomain
             width={glaDomainWidth}
@@ -133,7 +133,7 @@ export function FactorTokenNew({
   return (
     <div
       {...wrapperProps}
-      style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}
+      style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 0, cursor: 'pointer' }}
     >
       {tokenContent}
       {hasGlaDomain && (

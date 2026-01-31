@@ -20,7 +20,6 @@ export default function Home(): React.ReactElement {
     updateIsthManualCriteria,
     isthManualCriteria,
     reset,
-    setMode,
     setHoveredFactor,
     setCurrentScenario,
     setShowFeedback,

@@ -88,7 +88,7 @@ export function updateKinetics(
   hasPlayerDockedFII: boolean
 ): KineticUpdateResult {
   const events: KineticEvent[] = [];
-  let state = { ...currentState };
+  const state = { ...currentState };
 
   // Update elapsed time
   state.elapsedTime += deltaTime;

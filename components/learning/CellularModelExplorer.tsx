@@ -46,8 +46,6 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
     dockFV,
     dockFII,
     produceThrombin,
-    thrombinArrives,
-    setPlateletPhase,
     splitVWF,
     activateFV,
     activateFVIII,
@@ -58,7 +56,6 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
     parThrombinBind,
     parCleave,
     parActivate,
-    fixaArrives,
     formTenase,
     produceFXa,
     formProthrombinase,
@@ -77,10 +74,6 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
     holdFiiaForMigration,
     startFiiaGlide,
     completeFiiaMigration,
-    // Legacy migration visualization (kept for backward compat, may remove later)
-    startFixaMigration,
-    stopFixaMigration,
-    // Note: startFiiaMigration/stopFiiaMigration no longer used - replaced by iiaMigrationState
     // Learning mode control
     setMode,
     advanceStep,
@@ -436,67 +429,12 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
     [formTenase, formProthrombinase, thrombinBurst]
   );
 
-  // Update refs for auto-play callbacks
-  handleDockFactorRef.current = handleDockFactor;
-  handleActivateFactorRef.current = handleActivateFactor;
-  handleFormComplexRef.current = handleFormComplex;
-
-  // Calculate learning progress for each phase
-  const learningProgress = useMemo(() => {
-    // Initiation progress
-    const initiationSteps = [
-      state.initiation.tfVIIaDocked,
-      state.initiation.fixDocked,
-      state.initiation.fxDocked,
-      state.initiation.fvDocked,
-      state.initiation.fiiDocked,
-      state.initiation.thrombinProduced,
-    ];
-    const initiationProgress = (initiationSteps.filter(Boolean).length / initiationSteps.length) * 100;
-
-    // Amplification progress
-    const amplificationSteps = [
-      state.platelet.thrombinArrived,
-      state.platelet.vwfSplit,
-      state.platelet.fvActivated,
-      state.platelet.fxiActivated,
-      state.platelet.plateletActivated,
-      state.platelet.fvaDocked,
-      state.platelet.fviiaDocked,
-    ];
-    const amplificationProgress = (amplificationSteps.filter(Boolean).length / amplificationSteps.length) * 100;
-
-    // Propagation progress
-    const propagationSteps = [
-      state.platelet.fixaArrived,
-      state.platelet.tenaseFormed,
-      state.platelet.prothrombinaseFormed,
-    ];
-    const propagationProgress = (propagationSteps.filter(Boolean).length / propagationSteps.length) * 100;
-
-    // Determine current learning phase
-    let currentPhase: 'initiation' | 'amplification' | 'propagation' | 'burst' | 'clotting' | 'complete' = 'initiation';
-    if (state.cascadeCompleted) {
-      currentPhase = 'complete';
-    } else if (state.platelet.phase === 'clotting' || state.platelet.phase === 'stable') {
-      currentPhase = 'clotting';
-    } else if (state.platelet.thrombinBurst) {
-      currentPhase = 'burst';
-    } else if (state.platelet.phase === 'propagating') {
-      currentPhase = 'propagation';
-    } else if (state.platelet.phase === 'amplifying') {
-      currentPhase = 'amplification';
-    } else if (state.initiation.thrombinProduced) {
-      currentPhase = 'amplification';
-    }
-
-    return {
-      currentPhase,
-      initiationProgress,
-      amplificationProgress,
-      propagationProgress,
-    };
-  }, [state]);
+  // Update refs for auto-play callbacks (must be in useEffect to avoid accessing refs during render)
+  useEffect(() => {
+    handleDockFactorRef.current = handleDockFactor;
+    handleActivateFactorRef.current = handleActivateFactor;
+    handleFormComplexRef.current = handleFormComplex;
+  }, [handleDockFactor, handleActivateFactor, handleFormComplex]);
 
   return (
     <div

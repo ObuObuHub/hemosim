@@ -1,7 +1,7 @@
 // components/game/visuals/ActivationParticles.tsx
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useId } from 'react';
 
 interface ActivationParticlesProps {
   x: number;
@@ -28,22 +28,28 @@ export function ActivationParticles({
   radius = 25,
   duration = 0.8,
 }: ActivationParticlesProps): React.ReactElement | null {
+  const uniqueId = useId();
+
   const particles = useMemo(() => {
+    // Deterministic variation based on index (avoids Math.random during render)
+    const deterministicVariation = (idx: number): number =>
+      0.85 + Math.sin(idx * 3.7) * 0.15;
+    const deterministicSize = (idx: number): number =>
+      3 + Math.sin(idx * 5.3) * 1;
+
     return Array.from({ length: particleCount }, (_, i) => {
       const angle = (i / particleCount) * 2 * Math.PI;
-      const randomRadius = radius * (0.7 + Math.random() * 0.6);
+      const variableRadius = radius * deterministicVariation(i);
       return {
-        endX: Math.cos(angle) * randomRadius,
-        endY: Math.sin(angle) * randomRadius,
+        endX: Math.cos(angle) * variableRadius,
+        endY: Math.sin(angle) * variableRadius,
         delay: i * 0.03,
-        size: 2 + Math.random() * 2,
+        size: deterministicSize(i),
       };
     });
   }, [particleCount, radius]);
 
   if (!isActive) return null;
-
-  const uniqueId = `activation-${x}-${y}-${Date.now()}`;
 
   return (
     <svg
@@ -179,9 +185,9 @@ export function CleavageParticles({
   isActive,
   direction = 'horizontal',
 }: CleavageParticlesProps): React.ReactElement | null {
-  if (!isActive) return null;
+  const uniqueId = useId();
 
-  const uniqueId = `cleavage-${x}-${y}-${Date.now()}`;
+  if (!isActive) return null;
   const isHorizontal = direction === 'horizontal';
 
   return (
@@ -224,16 +230,20 @@ export function CleavageParticles({
 
       {/* Debris particles */}
       {Array.from({ length: 6 }).map((_, i) => {
-        const angle = (i / 6) * Math.PI + (Math.random() - 0.5) * 0.5;
-        const dist = 15 + Math.random() * 10;
+        // Deterministic variations based on index (avoids Math.random during render)
+        const angleVariation = Math.sin(i * 4.7) * 0.25;
+        const angle = (i / 6) * Math.PI + angleVariation;
+        const distVariation = Math.sin(i * 3.1) * 5;
+        const dist = 20 + distVariation;
         const endX = Math.cos(angle) * dist * (i < 3 ? 1 : -1);
         const endY = Math.sin(angle) * dist;
+        const sizeVariation = Math.sin(i * 2.3) * 0.5;
         return (
           <circle
             key={i}
             cx={30}
             cy={20}
-            r={1.5 + Math.random()}
+            r={2 + sizeVariation}
             fill="#FBBF24"
             style={{
               animation: `debrisFly 0.6s ease-out ${i * 0.02}s forwards`,

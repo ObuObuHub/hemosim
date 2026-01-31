@@ -90,7 +90,9 @@ export function ActivationArrow({
   const filterId = useId();
 
   // Keep ref in sync with prop to avoid stale closure issues
-  onCompleteRef.current = onComplete;
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
     const startTime = Date.now();

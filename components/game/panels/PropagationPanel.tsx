@@ -80,11 +80,13 @@ export function PropagationPanel({
 
     for (let i = 0; i < numParticles; i++) {
       const angle = (i / numParticles) * 2 * Math.PI - Math.PI / 2; // Start from top
+      // Deterministic scale variation based on index (avoids Math.random during render)
+      const scaleVariation = Math.sin(i * 2.7) * 0.1;
       particles.push({
         x: Math.cos(angle) * radius,
         y: Math.sin(angle) * radius * 0.6, // Elliptical spread
         delay: i * 0.06,
-        scale: 0.5 + Math.random() * 0.2,
+        scale: 0.6 + scaleVariation,
       });
     }
     return particles;
@@ -565,7 +567,7 @@ export function PropagationPanel({
         }}
       >
         <span style={{ fontSize: 9, fontWeight: 600, color: '#FCD34D', letterSpacing: 0.5 }}>
-          TROMBOCIT ACTIVAT - "decorat" cu cofactori
+          TROMBOCIT ACTIVAT - &ldquo;decorat&rdquo; cu cofactori
         </span>
       </div>
 

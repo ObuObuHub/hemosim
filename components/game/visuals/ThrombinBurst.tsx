@@ -31,7 +31,8 @@ export function ThrombinBurst({
 
   useEffect(() => {
     if (isActive) {
-      setPhase('initial');
+      // Defer initial state to avoid cascading renders
+      const timerInit = setTimeout(() => setPhase('initial'), 0);
       // Quick flash then explosion
       const timer1 = setTimeout(() => setPhase('explosion'), 100);
       const timer2 = setTimeout(() => {
@@ -39,6 +40,7 @@ export function ThrombinBurst({
         onComplete?.();
       }, 1200);
       return () => {
+        clearTimeout(timerInit);
         clearTimeout(timer1);
         clearTimeout(timer2);
       };
@@ -56,6 +58,10 @@ export function ThrombinBurst({
       angle: number;
     }> = [];
 
+    // Deterministic scale variation (avoids Math.random during render)
+    const deterministicScale = (idx: number, base: number): number =>
+      base + Math.sin(idx * 4.3) * 0.1;
+
     // Inner ring - 8 particles
     for (let i = 0; i < 8; i++) {
       const angle = (i / 8) * 2 * Math.PI;
@@ -63,7 +69,7 @@ export function ThrombinBurst({
         x: Math.cos(angle) * 40,
         y: Math.sin(angle) * 25,
         delay: i * 0.03,
-        scale: 0.6 + Math.random() * 0.2,
+        scale: deterministicScale(i, 0.7),
         ring: 0,
         angle: angle * (180 / Math.PI),
       });
@@ -76,7 +82,7 @@ export function ThrombinBurst({
         x: Math.cos(angle) * 70,
         y: Math.sin(angle) * 45,
         delay: 0.15 + i * 0.025,
-        scale: 0.4 + Math.random() * 0.2,
+        scale: deterministicScale(i + 8, 0.5),
         ring: 1,
         angle: angle * (180 / Math.PI),
       });
@@ -92,13 +98,13 @@ export function ThrombinBurst({
     { delay: 0.2, maxRadius: 120, duration: 0.8 },
   ], []);
 
-  // Generate debris sparks
+  // Generate debris sparks with deterministic values
   const sparks = useMemo(() => {
     return Array.from({ length: 20 }, (_, i) => ({
-      angle: Math.random() * 2 * Math.PI,
-      distance: 30 + Math.random() * 80,
-      delay: Math.random() * 0.3,
-      size: 1 + Math.random() * 2,
+      angle: (i / 20) * 2 * Math.PI + Math.sin(i * 3.7) * 0.3,
+      distance: 30 + 40 + Math.sin(i * 2.3) * 40,
+      delay: (i % 10) * 0.03,
+      size: 2 + Math.sin(i * 5.1) * 1,
     }));
   }, []);
 

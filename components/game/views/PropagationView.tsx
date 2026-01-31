@@ -43,7 +43,6 @@ interface PropagationViewProps {
  */
 export function PropagationView({
   width,
-  height,
   membraneY,
   state,
   onFormTenase,
@@ -510,7 +509,6 @@ interface ComplexAssemblySlotProps {
 
 function ComplexAssemblySlot({
   name,
-  subtitle,
   enzyme,
   cofactor,
   canForm,

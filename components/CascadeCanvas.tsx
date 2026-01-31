@@ -298,7 +298,7 @@ export function CascadeCanvas({
   dicPhase,
   onFactorHover,
   blockedFactors = new Set(),
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Prop kept for API compatibility
+   
   onFactorClick: _onFactorClick,
   showFeedback = false,
   showInhibition = false,
@@ -317,7 +317,7 @@ export function CascadeCanvas({
   const isMobile = canvasSize.width < 768;
 
   // Pinch-to-zoom state for mobile - start with better initial scale on mobile
-  const getInitialScale = (): number => {
+  const getInitialScale = useCallback((): number => {
     if (canvasSize.width < 768) {
       // Mobile: scale to fit comfortably with some padding
       const scaleX = canvasSize.width / CANVAS_WIDTH;
@@ -325,7 +325,7 @@ export function CascadeCanvas({
       return Math.min(scaleX, scaleY) * 1.1; // 10% larger for better initial view
     }
     return 1;
-  };
+  }, [canvasSize.width, canvasSize.height]);
 
   const [scale, setScale] = useState(() => getInitialScale());
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
@@ -333,8 +333,14 @@ export function CascadeCanvas({
   const lastPinchDistRef = useRef<number | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [touchFeedback, setTouchFeedback] = useState<{ x: number; y: number } | null>(null);
+  const touchFeedbackRef = useRef<{ x: number; y: number } | null>(null);
   const touchStartTimeRef = useRef<number>(0);
   const touchMoveDistRef = useRef<number>(0);
+
+  // Keep touchFeedback ref in sync (for animation loop)
+  useEffect(() => {
+    touchFeedbackRef.current = touchFeedback;
+  }, [touchFeedback]);
 
   // Factor activ = selectat (click) sau hover
   const activeFactor = selectedFactor || hoveredFactor;
@@ -952,12 +958,13 @@ export function CascadeCanvas({
       }
 
       // Draw touch feedback indicator if active
-      if (touchFeedback) {
+      const currentTouchFeedback = touchFeedbackRef.current;
+      if (currentTouchFeedback) {
         const feedbackRadius = 20;
         ctx.save();
         ctx.globalAlpha = 0.3;
         ctx.beginPath();
-        ctx.arc(touchFeedback.x, touchFeedback.y, feedbackRadius, 0, Math.PI * 2);
+        ctx.arc(currentTouchFeedback.x, currentTouchFeedback.y, feedbackRadius, 0, Math.PI * 2);
         ctx.fillStyle = '#3b82f6';
         ctx.fill();
         ctx.restore();

@@ -111,7 +111,6 @@ export function PhaseProgressBar({
         {phases.map((phase, index) => {
           const isActive = phase.id === currentPhase;
           const isPast = index < currentIndex || isComplete;
-          const isFuture = index > currentIndex && !isComplete;
 
           return (
             <div

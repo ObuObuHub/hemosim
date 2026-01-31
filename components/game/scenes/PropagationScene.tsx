@@ -82,13 +82,17 @@ export function PropagationScene({
   useEffect(() => {
     if (thrombinBurst && burstParticles.length === 0) {
       // Create burst particles (~350 nM thrombin burst = 12 particles for visual impact)
-      const particles = Array.from({ length: 12 }, (_, i) => ({
-        id: i,
-        x: positions.fii.x,
-        y: positions.fii.y,
-        angle: (i * 30) * (Math.PI / 180),
-      }));
-      setBurstParticles(particles);
+      // Defer state update to avoid cascading renders
+      const timer = setTimeout(() => {
+        const particles = Array.from({ length: 12 }, (_, i) => ({
+          id: i,
+          x: positions.fii.x,
+          y: positions.fii.y,
+          angle: (i * 30) * (Math.PI / 180),
+        }));
+        setBurstParticles(particles);
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [thrombinBurst, burstParticles.length, positions.fii]);
 

@@ -1,7 +1,7 @@
 // components/game/scenes/AmplificationScene.tsx
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { PhospholipidMembrane } from '../visuals/PhospholipidMembrane';
 import { FactorTokenNew } from '../tokens/FactorTokenNew';
 import type { FloatingFactor } from '@/types/game';
@@ -49,17 +49,6 @@ export function AmplificationScene({
   const membraneHeight = height * 0.25;
   const bloodstreamHeight = height - membraneHeight;
   const membraneY = bloodstreamHeight;
-
-  // Docking positions along the membrane (like TF positions in Initiation)
-  const dockingPositions = useMemo(() => ({
-    // vWF-FVIII on the right
-    vwf: { x: width * 0.7, y: membraneY - 60 },
-    fviii: { x: width * 0.7, y: membraneY - 60 },
-    // FV on the left
-    fv: { x: width * 0.3, y: membraneY - 50 },
-    // FXI in the middle
-    fxi: { x: width * 0.5, y: membraneY - 70 },
-  }), [width, membraneY]);
 
   const isHoldingThrombin = heldFactorId === 'FIIa';
 

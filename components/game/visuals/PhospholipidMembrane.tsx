@@ -43,7 +43,6 @@ export function PhospholipidMembrane({
   // Phosphatidylserine (PS) color - RED/ORANGE (exposed during activation)
   // Medical accuracy: PS is normally hidden on inner leaflet, flips out during activation
   const psColor = '#DC2626';    // Clearer red for PS heads
-  const psGlow = 'rgba(220, 38, 38, 0.7)';
 
   // Phospholipid bilayer dimensions
   const bilayerTop = 15;  // Where the top row of heads starts

@@ -41,7 +41,6 @@ export function PARReceptor({
   // Membrane position (receptor spans this)
   const membraneTop = height * 0.35;
   const membraneBottom = height * 0.75;
-  const membraneThickness = membraneBottom - membraneTop;
 
   // N-terminus cleavage point
   const cleavageY = height * 0.15;
@@ -53,7 +52,6 @@ export function PARReceptor({
 
   // 7-Transmembrane serpentine path
   // Starts from N-terminus, goes through membrane 7 times
-  const loopWidth = width * 0.12;
   const loopSpacing = width * 0.13;
   const startX = width * 0.15;
 

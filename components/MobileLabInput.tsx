@@ -97,7 +97,7 @@ const PRESET_CATEGORIES: PresetCategory[] = [
 ];
 
 // Flat list for backwards compatibility (currently unused but kept for potential future use)
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Kept for backwards compatibility
+ 
 const _PRESETS: Preset[] = PRESET_CATEGORIES.flatMap(cat => cat.presets);
 
 interface MobileLabInputProps {

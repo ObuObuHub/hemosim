@@ -55,16 +55,6 @@ export function StabilizationScene({
   const bloodstreamHeight = height - membraneHeight;
   const membraneY = bloodstreamHeight;
 
-  // Docking positions
-  const dockingPositions = useMemo(() => ({
-    // Thrombin is active in center (from Propagation)
-    thrombin: { x: width * 0.5, y: membraneY - 50 },
-    // Fibrinogen docking zone (wide area around thrombin)
-    fibrinogen: { x: width * 0.5, y: membraneY - 80 },
-    // FXIII docking (right of thrombin)
-    fxiii: { x: width * 0.7, y: membraneY - 60 },
-  }), [width, membraneY]);
-
   // Visual feedback
   const isHoldingFibrinogen = heldFactorId === 'Fibrinogen';
   const isHoldingFXIII = heldFactorId === 'FXIII';

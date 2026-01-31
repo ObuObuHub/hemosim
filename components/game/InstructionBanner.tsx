@@ -26,12 +26,16 @@ export function InstructionBanner({
 
   // Trigger animation when step changes
   useEffect(() => {
-    setIsVisible(false);
-    const timer = setTimeout(() => {
+    // Defer state updates to avoid cascading renders
+    const hideTimer = setTimeout(() => setIsVisible(false), 0);
+    const showTimer = setTimeout(() => {
       setAnimationKey((prev) => prev + 1);
       setIsVisible(true);
     }, 150);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(hideTimer);
+      clearTimeout(showTimer);
+    };
   }, [currentStepIndex]);
 
   if (isComplete) {

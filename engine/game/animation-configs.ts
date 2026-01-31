@@ -137,7 +137,7 @@ function phaseUnlockedAnimation(event: PhaseUnlockedEvent): AnimationConfig {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Event type required for signature consistency
+ 
 function victoryAnimation(_event: VictoryEvent): AnimationConfig {
   return {
     duration: ANIMATION_DURATIONS.VICTORY,
@@ -501,7 +501,7 @@ function fibrinogenDockedAnimation(): AnimationConfig {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Event type required for signature consistency
+ 
 function fibrinogenConvertedAnimation(_event: FibrinogenConvertedEvent): AnimationConfig {
   return {
     duration: ANIMATION_DURATIONS.FIBRINOGEN_CONVERTED,
@@ -558,7 +558,7 @@ function fxiiiDockedAnimation(): AnimationConfig {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Event type required for signature consistency
+ 
 function fxiiiActivatedAnimation(_event: FXIIIActivatedEvent): AnimationConfig {
   return {
     duration: ANIMATION_DURATIONS.FXIII_ACTIVATED,
@@ -602,7 +602,7 @@ function fxiiiActivatedAnimation(_event: FXIIIActivatedEvent): AnimationConfig {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Event type required for signature consistency
+ 
 function crossLinkFormedAnimation(_event: CrossLinkFormedEvent): AnimationConfig {
   return {
     duration: ANIMATION_DURATIONS.CROSS_LINK_FORMED,
@@ -641,7 +641,7 @@ function crossLinkFormedAnimation(_event: CrossLinkFormedEvent): AnimationConfig
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Event type required for signature consistency
+ 
 function clotStabilizedAnimation(_event: ClotStabilizedEvent): AnimationConfig {
   return {
     duration: ANIMATION_DURATIONS.CLOT_STABILIZED,
