@@ -91,7 +91,7 @@ export function TFProtein({
               >
                 FT
               </div>
-              {/* Transmembrane pedicle - attached to TF */}
+              {/* Transmembrane pedicle - attached to TF, ends at membrane surface */}
               <div
                 style={{
                   position: 'absolute',
@@ -99,8 +99,9 @@ export function TFProtein({
                   top: '100%',
                   transform: 'translateX(-50%)',
                   width: 8,
-                  height: pedicleHeight + 12,
+                  height: pedicleHeight - 8,
                   background: '#16A34A',
+                  borderRadius: '0 0 2px 2px',
                 }}
               />
             </div>
