@@ -632,111 +632,62 @@ export function SparkFrame({
             zIndex: 15,
           }}
         >
-          {/* Complex container */}
+          {/* Complex container - standardized with UnifiedPlateletView */}
           <div
             style={{
               position: 'relative',
-              padding: '12px 12px 8px',
-              border: '2px dashed #3B82F6',
-              borderRadius: 10,
-              background: 'rgba(59, 130, 246, 0.05)',
-              animation: 'complexPulse 2s ease-in-out infinite',
+              padding: '12px 16px 20px',
+              border: '2px solid #3B82F6',
+              borderRadius: 8,
+              background: 'rgba(59, 130, 246, 0.08)',
             }}
           >
             {/* Label badge */}
             <div
               style={{
                 position: 'absolute',
-                top: -10,
+                top: -9,
                 left: '50%',
                 transform: 'translateX(-50%)',
-                padding: '3px 10px',
+                padding: '2px 7px',
                 background: '#3B82F6',
                 borderRadius: 4,
-                fontSize: 9,
+                fontSize: 8,
                 color: '#FFFFFF',
-                fontWeight: 700,
+                fontWeight: 600,
                 fontFamily: 'system-ui, sans-serif',
                 whiteSpace: 'nowrap',
-                letterSpacing: 0.3,
               }}
             >
-              Protrombinază
+              PROTROMBINAZĂ
             </div>
 
-            {/* Enzyme + Cofactor layout */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {/* FXa - Enzyme (circular) with Gla domain and active site slot */}
-              <div style={{ position: 'relative' }}>
-                <svg width={40} height={40} viewBox="0 0 40 40">
-                  {/* Main circle */}
-                  <circle cx={20} cy={20} r={17} fill="#22C55E" stroke="#15803D" strokeWidth={2} />
-                  {/* Active site slot */}
-                  <path
-                    d={`M ${20 - 3} 3 L ${20 - 3} ${3 + 8} A 2.5 2.5 0 0 0 ${20 + 3} ${3 + 8} L ${20 + 3} 3 Z`}
-                    fill="#E2E8F0"
-                  />
-                  <path
-                    d={`M ${20 - 3} 3 L ${20 - 3} ${3 + 8 - 2} A 2 2 0 0 0 ${20 + 3} ${3 + 8 - 2} L ${20 + 3} 3`}
-                    fill="none"
-                    stroke="#FFFFFF"
-                    strokeWidth={1.5}
-                    strokeLinecap="round"
-                  />
-                  {/* Label */}
-                  <text x={20} y={25} textAnchor="middle" fontSize={10} fontWeight={700} fill="#FFFFFF" style={{ fontFamily: 'system-ui, sans-serif' }}>
-                    FXa
-                  </text>
-                </svg>
-
-                {/* Gla domain with labels */}
-                <svg
-                  width={35}
-                  height={50}
-                  style={{
-                    position: 'absolute',
-                    left: 6,
-                    top: 36,
-                    overflow: 'visible',
-                  }}
-                >
-                  <path
-                    d="M 12 0 Q 16 12, 12 24 Q 8 36, 14 48"
-                    stroke="#1F2937"
-                    strokeWidth={3}
-                    fill="none"
-                    strokeLinecap="round"
-                  />
-                  {/* Gla label - upper right */}
-                  <text x={20} y={10} fontSize={7} fontWeight={600} fill="#374151" style={{ fontFamily: 'system-ui, sans-serif' }}>
-                    Gla
-                  </text>
-                  {/* Ca²⁺ label - bottom left */}
-                  <text x={-6} y={42} fontSize={6} fontWeight={600} fill="#64748B" style={{ fontFamily: 'system-ui, sans-serif' }}>
-                    Ca²⁺
-                  </text>
-                </svg>
+            {/* Enzyme + Cofactor layout - matches UnifiedPlateletView pattern */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+              {/* FVa - Cofactor (scaled up) */}
+              <div style={{ transform: 'scale(1.1)' }}>
+                <FactorTokenNew factorId="FVa" isActive={true} enableHover={false} />
               </div>
-
-              {/* FVa - Cofactor (rectangular) */}
-              <div
-                style={{
-                  width: 42,
-                  height: 34,
-                  background: '#F97316',
-                  border: '2px solid #C2410C',
-                  borderRadius: 6,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#FFFFFF',
-                  fontSize: 11,
-                  fontWeight: 700,
-                  fontFamily: 'system-ui, sans-serif',
-                }}
-              >
-                FVa
+              {/* FXa - Enzyme (scaled down, with Gla domain) */}
+              <div style={{ transform: 'scale(0.85)' }}>
+                <FactorTokenNew factorId="FXa" isActive={true} enableHover={false} />
               </div>
+            </div>
+
+            {/* Role labels - matches UnifiedPlateletView */}
+            <div
+              style={{
+                marginTop: 4,
+                display: 'flex',
+                justifyContent: 'center',
+                gap: 12,
+                fontSize: 5,
+                fontFamily: 'system-ui, sans-serif',
+                color: '#64748B',
+              }}
+            >
+              <span title="FVa = cofactor, pozitionează FXa și protrombina">cofactor</span>
+              <span title="FXa = serină protează, enzima activă">enzimă</span>
             </div>
           </div>
         </div>

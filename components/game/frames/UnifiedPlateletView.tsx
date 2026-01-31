@@ -1028,7 +1028,7 @@ function ComplexAssemblySlot({
     <div
       style={{
         position: 'relative',
-        padding: '10px 14px',
+        padding: '12px 16px 20px',
         border: `2px dashed ${color}`,
         borderRadius: 8,
         background: `${color}08`,
@@ -1057,7 +1057,7 @@ function ComplexAssemblySlot({
         {name}
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 10, alignItems: 'center', marginTop: 6 }}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, alignItems: 'center', marginTop: 6 }}>
         {/* Cofactor with role label */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={{ transform: cofactor.ready ? 'scale(1.1)' : 'scale(1)', opacity: cofactor.ready ? 1 : 0.3 }}>
@@ -1068,7 +1068,7 @@ function ComplexAssemblySlot({
         <div style={{ color: '#94A3B8', fontSize: 12, fontWeight: 600, fontFamily: 'system-ui, sans-serif' }}>+</div>
         {/* Enzyme with role label */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ transform: enzyme.ready ? 'scale(0.9)' : 'scale(1)', opacity: enzyme.ready ? 1 : 0.3 }}>
+          <div style={{ transform: enzyme.ready ? 'scale(0.85)' : 'scale(1)', opacity: enzyme.ready ? 1 : 0.3 }}>
             <FactorTokenNew factorId={enzyme.id} isActive={enzyme.ready} enableHover={false} />
           </div>
           <span style={{ fontSize: 5, color: '#94A3B8', fontFamily: 'system-ui, sans-serif', marginTop: 2 }}>enzimă</span>

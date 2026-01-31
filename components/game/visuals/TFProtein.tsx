@@ -41,13 +41,13 @@ export function TFProtein({
           transform: 'translateX(-50%)',
         }}
       >
-        {/* Complex container - medical textbook style */}
+        {/* Complex container - standardized styling */}
         <div
           style={{
             position: 'relative',
-            padding: '14px 14px 10px',
+            padding: '12px 16px 20px',
             border: '2px solid #16A34A',
-            borderRadius: 10,
+            borderRadius: 8,
             background: 'rgba(22, 163, 74, 0.08)',
           }}
         >
@@ -55,25 +55,24 @@ export function TFProtein({
           <div
             style={{
               position: 'absolute',
-              top: -10,
+              top: -9,
               left: '50%',
               transform: 'translateX(-50%)',
-              padding: '3px 10px',
+              padding: '2px 7px',
               background: '#16A34A',
               borderRadius: 4,
-              fontSize: 9,
+              fontSize: 8,
               color: '#FFFFFF',
-              fontWeight: 700,
+              fontWeight: 600,
               fontFamily: 'system-ui, sans-serif',
               whiteSpace: 'nowrap',
-              letterSpacing: 0.3,
             }}
           >
             TF:VIIa
           </div>
 
-          {/* Enzyme + Cofactor layout */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, position: 'relative' }}>
+          {/* Enzyme + Cofactor layout - standardized */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, position: 'relative' }}>
             {/* TF - Cofactor (rectangular) with pedicle */}
             <div style={{ position: 'relative' }}>
               <div
@@ -161,6 +160,22 @@ export function TFProtein({
                 </text>
               </svg>
             </div>
+          </div>
+
+          {/* Role labels - standardized */}
+          <div
+            style={{
+              marginTop: 4,
+              display: 'flex',
+              justifyContent: 'center',
+              gap: 12,
+              fontSize: 5,
+              fontFamily: 'system-ui, sans-serif',
+              color: '#64748B',
+            }}
+          >
+            <span title="TF = cofactor transmembranar, inițiator al căii extrinseci">cofactor</span>
+            <span title="FVIIa = serină protează, enzima activă">enzimă</span>
           </div>
         </div>
 
