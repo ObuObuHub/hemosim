@@ -99,7 +99,7 @@ export function TFProtein({
                   top: '100%',
                   transform: 'translateX(-50%)',
                   width: 8,
-                  height: pedicleHeight - 8,
+                  height: pedicleHeight + 2,
                   background: '#16A34A',
                   borderRadius: '0 0 2px 2px',
                 }}
