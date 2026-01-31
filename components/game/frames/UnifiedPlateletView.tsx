@@ -392,7 +392,7 @@ export function UnifiedPlateletView({
         >
           <defs>
             <marker id="arrow-thrombin-small" markerWidth="4" markerHeight="3" refX="4" refY="1.5" orient="auto">
-              <path d="M0,0 L4,1.5 L0,3 Z" fill="#F97316" fillOpacity="0.7" />
+              <path d="M0,0 L4,1.5 L0,3 Z" fill="#DC2626" fillOpacity="0.7" />
             </marker>
           </defs>
 
@@ -403,7 +403,7 @@ export function UnifiedPlateletView({
                   C ${thrombinX - 100} ${thrombinY + 80},
                     ${parX + 70} ${membraneY - 120},
                     ${parX + 35} ${membraneY - 70}`}
-              stroke="#F97316"
+              stroke="#DC2626"
               strokeWidth={1.5}
               strokeDasharray="6 4"
               strokeOpacity={0.6}
@@ -423,7 +423,7 @@ export function UnifiedPlateletView({
                       C ${thrombinX - 80} ${thrombinY - 25},
                         ${factorXPositions.fxi + 50} ${topRowY + 30},
                         ${factorXPositions.fxi + 25} ${topRowY + 18}`}
-                  stroke="#F97316"
+                  stroke="#DC2626"
                   strokeWidth={1.5}
                   strokeDasharray="6 4"
                   strokeOpacity={0.5}
@@ -441,7 +441,7 @@ export function UnifiedPlateletView({
                       C ${thrombinX - 30} ${thrombinY - 50},
                         ${factorXPositions.fviii + 30} ${topRowY + 50},
                         ${factorXPositions.fviii} ${topRowY + 35}`}
-                  stroke="#F97316"
+                  stroke="#DC2626"
                   strokeWidth={1.5}
                   strokeDasharray="6 4"
                   strokeOpacity={0.5}
@@ -459,7 +459,7 @@ export function UnifiedPlateletView({
                       C ${thrombinX + 80} ${thrombinY - 30},
                         ${factorXPositions.fv - 30} ${topRowY + 50},
                         ${factorXPositions.fv} ${topRowY + 35}`}
-                  stroke="#F97316"
+                  stroke="#DC2626"
                   strokeWidth={1.5}
                   strokeDasharray="6 4"
                   strokeOpacity={0.5}
