@@ -72,23 +72,37 @@ export function TFProtein({
 
           {/* Enzyme + Cofactor layout */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, position: 'relative' }}>
-            {/* TF - Cofactor (rectangular) */}
-            <div
-              style={{
-                width: 44,
-                height: 36,
-                background: '#22C55E',
-                border: '2px solid #15803D',
-                borderRadius: 6,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#FFFFFF',
-                fontSize: 12,
-                fontWeight: 700,
-              }}
-            >
-              FT
+            {/* TF - Cofactor (rectangular) with pedicle */}
+            <div style={{ position: 'relative' }}>
+              <div
+                style={{
+                  width: 44,
+                  height: 36,
+                  background: '#22C55E',
+                  border: '2px solid #15803D',
+                  borderRadius: 6,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#FFFFFF',
+                  fontSize: 12,
+                  fontWeight: 700,
+                }}
+              >
+                FT
+              </div>
+              {/* Transmembrane pedicle - attached to TF */}
+              <div
+                style={{
+                  position: 'absolute',
+                  left: '50%',
+                  top: '100%',
+                  transform: 'translateX(-50%)',
+                  width: 8,
+                  height: pedicleHeight + 12,
+                  background: '#16A34A',
+                }}
+              />
             </div>
 
             {/* FVIIa - Enzyme (circular) with Gla domain */}
@@ -115,13 +129,13 @@ export function TFProtein({
                 </text>
               </svg>
 
-              {/* Gla domain */}
+              {/* Gla domain with Ca²⁺ label */}
               <svg
-                width={35}
+                width={50}
                 height={48}
                 style={{
                   position: 'absolute',
-                  left: 8,
+                  left: 4,
                   top: 38,
                   overflow: 'visible',
                 }}
@@ -133,26 +147,14 @@ export function TFProtein({
                   fill="none"
                   strokeLinecap="round"
                 />
-                <text x={22} y={18} fontSize={8} fontWeight={600} fill="#374151">
-                  Gla
-                </text>
-                <text x={20} y={28} fontSize={7} fill="#64748B">
-                  + Ca²⁺
+                {/* Combined label */}
+                <text x={24} y={22} fontSize={7} fontWeight={600} fill="#374151" style={{ fontFamily: 'system-ui, sans-serif' }}>
+                  Gla+Ca²⁺
                 </text>
               </svg>
             </div>
           </div>
         </div>
-
-        {/* Transmembrane pedicle */}
-        <div
-          style={{
-            width: 8,
-            height: pedicleHeight,
-            background: '#16A34A',
-            margin: '0 auto',
-          }}
-        />
 
         {/* Active site animation */}
         <style>
