@@ -45,7 +45,7 @@ export function GlaDomain({
       <path
         d={path}
         stroke={isBound ? '#3B82F6' : color}
-        strokeWidth={3.5}
+        strokeWidth={3}
         strokeLinecap="round"
         fill="none"
       />
@@ -56,7 +56,7 @@ export function GlaDomain({
         y={height * 0.25}
         fontSize={7}
         fontWeight={600}
-        fill="#1E293B"
+        fill="#374151"
         style={{ fontFamily: 'system-ui, sans-serif' }}
       >
         Gla

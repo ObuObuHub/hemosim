@@ -669,7 +669,7 @@ function TenaseComplex({
               strokeWidth="2"
               fill="none"
             />
-            <text x="16" y="14" fontSize="7" fill="#1E293B" fontWeight="600">Gla</text>
+            <text x="16" y="14" fontSize="7" fill="#374151" fontWeight="600">Gla</text>
           </svg>
         </div>
       </div>
@@ -774,7 +774,7 @@ function ProthrombinaseComplex({
               strokeWidth="2"
               fill="none"
             />
-            <text x="16" y="14" fontSize="7" fill="#1E293B" fontWeight="600">Gla</text>
+            <text x="16" y="14" fontSize="7" fill="#374151" fontWeight="600">Gla</text>
           </svg>
         </div>
       </div>

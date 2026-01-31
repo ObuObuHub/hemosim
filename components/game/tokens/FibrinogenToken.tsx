@@ -19,7 +19,7 @@ export function FibrinogenToken({ width = 60, height = 25, style }: FibrinogenTo
         </linearGradient>
         <filter id={`${id}-shadow`}><feDropShadow dx="1" dy="2" stdDeviation="1" floodOpacity="0.3" /></filter>
       </defs>
-      <ellipse cx={width / 2} cy={height / 2} rx={width / 2 - 2} ry={height / 2 - 2} fill={`url(#${id}-gradient)`} stroke={color} strokeWidth={1.5} filter={`url(#${id}-shadow)`} />
+      <ellipse cx={width / 2} cy={height / 2} rx={width / 2 - 2} ry={height / 2 - 2} fill={`url(#${id}-gradient)`} stroke={color} strokeWidth={2} filter={`url(#${id}-shadow)`} />
       <text x={width / 2} y={height / 2 + 3} textAnchor="middle" fontSize={8} fontWeight={600} fill="#FFFFFF" style={{ fontFamily: 'system-ui, sans-serif', textShadow: '0 1px 1px rgba(0,0,0,0.5)' }}>Fbg</text>
     </svg>
   );

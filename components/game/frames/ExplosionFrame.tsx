@@ -415,7 +415,7 @@ export function ExplosionFrame({
                   padding: '10px 20px',
                   background: '#059669',
                   border: 'none',
-                  borderRadius: 6,
+                  borderRadius: 4,
                   color: '#FFF',
                   fontSize: 12,
                   fontWeight: 600,
@@ -439,7 +439,7 @@ export function ExplosionFrame({
                 padding: '6px 12px',
                 background: '#ECFDF5',
                 border: '1px solid #A7F3D0',
-                borderRadius: 6,
+                borderRadius: 4,
                 zIndex: 25,
               }}
             >

@@ -177,8 +177,8 @@ export function UnifiedPlateletView({
             top: thrombinY,
             transform: 'translate(-50%, -50%)',
             zIndex: 10,
-            opacity: 0.3,
-            filter: 'grayscale(50%)',
+            opacity: 0.4,
+            filter: 'grayscale(30%)',
           }}
         >
           <FactorTokenNew
@@ -256,7 +256,7 @@ export function UnifiedPlateletView({
               borderRadius: 8,
               border: state.parCleavageState === 'activated' && !isAutoMode ? '2px solid #22C55E' : '2px solid #E2E8F0',
               cursor: state.parCleavageState === 'activated' && !isAutoMode ? 'pointer' : 'default',
-              opacity: state.parCleavageState === 'activated' ? 1 : 0.5,
+              opacity: state.parCleavageState === 'activated' ? 1 : 0.4,
             }}
             onClick={() => state.parCleavageState === 'activated' && !isAutoMode && onActivateFactor('vWF-VIII')}
           >
@@ -484,7 +484,7 @@ export function UnifiedPlateletView({
             left: 30,
             top: bloodstreamHeight * 0.45,
             zIndex: 20,
-            opacity: 0.35,
+            opacity: 0.4,
             filter: 'grayscale(30%)',
             animation: 'fadeInSlide 0.8s ease-out',
           }}
@@ -754,7 +754,7 @@ export function UnifiedPlateletView({
                 padding: '4px 10px',
                 background: 'rgba(251, 191, 36, 0.9)',
                 border: '2px solid #D97706',
-                borderRadius: 6,
+                borderRadius: 4,
                 animation: 'fibrinLabelAppear 1s ease-out 3s forwards',
                 zIndex: 35,
               }}
@@ -995,7 +995,7 @@ function FactorSlot({
         alignItems: 'center',
         gap: 4,
         cursor: disabled ? 'default' : 'pointer',
-        opacity: disabled && !isActivated ? 0.5 : 1,
+        opacity: disabled && !isActivated ? 0.4 : 1,
         zIndex: 10,
       }}
       onClick={disabled ? undefined : onClick}
@@ -1060,7 +1060,7 @@ function ComplexAssemblySlot({
       <div style={{ display: 'flex', justifyContent: 'center', gap: 8, alignItems: 'center', marginTop: 6 }}>
         {/* Cofactor with role label */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ transform: cofactor.ready ? 'scale(1.1)' : 'scale(1)', opacity: cofactor.ready ? 1 : 0.3 }}>
+          <div style={{ transform: cofactor.ready ? 'scale(1.1)' : 'scale(1)', opacity: cofactor.ready ? 1 : 0.4 }}>
             <FactorTokenNew factorId={cofactor.id} isActive={cofactor.ready} enableHover={false} />
           </div>
           <span style={{ fontSize: 5, color: '#94A3B8', fontFamily: 'system-ui, sans-serif', marginTop: 2 }}>cofactor</span>
@@ -1068,7 +1068,7 @@ function ComplexAssemblySlot({
         <div style={{ color: '#94A3B8', fontSize: 12, fontWeight: 600, fontFamily: 'system-ui, sans-serif' }}>+</div>
         {/* Enzyme with role label */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ transform: enzyme.ready ? 'scale(0.85)' : 'scale(1)', opacity: enzyme.ready ? 1 : 0.3 }}>
+          <div style={{ transform: enzyme.ready ? 'scale(0.85)' : 'scale(1)', opacity: enzyme.ready ? 1 : 0.4 }}>
             <FactorTokenNew factorId={enzyme.id} isActive={enzyme.ready} enableHover={false} />
           </div>
           <span style={{ fontSize: 5, color: '#94A3B8', fontFamily: 'system-ui, sans-serif', marginTop: 2 }}>enzimă</span>

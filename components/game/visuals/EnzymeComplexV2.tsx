@@ -177,11 +177,11 @@ export function EnzymeComplexV2({
                 opacity={isFormed ? 1 : 0.4}
               />
               {/* Gla label - upper right */}
-              <text x={20} y={10} fontSize={7} fontWeight={600} fill="#374151">
+              <text x={20} y={10} fontSize={7} fontWeight={600} fill="#374151" style={{ fontFamily: 'system-ui, sans-serif' }}>
                 Gla
               </text>
               {/* Ca²⁺ label - bottom left */}
-              <text x={-6} y={38} fontSize={6} fontWeight={600} fill="#64748B">
+              <text x={-6} y={38} fontSize={6} fontWeight={600} fill="#64748B" style={{ fontFamily: 'system-ui, sans-serif' }}>
                 Ca²⁺
               </text>
             </svg>
@@ -338,11 +338,11 @@ export function EnzymeWithGla({
           strokeLinecap="round"
         />
         {/* Gla label - upper right */}
-        <text x={20} y={10} fontSize={7} fontWeight={600} fill="#374151">
+        <text x={20} y={10} fontSize={7} fontWeight={600} fill="#374151" style={{ fontFamily: 'system-ui, sans-serif' }}>
           Gla
         </text>
         {/* Ca²⁺ label - bottom left */}
-        <text x={-6} y={38} fontSize={6} fill="#64748B">
+        <text x={-6} y={38} fontSize={6} fontWeight={600} fill="#64748B" style={{ fontFamily: 'system-ui, sans-serif' }}>
           Ca²⁺
         </text>
       </svg>
