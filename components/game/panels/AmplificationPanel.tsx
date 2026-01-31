@@ -12,12 +12,15 @@ interface AmplificationPanelProps {
   height: number;
   state: AmplificationState;
   thrombinAvailable: boolean;
+  fixaInPropagation?: boolean;  // FIXa has moved to Propagation (hide from Amplification)
   onActivateFactor: (factorId: string) => void;
   onDockCofactor?: (cofactorId: 'FVa' | 'FVIIIa') => void;
   // PAR cleavage callbacks
   onPARThrombinBind?: () => void;
   onPARCleave?: () => void;
   onPARActivate?: () => void;
+  // FIXa click callback (to send to Propagation)
+  onFIXaClick?: () => void;
 }
 
 /**
@@ -39,11 +42,13 @@ export function AmplificationPanel({
   height,
   state,
   thrombinAvailable,
+  fixaInPropagation = false,
   onActivateFactor,
   onDockCofactor,
   onPARThrombinBind,
   onPARCleave,
   onPARActivate,
+  onFIXaClick,
 }: AmplificationPanelProps): React.ReactElement {
   const layout = useMemo(() => {
     const membraneHeight = height * 0.32;
@@ -209,6 +214,89 @@ export function AmplificationPanel({
           </div>
           <div style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 700 }}>
             Trombina activează
+          </div>
+        </div>
+      )}
+
+      {/* Factors arriving at top border - FIIa and FIXa side by side */}
+      {/* FIIa Token (stays in Amplification) */}
+      {thrombinAvailable && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 8,
+            left: '40%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 4,
+            animation: 'factorArriveFromTop 0.8s ease-out',
+            zIndex: 25,
+          }}
+        >
+          <FactorTokenNew
+            factorId="FIIa"
+            isActive
+            style={{
+              filter: 'drop-shadow(0 0 12px rgba(239, 68, 68, 0.8))',
+            }}
+          />
+          <div
+            style={{
+              padding: '2px 8px',
+              background: 'rgba(239, 68, 68, 0.9)',
+              borderRadius: 4,
+              fontSize: 8,
+              fontWeight: 700,
+              color: '#FFFFFF',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            FIIa (rămâne)
+          </div>
+        </div>
+      )}
+
+      {/* FIXa Token (clickable - sends to Propagation) */}
+      {state.fixaAtAmplification && !fixaInPropagation && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 8,
+            left: '60%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 4,
+            animation: 'factorArriveFromTop 0.8s ease-out',
+            zIndex: 25,
+            cursor: 'pointer',
+          }}
+          onClick={onFIXaClick}
+        >
+          <FactorTokenNew
+            factorId="FIXa"
+            isActive
+            style={{
+              filter: 'drop-shadow(0 0 12px rgba(6, 182, 212, 0.8))',
+              transition: 'transform 0.2s ease',
+            }}
+          />
+          <div
+            style={{
+              padding: '2px 8px',
+              background: 'rgba(6, 182, 212, 0.9)',
+              borderRadius: 4,
+              fontSize: 8,
+              fontWeight: 700,
+              color: '#FFFFFF',
+              whiteSpace: 'nowrap',
+              animation: 'fixaClickHint 1.5s ease-in-out infinite',
+            }}
+          >
+            Click → Propagare
           </div>
         </div>
       )}
@@ -522,6 +610,20 @@ export function AmplificationPanel({
 
       {/* CSS Animations */}
       <style>{`
+        @keyframes factorArriveFromTop {
+          0% {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-30px);
+          }
+          60% {
+            opacity: 1;
+            transform: translateX(-50%) translateY(5px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+          }
+        }
         @keyframes thrombinArrival {
           0%, 100% { box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5); }
           50% { box-shadow: 0 4px 25px rgba(239, 68, 68, 0.8); }
@@ -559,6 +661,16 @@ export function AmplificationPanel({
         @keyframes anchorLine {
           0%, 100% { opacity: 0.3; }
           50% { opacity: 0.7; }
+        }
+        @keyframes fixaClickHint {
+          0%, 100% {
+            box-shadow: 0 2px 8px rgba(6, 182, 212, 0.5);
+            transform: scale(1);
+          }
+          50% {
+            box-shadow: 0 2px 15px rgba(6, 182, 212, 0.8);
+            transform: scale(1.05);
+          }
         }
       `}</style>
     </div>

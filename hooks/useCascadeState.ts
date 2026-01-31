@@ -13,6 +13,26 @@ export type { PlayMode };
 // =============================================================================
 
 /**
+ * FIXa Migration State - Deterministic migration from TF-cell to Platelet
+ * Based on cell-based model: FIXa produced on TF-cell migrates to platelet
+ */
+export type FixaMigrationState =
+  | 'inactive'           // FIX not yet activated
+  | 'held_for_migration' // FIXa activated, held in ready position (top-right of SparkFrame)
+  | 'migrating'          // FIXa actively gliding towards Tenase port
+  | 'arrived';           // FIXa docked at Tenase port on platelet
+
+/**
+ * IIa (Thrombin) Migration State - Cross-frame migration from SparkFrame to ExplosionFrame
+ * Based on cell-based model: Trace thrombin from initiation migrates to activate platelet
+ */
+export type IIaMigrationState =
+  | 'inactive'           // FII not yet activated
+  | 'held_for_migration' // FIIa produced, held at ready position
+  | 'migrating'          // FIIa actively migrating across frames
+  | 'arrived';           // FIIa arrived at platelet IIa slot
+
+/**
  * Initiation Phase State
  * Location: TF-bearing cell surface (subendothelium, monocytes)
  * Educational focus: TF-VIIa complex formation and initial factor activation
@@ -24,7 +44,11 @@ export interface InitiationState {
   fvDocked: boolean;          // FV present for prothrombinase
   fiiDocked: boolean;         // Prothrombin present
   thrombinProduced: boolean;  // Small thrombin amounts (~0.35 nM)
-  // Migration visualization - factors traveling to platelet surface
+  // FIXa deterministic migration state
+  fixaMigrationState: FixaMigrationState;
+  // IIa (thrombin) cross-frame migration state
+  iiaMigrationState: IIaMigrationState;
+  // Legacy migration visualization flags (for backward compat)
   fixaMigrating: boolean;
   fiiaMigrating: boolean;
 }
@@ -36,8 +60,14 @@ export interface InitiationState {
 export type PARCleavageState = 'intact' | 'thrombin-bound' | 'cleaved' | 'activated';
 
 /**
- * Amplification & Propagation Phase Types
- * Educational focus: Platelet surface reactions and complex formation
+ * Platelet Surface Phase Types
+ *
+ * UNIFIED VIEW MODEL: Amplification and Propagation occur simultaneously
+ * on the activated platelet surface. The 'propagating' phase is kept for
+ * backward compatibility but the unified view uses 'amplifying' as the
+ * active state where both cofactor activation and complex formation are visible.
+ *
+ * Phase flow: dormant → amplifying (unified) → burst → clotting → stable
  */
 export type PlateletPhase = 'dormant' | 'amplifying' | 'propagating' | 'burst' | 'clotting' | 'stable';
 
@@ -118,6 +148,8 @@ const initialState: CascadeState = {
     fvDocked: false,
     fiiDocked: false,
     thrombinProduced: false,
+    fixaMigrationState: 'inactive',
+    iiaMigrationState: 'inactive',
     fixaMigrating: false,
     fiiaMigrating: false,
   },
@@ -163,7 +195,15 @@ type CascadeAction =
   | { type: 'DOCK_FV' }
   | { type: 'DOCK_FII' }
   | { type: 'PRODUCE_THROMBIN' }
-  // Factor migration visualization
+  // FIXa deterministic migration
+  | { type: 'HOLD_FIXA_FOR_MIGRATION' }  // FIXa moves to hold slot
+  | { type: 'START_FIXA_GLIDE' }         // Begin migration animation
+  | { type: 'COMPLETE_FIXA_MIGRATION' }  // FIXa arrives at Tenase
+  // IIa cross-frame migration
+  | { type: 'HOLD_FIIA_FOR_MIGRATION' }  // FIIa at ready position
+  | { type: 'START_FIIA_GLIDE' }         // Begin cross-frame animation
+  | { type: 'COMPLETE_FIIA_MIGRATION' }  // FIIa arrived at platelet IIa slot
+  // Legacy migration visualization (backward compat)
   | { type: 'START_FIXA_MIGRATION' }
   | { type: 'STOP_FIXA_MIGRATION' }
   | { type: 'START_FIIA_MIGRATION' }
@@ -226,7 +266,43 @@ function cascadeReducer(state: CascadeState, action: CascadeAction): CascadeStat
     case 'PRODUCE_THROMBIN':
       return { ...state, initiation: { ...state.initiation, thrombinProduced: true } };
 
-    // Factor migration visualization
+    // FIXa deterministic migration states
+    case 'HOLD_FIXA_FOR_MIGRATION':
+      return {
+        ...state,
+        initiation: { ...state.initiation, fixaMigrationState: 'held_for_migration' },
+      };
+    case 'START_FIXA_GLIDE':
+      return {
+        ...state,
+        initiation: { ...state.initiation, fixaMigrationState: 'migrating', fixaMigrating: true },
+      };
+    case 'COMPLETE_FIXA_MIGRATION':
+      return {
+        ...state,
+        initiation: { ...state.initiation, fixaMigrationState: 'arrived', fixaMigrating: false },
+        platelet: { ...state.platelet, fixaArrived: true },
+      };
+
+    // IIa (thrombin) cross-frame migration states
+    case 'HOLD_FIIA_FOR_MIGRATION':
+      return {
+        ...state,
+        initiation: { ...state.initiation, iiaMigrationState: 'held_for_migration' },
+      };
+    case 'START_FIIA_GLIDE':
+      return {
+        ...state,
+        initiation: { ...state.initiation, iiaMigrationState: 'migrating', fiiaMigrating: true },
+      };
+    case 'COMPLETE_FIIA_MIGRATION':
+      return {
+        ...state,
+        initiation: { ...state.initiation, iiaMigrationState: 'arrived', fiiaMigrating: false },
+        platelet: { ...state.platelet, thrombinArrived: true, phase: 'amplifying' },
+      };
+
+    // Legacy migration visualization (backward compat)
     case 'START_FIXA_MIGRATION':
       return { ...state, initiation: { ...state.initiation, fixaMigrating: true } };
     case 'STOP_FIXA_MIGRATION':
@@ -364,7 +440,15 @@ export interface CascadeStateHook {
   dockFV: () => void;
   dockFII: () => void;
   produceThrombin: () => void;
-  // Migration visualization
+  // FIXa deterministic migration
+  holdFixaForMigration: () => void;
+  startFixaGlide: () => void;
+  completeFixaMigration: () => void;
+  // IIa cross-frame migration
+  holdFiiaForMigration: () => void;
+  startFiiaGlide: () => void;
+  completeFiiaMigration: () => void;
+  // Legacy migration visualization
   startFixaMigration: () => void;
   stopFixaMigration: () => void;
   startFiiaMigration: () => void;
@@ -430,7 +514,17 @@ export function useCascadeState(): CascadeStateHook {
   const dockFII = useCallback((): void => dispatch({ type: 'DOCK_FII' }), []);
   const produceThrombin = useCallback((): void => dispatch({ type: 'PRODUCE_THROMBIN' }), []);
 
-  // Migration visualization
+  // FIXa deterministic migration
+  const holdFixaForMigration = useCallback((): void => dispatch({ type: 'HOLD_FIXA_FOR_MIGRATION' }), []);
+  const startFixaGlide = useCallback((): void => dispatch({ type: 'START_FIXA_GLIDE' }), []);
+  const completeFixaMigration = useCallback((): void => dispatch({ type: 'COMPLETE_FIXA_MIGRATION' }), []);
+
+  // IIa cross-frame migration
+  const holdFiiaForMigration = useCallback((): void => dispatch({ type: 'HOLD_FIIA_FOR_MIGRATION' }), []);
+  const startFiiaGlide = useCallback((): void => dispatch({ type: 'START_FIIA_GLIDE' }), []);
+  const completeFiiaMigration = useCallback((): void => dispatch({ type: 'COMPLETE_FIIA_MIGRATION' }), []);
+
+  // Legacy migration visualization
   const startFixaMigration = useCallback((): void => dispatch({ type: 'START_FIXA_MIGRATION' }), []);
   const stopFixaMigration = useCallback((): void => dispatch({ type: 'STOP_FIXA_MIGRATION' }), []);
   const startFiiaMigration = useCallback((): void => dispatch({ type: 'START_FIIA_MIGRATION' }), []);
@@ -534,7 +628,15 @@ export function useCascadeState(): CascadeStateHook {
     dockFV,
     dockFII,
     produceThrombin,
-    // Migration
+    // FIXa deterministic migration
+    holdFixaForMigration,
+    startFixaGlide,
+    completeFixaMigration,
+    // IIa cross-frame migration
+    holdFiiaForMigration,
+    startFiiaGlide,
+    completeFiiaMigration,
+    // Legacy migration
     startFixaMigration,
     stopFixaMigration,
     startFiiaMigration,

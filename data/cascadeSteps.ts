@@ -32,7 +32,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Apasă pe FVII pentru a forma complexul TF-VIIa',
     actionKey: 'TF+FVII',
     isAutomatic: false,
-    delayMs: 1000,
+    delayMs: 2500,
     phase: 'initiation',
   },
   {
@@ -40,7 +40,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Apasă pe FIX pentru activare - FIXa va migra către trombocit',
     actionKey: 'FIX',
     isAutomatic: false,
-    delayMs: 1500,
+    delayMs: 3000,
     phase: 'initiation',
   },
   {
@@ -48,7 +48,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Apasă pe FX pentru activare de către TF-VIIa',
     actionKey: 'FX',
     isAutomatic: false,
-    delayMs: 1200,
+    delayMs: 2500,
     phase: 'initiation',
   },
   {
@@ -56,7 +56,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Apasă pe FV pentru a forma complexul Protrombinase',
     actionKey: 'FV',
     isAutomatic: false,
-    delayMs: 1200,
+    delayMs: 2500,
     phase: 'initiation',
   },
   {
@@ -64,7 +64,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Apasă pe FII pentru a produce Trombină',
     actionKey: 'FII',
     isAutomatic: false,
-    delayMs: 1200,
+    delayMs: 2500,
     phase: 'initiation',
   },
 
@@ -74,7 +74,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Trombina migrează către suprafața trombocitului...',
     actionKey: 'THROMBIN_ARRIVES',
     isAutomatic: true,
-    delayMs: 1100, // Wait for thrombin migration animation
+    delayMs: 2500, // Wait for thrombin migration animation
     phase: 'amplification',
   },
   {
@@ -82,7 +82,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Trombina se leagă de receptorul PAR1...',
     actionKey: 'PAR_BIND',
     isAutomatic: true,
-    delayMs: 600,
+    delayMs: 1500,
     phase: 'amplification',
   },
   {
@@ -90,7 +90,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Apasă pe receptorul PAR1 pentru clivare',
     actionKey: 'PAR_CLEAVE',
     isAutomatic: false,
-    delayMs: 800,
+    delayMs: 2000,
     phase: 'amplification',
   },
   {
@@ -98,7 +98,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'PAR1 se activează și transmite semnalul...',
     actionKey: 'PAR_ACTIVATE',
     isAutomatic: true,
-    delayMs: 1200,
+    delayMs: 2500,
     phase: 'amplification',
   },
   {
@@ -106,7 +106,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Apasă pe complexul vWF-FVIII pentru a elibera FVIII',
     actionKey: 'vWF-VIII',
     isAutomatic: false,
-    delayMs: 1000,
+    delayMs: 2500,
     phase: 'amplification',
   },
   {
@@ -114,7 +114,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Apasă pe FV pentru activare',
     actionKey: 'FV_AMP',
     isAutomatic: false,
-    delayMs: 1000,
+    delayMs: 2500,
     phase: 'amplification',
   },
   {
@@ -122,7 +122,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Apasă pe FXI pentru activare (buclă feedback pozitiv)',
     actionKey: 'FXI',
     isAutomatic: false,
-    delayMs: 1000,
+    delayMs: 2500,
     phase: 'amplification',
   },
   {
@@ -130,7 +130,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Trombocitul se activează și expune fosfolipide...',
     actionKey: 'PLATELET_ACTIVATE',
     isAutomatic: true,
-    delayMs: 800,
+    delayMs: 2000,
     phase: 'amplification',
   },
   {
@@ -138,7 +138,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'FVa se ancorează pe membrana trombocitului...',
     actionKey: 'DOCK_FVA',
     isAutomatic: true,
-    delayMs: 800,
+    delayMs: 2000,
     phase: 'amplification',
   },
   {
@@ -146,7 +146,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'FVIIIa se ancorează pe membrana trombocitului...',
     actionKey: 'DOCK_FVIIIA',
     isAutomatic: true,
-    delayMs: 800,
+    delayMs: 2000,
     phase: 'amplification',
   },
 
@@ -156,7 +156,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'FIXa sosește de la faza de inițiere...',
     actionKey: 'FIXA_ARRIVES',
     isAutomatic: true,
-    delayMs: 500, // This depends on when FIX was activated (2s total)
+    delayMs: 1500,
     phase: 'propagation',
   },
   {
@@ -164,7 +164,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Apasă pentru a forma complexul Tenase (FIXa + FVIIIa)',
     actionKey: 'TENASE',
     isAutomatic: false,
-    delayMs: 1500,
+    delayMs: 3000,
     phase: 'propagation',
   },
   {
@@ -172,7 +172,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Tenase convertește FX → FXa (×200.000 amplificare)',
     actionKey: 'PRODUCE_FXA',
     isAutomatic: false,
-    delayMs: 1200,
+    delayMs: 2500,
     phase: 'propagation',
   },
   {
@@ -180,7 +180,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'FXa + FVa formează complexul Protrombinază',
     actionKey: 'PROTHROMBINASE',
     isAutomatic: false,
-    delayMs: 1500,
+    delayMs: 3000,
     phase: 'propagation',
   },
   {
@@ -188,7 +188,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Apasă pentru a genera explozia de trombină! (×300.000)',
     actionKey: 'BURST',
     isAutomatic: false,
-    delayMs: 1500,
+    delayMs: 10000,
     phase: 'propagation',
   },
 
@@ -198,7 +198,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Trombina clivează fibrinogenul în monomeri de fibrină...',
     actionKey: 'FIBRINOGEN_CLEAVE',
     isAutomatic: true,
-    delayMs: 1500,
+    delayMs: 8000,
     phase: 'clotting',
   },
   {
@@ -206,7 +206,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Monomerii de fibrină se autoasamblează în protofibrile...',
     actionKey: 'FIBRIN_POLYMERIZE',
     isAutomatic: true,
-    delayMs: 1200,
+    delayMs: 5000,
     phase: 'clotting',
   },
   {
@@ -214,7 +214,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Trombina activează FXIII pentru stabilizarea cheagului...',
     actionKey: 'FXIII_ACTIVATE',
     isAutomatic: true,
-    delayMs: 1000,
+    delayMs: 5000,
     phase: 'clotting',
   },
   {
@@ -222,7 +222,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Apasă pentru a forma legături covalente între fibrele de fibrină',
     actionKey: 'FIBRIN_CROSSLINK',
     isAutomatic: false,
-    delayMs: 2000,
+    delayMs: 6000,
     phase: 'clotting',
   },
 ];

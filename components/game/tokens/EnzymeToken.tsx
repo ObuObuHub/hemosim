@@ -10,9 +10,9 @@ interface EnzymeTokenProps {
 }
 
 /**
- * EnzymeToken - Medical textbook style
- * Represents active serine proteases (FIXa, FXa, FIIa, etc.)
- * Simple circle with "a" suffix to indicate activated state
+ * EnzymeToken - Medical textbook style with subtle pac-man shape
+ * Represents active serine proteases (FIXa, FXa, FIIa, FVIIa, FXIa, etc.)
+ * Circle with small notch in top-right corner = active site that cleaves substrates
  */
 export function EnzymeToken({
   color,
@@ -25,6 +25,12 @@ export function EnzymeToken({
   const cy = height / 2;
   const r = Math.min(width, height) / 2 - 4;
 
+  // Notch position: top-right corner (like pac-man looking up-right)
+  const notchAngle = -45 * (Math.PI / 180); // -45 degrees (top-right)
+  const notchX = cx + (r - 1) * Math.cos(notchAngle);
+  const notchY = cy + (r - 1) * Math.sin(notchAngle);
+  const notchR = r * 0.28; // Notch size relative to main circle
+
   return (
     <svg
       width={width}
@@ -34,7 +40,7 @@ export function EnzymeToken({
       role="img"
       aria-label={`${label} - active enzyme`}
     >
-      {/* Simple circle */}
+      {/* Main circle body */}
       <circle
         cx={cx}
         cy={cy}
@@ -44,20 +50,22 @@ export function EnzymeToken({
         strokeWidth={2}
       />
 
-      {/* Active state indicator - small notch */}
+      {/* Subtle notch in top-right - represents enzyme active site */}
       <circle
-        cx={cx + r - 2}
-        cy={cy}
-        r={4}
-        fill="#FFFFFF"
+        cx={notchX}
+        cy={notchY}
+        r={notchR}
+        fill="#F8FAFC"
+        stroke="#FFFFFF"
+        strokeWidth={1.5}
       />
 
       {/* Label */}
       <text
-        x={cx - 2}
+        x={cx}
         y={cy + 4}
         textAnchor="middle"
-        fontSize={10}
+        fontSize={label.length > 4 ? 9 : 10}
         fontWeight={700}
         fill="#FFFFFF"
         style={{ fontFamily: 'system-ui, sans-serif' }}

@@ -18,6 +18,10 @@ interface FactorTokenNewProps {
   style?: React.CSSProperties;
   /** Hide Gla domain (useful when factor is docked to membrane) */
   hideGlaDomain?: boolean;
+  /** Show factor as membrane-bound (activates Ca²⁺-PS bridging visualization) */
+  isMembraneBound?: boolean;
+  /** Show/hide Ca²⁺ ions on Gla domain */
+  showGlaCalcium?: boolean;
 }
 
 /**
@@ -40,6 +44,8 @@ export function FactorTokenNew({
   enableHover = true,
   style,
   hideGlaDomain = false,
+  isMembraneBound = false,
+  showGlaCalcium = true,
 }: FactorTokenNewProps): React.ReactElement | null {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -103,14 +109,21 @@ export function FactorTokenNew({
   })();
 
   // Calculate Gla domain size based on factor size
-  const glaDomainHeight = Math.round(visual.height * 0.5);
+  // Enhanced size when membrane bound to show Ca²⁺-PS bridging
+  const glaDomainWidth = isMembraneBound ? 20 : 16;
+  const glaDomainHeight = isMembraneBound ? Math.round(visual.height * 0.7) : Math.round(visual.height * 0.5);
 
   if (!enableHover) {
     if (hasGlaDomain) {
       return (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           {tokenContent}
-          <GlaDomain width={16} height={glaDomainHeight} />
+          <GlaDomain
+            width={glaDomainWidth}
+            height={glaDomainHeight}
+            showCalcium={showGlaCalcium}
+            isBound={isMembraneBound}
+          />
         </div>
       );
     }
@@ -123,7 +136,14 @@ export function FactorTokenNew({
       style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}
     >
       {tokenContent}
-      {hasGlaDomain && <GlaDomain width={16} height={glaDomainHeight} />}
+      {hasGlaDomain && (
+        <GlaDomain
+          width={glaDomainWidth}
+          height={glaDomainHeight}
+          showCalcium={showGlaCalcium}
+          isBound={isMembraneBound}
+        />
+      )}
     </div>
   );
 }

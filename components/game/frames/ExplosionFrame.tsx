@@ -112,10 +112,10 @@ export function ExplosionFrame({
   const canFormProthrombinase = state.fxaProduced && state.fvaDocked && !state.prothrombinaseFormed && !isAutoMode;
   const canBurst = state.prothrombinaseFormed && !state.thrombinBurst && !isAutoMode;
 
-  // Auto-trigger fibrin formation after burst
+  // Auto-trigger fibrin formation after burst (slow for dramatic effect)
   useEffect(() => {
     if (state.thrombinBurst && !state.fibrinogenCleaved && onCleaveFibrinogen) {
-      const timer = setTimeout(() => onCleaveFibrinogen(), 1500);
+      const timer = setTimeout(() => onCleaveFibrinogen(), 8000);
       return () => clearTimeout(timer);
     }
   }, [state.thrombinBurst, state.fibrinogenCleaved, onCleaveFibrinogen]);
@@ -123,7 +123,7 @@ export function ExplosionFrame({
   // Auto-polymerize fibrin after cleavage
   useEffect(() => {
     if (state.fibrinogenCleaved && !state.fibrinPolymerized && onPolymerizeFibrin) {
-      const timer = setTimeout(() => onPolymerizeFibrin(), 1200);
+      const timer = setTimeout(() => onPolymerizeFibrin(), 5000);
       return () => clearTimeout(timer);
     }
   }, [state.fibrinogenCleaved, state.fibrinPolymerized, onPolymerizeFibrin]);
@@ -131,7 +131,7 @@ export function ExplosionFrame({
   // Auto-activate FXIII after polymerization
   useEffect(() => {
     if (state.fibrinPolymerized && !state.fxiiiActivated && onActivateFXIII) {
-      const timer = setTimeout(() => onActivateFXIII(), 1000);
+      const timer = setTimeout(() => onActivateFXIII(), 5000);
       return () => clearTimeout(timer);
     }
   }, [state.fibrinPolymerized, state.fxiiiActivated, onActivateFXIII]);
@@ -239,20 +239,22 @@ export function ExplosionFrame({
             }}
           />
         )}
-        {/* Phase label inside membrane */}
+        {/* Phase label inside membrane - centered vertically */}
         <div
           style={{
             position: 'absolute',
-            bottom: 8,
-            left: 12,
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
             color: '#FFFFFF',
-            fontSize: 11,
+            fontSize: 12,
             fontWeight: 700,
-            textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+            textShadow: '0 1px 3px rgba(0,0,0,0.6)',
+            textAlign: 'center',
           }}
         >
           {isDormant ? 'TROMBOCIT CIRCULANT' :
-           isBurst ? 'THROMBIN BURST' :
+           isBurst ? 'EXPLOZIA DE TROMBINĂ' :
            isClotting ? 'FAZA 4 · COAGULARE' :
            isStable ? 'FAZA 4 · CHEAG STABIL' :
            'FAZA 2-3 · AMPLIFICARE + PROPAGARE'}
@@ -260,37 +262,86 @@ export function ExplosionFrame({
       </div>
 
 
-      {/* Resting Platelet - Circulating state (not "waiting") */}
-      {isDormant && (
+      {/* Platelet visualization - visible in dormant and active states */}
+      {(isDormant || (isActive && !state.fxiActivated && !state.vwfSplit && !state.fvActivated)) && (
         <div
           style={{
             position: 'absolute',
-            top: layout.bloodstreamHeight * 0.35,
+            top: layout.bloodstreamHeight * 0.55,
             left: '50%',
             transform: 'translateX(-50%)',
             zIndex: 10,
-            textAlign: 'center',
           }}
         >
-          {/* Resting platelet visualization */}
-          <div
-            style={{
-              width: 140,
-              height: 70,
-              margin: '0 auto',
-              background: 'linear-gradient(180deg, #F1F5F9 0%, #E2E8F0 100%)',
-              borderRadius: '50%',
-              border: '3px solid #CBD5E1',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
-            }}
-          >
-            <span style={{ fontSize: 13, color: '#64748B', fontWeight: 600 }}>
-              Trombocit inactiv
-            </span>
-          </div>
+          {state.plateletActivated ? (
+            /* Activated platelet - organic shape with pseudopods */
+            <svg
+              width="200"
+              height="110"
+              viewBox="0 0 200 110"
+              style={{ animation: 'plateletMorph 1.5s ease-out' }}
+            >
+              <defs>
+                <linearGradient id="activatedPlateletGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#F1F5F9" />
+                  <stop offset="50%" stopColor="#E2E8F0" />
+                  <stop offset="100%" stopColor="#CBD5E1" />
+                </linearGradient>
+                <filter id="plateletGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="1.5" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              {/* Organic activated platelet shape with pseudopods - curved, natural */}
+              <path
+                d="M100,10
+                   C115,8 125,15 135,5
+                   C140,12 138,25 145,30
+                   C155,32 170,28 175,40
+                   C178,50 168,55 175,65
+                   C170,75 155,72 150,80
+                   C145,90 140,95 130,100
+                   C120,105 110,98 100,102
+                   C90,98 80,105 70,100
+                   C60,95 55,90 50,80
+                   C45,72 30,75 25,65
+                   C32,55 22,50 25,40
+                   C30,28 45,32 55,30
+                   C62,25 60,12 65,5
+                   C75,15 85,8 100,10
+                   Z"
+                fill="url(#activatedPlateletGrad)"
+                stroke="#94A3B8"
+                strokeWidth={3}
+                filter="url(#plateletGlow)"
+              />
+              <text x="100" y="58" textAnchor="middle" fontSize="13" fontWeight="600" fill="#64748B">
+                Trombocit activat
+              </text>
+            </svg>
+          ) : (
+            /* Inactive platelet - round/ellipse shape with "Trombocit inactiv" */
+            <div
+              style={{
+                width: 180,
+                height: 80,
+                background: 'linear-gradient(180deg, #F1F5F9 0%, #E2E8F0 100%)',
+                borderRadius: '50%',
+                border: '3px solid #CBD5E1',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+              }}
+            >
+              <span style={{ fontSize: 15, color: '#64748B', fontWeight: 600 }}>
+                Trombocit inactiv
+              </span>
+            </div>
+          )}
         </div>
       )}
 
@@ -439,9 +490,47 @@ export function ExplosionFrame({
           0%, 100% { transform: translateX(0); opacity: 0.6; }
           50% { transform: translateX(12px); opacity: 1; }
         }
-        @keyframes fixaMigrateDown {
-          from { opacity: 0; transform: translateY(-30px); }
-          to { opacity: 1; transform: translateY(var(--target-y, 150px)); }
+        @keyframes fixaMigrateToTenase {
+          0% { opacity: 1; transform: translate(0, 0); }
+          100% { opacity: 1; transform: translate(var(--target-x, -200px), var(--target-y, 150px)); }
+        }
+        @keyframes arrowAppear {
+          from { opacity: 0; stroke-dashoffset: 50; }
+          to { opacity: 0.5; stroke-dashoffset: 0; }
+        }
+        @keyframes plateletActivate {
+          0% { transform: scale(0.8) rotate(-10deg); opacity: 0; }
+          50% { transform: scale(1.1) rotate(5deg); }
+          100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        @keyframes plateletMorph {
+          0% {
+            transform: scale(0.7);
+            opacity: 0;
+            filter: blur(4px);
+          }
+          20% {
+            transform: scale(1.15);
+            opacity: 1;
+            filter: blur(0);
+          }
+          40% {
+            transform: scale(0.95) rotate(-5deg);
+          }
+          60% {
+            transform: scale(1.08) rotate(3deg);
+          }
+          80% {
+            transform: scale(0.98) rotate(-2deg);
+          }
+          100% {
+            transform: scale(1) rotate(0deg);
+            opacity: 1;
+          }
+        }
+        @keyframes plateletPulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.08); }
         }
         @keyframes trailFade {
           0%, 100% { opacity: 0.2; height: 25px; }
@@ -508,8 +597,8 @@ function UnifiedPlateletView({
   const thrombinY = bloodstreamHeight * 0.32;
   const activatedRowY = topZoneEnd - 20;
 
-  // PAR receptor position
-  const parX = width * 0.08;
+  // PAR receptor position (moved slightly left)
+  const parX = width * 0.05;
 
   // Factor positions in top zone - aligned above their respective complexes
   // FVIII-vWF above Tenase (FVIIIa goes to Tenase)
@@ -522,21 +611,96 @@ function UnifiedPlateletView({
 
   const thrombinX = width * 0.45;
 
-  // Burst particles for thrombin burst visualization
-  const burstParticles = Array.from({ length: 8 }, (_, i) => {
-    const angle = (i / 8) * Math.PI * 2 - Math.PI / 2;
-    return {
-      x: Math.cos(angle) * 40,
-      y: Math.sin(angle) * 30,
-      delay: i * 0.08,
-    };
-  });
+  // Dramatic thrombin burst - waves of FIIa converging on fibrinogen
+  const burstWaves = useMemo(() => {
+    const waves: Array<{
+      id: number;
+      startX: number;
+      startY: number;
+      endX: number;
+      endY: number;
+      delay: number;
+      duration: number;
+      size: number;
+    }> = [];
+
+    const centerX = width * 0.5;
+    const centerY = bloodstreamHeight * 0.5;
+    const sourceX = prothrombinaseX;
+    const sourceY = complexY;
+
+    // Wave 1: Initial burst (8 particles) - slow, dramatic
+    for (let i = 0; i < 8; i++) {
+      const spreadAngle = ((i - 3.5) / 7) * Math.PI * 0.6;
+      const targetX = centerX + Math.cos(spreadAngle) * 30;
+      const targetY = centerY + Math.sin(spreadAngle) * 20;
+      waves.push({
+        id: i,
+        startX: sourceX,
+        startY: sourceY,
+        endX: targetX,
+        endY: targetY,
+        delay: i * 0.15,
+        duration: 2.5,
+        size: 20,
+      });
+    }
+
+    // Wave 2: Secondary burst (12 particles)
+    for (let i = 0; i < 12; i++) {
+      const spreadAngle = ((i - 5.5) / 11) * Math.PI * 0.8;
+      const targetX = centerX + Math.cos(spreadAngle) * 50 + (Math.random() - 0.5) * 20;
+      const targetY = centerY + Math.sin(spreadAngle) * 30 + (Math.random() - 0.5) * 15;
+      waves.push({
+        id: 8 + i,
+        startX: sourceX + (Math.random() - 0.5) * 20,
+        startY: sourceY + (Math.random() - 0.5) * 15,
+        endX: targetX,
+        endY: targetY,
+        delay: 1.0 + i * 0.12,
+        duration: 2.8,
+        size: 16,
+      });
+    }
+
+    // Wave 3: Sustained flow (10 particles)
+    for (let i = 0; i < 10; i++) {
+      const spreadAngle = ((i - 4.5) / 9) * Math.PI * 0.5;
+      const targetX = centerX + Math.cos(spreadAngle) * 40 + (Math.random() - 0.5) * 30;
+      const targetY = centerY + Math.sin(spreadAngle) * 25 + (Math.random() - 0.5) * 20;
+      waves.push({
+        id: 20 + i,
+        startX: sourceX + (Math.random() - 0.5) * 15,
+        startY: sourceY + (Math.random() - 0.5) * 10,
+        endX: targetX,
+        endY: targetY,
+        delay: 2.5 + i * 0.18,
+        duration: 3.2,
+        size: 14,
+      });
+    }
+
+    return waves;
+  }, [width, bloodstreamHeight, complexY, prothrombinaseX]);
+
+  // Fibrinogen positions (appear in center during burst) - slower timing
+  const fibrinogenPositions = useMemo(() => {
+    const centerX = width * 0.5;
+    const centerY = bloodstreamHeight * 0.5;
+    return [
+      { x: centerX - 60, y: centerY - 20, delay: 0.5 },
+      { x: centerX, y: centerY + 10, delay: 1.0 },
+      { x: centerX + 50, y: centerY - 15, delay: 1.5 },
+      { x: centerX - 30, y: centerY + 25, delay: 2.0 },
+      { x: centerX + 30, y: centerY - 30, delay: 2.5 },
+    ];
+  }, [width, bloodstreamHeight]);
 
   return (
     <>
       {/* ========== TOP ZONE: COFACTOR ACTIVATION ========== */}
 
-      {/* Ghost slot for IIa (before thrombin arrives) */}
+      {/* Ghost slot for FIIa (before thrombin arrives) */}
       {!state.thrombinArrived && (
         <div
           style={{
@@ -544,104 +708,49 @@ function UnifiedPlateletView({
             left: thrombinX,
             top: thrombinY,
             transform: 'translate(-50%, -50%)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 4,
             zIndex: 10,
+            opacity: 0.3,
+            filter: 'grayscale(50%)',
           }}
         >
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: '50%',
-              background: 'rgba(220, 38, 38, 0.05)',
-              border: '2px dashed rgba(220, 38, 38, 0.3)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 13,
-              fontWeight: 700,
-              color: 'rgba(220, 38, 38, 0.3)',
-            }}
-          >
-            IIa
-          </div>
-          <div
-            style={{
-              padding: '2px 8px',
-              background: 'rgba(220, 38, 38, 0.05)',
-              border: '1px dashed rgba(220, 38, 38, 0.2)',
-              borderRadius: 4,
-              fontSize: 8,
-              fontWeight: 600,
-              color: 'rgba(220, 38, 38, 0.3)',
-            }}
-          >
-            TROMBINĂ
-          </div>
+          <FactorTokenNew
+            factorId="FIIa"
+            isActive={true}
+            enableHover={false}
+            hideGlaDomain={true}
+          />
         </div>
       )}
 
-      {/* Central Thrombin (IIa) - solid display (no entry animation, token arrives from cross-frame migration) */}
-      {state.thrombinArrived && !state.thrombinBurst && (
+      {/* Central FIIa (Thrombin) - fades away once cofactors dock to complexes */}
+      {state.thrombinArrived && !state.thrombinBurst && !(state.fvaDocked && state.fviiaDocked) && (
         <div
           style={{
             position: 'absolute',
             left: thrombinX,
             top: thrombinY,
             transform: 'translate(-50%, -50%)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 4,
             zIndex: 20,
+            animation: 'thrombinPulse 2s ease-in-out infinite',
           }}
         >
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #DC2626 0%, #991B1B 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 13,
-              fontWeight: 700,
-              color: '#FFFFFF',
-              border: '3px solid #FEE2E2',
-              boxShadow: '0 4px 16px rgba(220, 38, 38, 0.4)',
-              animation: 'thrombinPulse 2s ease-in-out infinite',
-            }}
-          >
-            IIa
-          </div>
-          <div
-            style={{
-              padding: '2px 8px',
-              background: 'rgba(220, 38, 38, 0.1)',
-              border: '1px solid #DC2626',
-              borderRadius: 4,
-              fontSize: 8,
-              fontWeight: 600,
-              color: '#DC2626',
-            }}
-          >
-            TROMBINĂ
-          </div>
+          <FactorTokenNew
+            factorId="FIIa"
+            isActive={true}
+            enableHover={false}
+            hideGlaDomain={true}
+          />
         </div>
       )}
 
-      {/* Inactive factors (top row) */}
+      {/* Inactive factors (top row) - only clickable after PAR is activated */}
       {!state.fxiActivated && (
         <FactorSlot
           x={factorXPositions.fxi}
           y={topRowY}
           factorId="FXI"
-          onClick={() => state.thrombinArrived && !isAutoMode && onActivateFactor('FXI')}
-          disabled={!state.thrombinArrived || isAutoMode}
+          onClick={() => state.parCleavageState === 'activated' && !isAutoMode && onActivateFactor('FXI')}
+          disabled={state.parCleavageState !== 'activated' || isAutoMode}
         />
       )}
 
@@ -650,12 +759,12 @@ function UnifiedPlateletView({
           x={factorXPositions.fv}
           y={topRowY}
           factorId="FV"
-          onClick={() => state.thrombinArrived && !isAutoMode && onActivateFactor('FV')}
-          disabled={!state.thrombinArrived || isAutoMode}
+          onClick={() => state.parCleavageState === 'activated' && !isAutoMode && onActivateFactor('FV')}
+          disabled={state.parCleavageState !== 'activated' || isAutoMode}
         />
       )}
 
-      {/* FVIII-vWF Complex */}
+      {/* FVIII-vWF Complex - only clickable after PAR is activated */}
       {!state.vwfSplit && (
         <div
           style={{
@@ -669,14 +778,14 @@ function UnifiedPlateletView({
             padding: '6px 10px',
             background: 'rgba(255,255,255,0.95)',
             borderRadius: 8,
-            border: state.thrombinArrived && !isAutoMode ? '2px solid #22C55E' : '2px solid #E2E8F0',
-            cursor: state.thrombinArrived && !isAutoMode ? 'pointer' : 'default',
-            opacity: state.thrombinArrived ? 1 : 0.5,
+            border: state.parCleavageState === 'activated' && !isAutoMode ? '2px solid #22C55E' : '2px solid #E2E8F0',
+            cursor: state.parCleavageState === 'activated' && !isAutoMode ? 'pointer' : 'default',
+            opacity: state.parCleavageState === 'activated' ? 1 : 0.5,
             zIndex: 10,
           }}
-          onClick={() => state.thrombinArrived && !isAutoMode && onActivateFactor('vWF-VIII')}
+          onClick={() => state.parCleavageState === 'activated' && !isAutoMode && onActivateFactor('vWF-VIII')}
         >
-          <FactorTokenNew factorId="FVIII" isActive={false} enableHover={state.thrombinArrived} />
+          <FactorTokenNew factorId="FVIII" isActive={false} enableHover={state.parCleavageState === 'activated'} />
           <span style={{ color: '#64748B', fontSize: 9 }}>─</span>
           <div
             style={{
@@ -796,9 +905,9 @@ function UnifiedPlateletView({
         </div>
       )}
 
-      {/* PAR Receptor */}
+      {/* PAR Receptor - medically accurate, moved slightly left */}
       <PARReceptor
-        x={parX + 35}
+        x={parX + 25}
         y={membraneY - 65}
         state={state.parCleavageState}
         onClick={onPARClick}
@@ -806,7 +915,7 @@ function UnifiedPlateletView({
         scale={0.85}
       />
 
-      {/* Thrombin activation arrows - elegant dashed lines showing activation targets */}
+      {/* Thrombin activation arrows - sequential: PAR first, then others after PAR activation */}
       {state.thrombinArrived && !state.thrombinBurst && (
         <svg
           style={{
@@ -825,88 +934,97 @@ function UnifiedPlateletView({
             </marker>
           </defs>
 
-          {/* Thrombin → PAR (elegant curve to bottom-left) */}
+          {/* Thrombin → PAR (FIRST arrow - appears immediately when thrombin arrives) */}
           {state.parCleavageState !== 'activated' && (
             <path
               d={`M ${thrombinX - 25} ${thrombinY + 15}
                   C ${thrombinX - 100} ${thrombinY + 80},
-                    ${parX + 80} ${membraneY - 140},
-                    ${parX + 45} ${membraneY - 75}`}
+                    ${parX + 70} ${membraneY - 120},
+                    ${parX + 35} ${membraneY - 70}`}
               stroke="#F97316"
               strokeWidth={1.5}
               strokeDasharray="6 4"
-              strokeOpacity={0.5}
+              strokeOpacity={0.6}
               fill="none"
               markerEnd="url(#arrow-thrombin-small)"
               strokeLinecap="round"
             />
           )}
 
-          {/* Thrombin → FXI (curve to top-left) */}
-          {!state.fxiActivated && (
-            <path
-              d={`M ${thrombinX - 25} ${thrombinY - 10}
-                  C ${thrombinX - 80} ${thrombinY - 25},
-                    ${factorXPositions.fxi + 50} ${topRowY + 30},
-                    ${factorXPositions.fxi + 25} ${topRowY + 18}`}
-              stroke="#F97316"
-              strokeWidth={1.5}
-              strokeDasharray="6 4"
-              strokeOpacity={0.5}
-              fill="none"
-              markerEnd="url(#arrow-thrombin-small)"
-              strokeLinecap="round"
-            />
-          )}
+          {/* OTHER ARROWS - appear only AFTER PAR is activated */}
+          {state.parCleavageState === 'activated' && (
+            <>
+              {/* Thrombin → FXI (curve to top-left) */}
+              {!state.fxiActivated && (
+                <path
+                  d={`M ${thrombinX - 25} ${thrombinY - 10}
+                      C ${thrombinX - 80} ${thrombinY - 25},
+                        ${factorXPositions.fxi + 50} ${topRowY + 30},
+                        ${factorXPositions.fxi + 25} ${topRowY + 18}`}
+                  stroke="#F97316"
+                  strokeWidth={1.5}
+                  strokeDasharray="6 4"
+                  strokeOpacity={0.5}
+                  fill="none"
+                  markerEnd="url(#arrow-thrombin-small)"
+                  strokeLinecap="round"
+                  style={{ animation: 'arrowAppear 0.5s ease-out' }}
+                />
+              )}
 
-          {/* Thrombin → FVIII-vWF (gentle curve up-left to Tenase area) */}
-          {!state.vwfSplit && (
-            <path
-              d={`M ${thrombinX - 15} ${thrombinY - 20}
-                  C ${thrombinX - 30} ${thrombinY - 50},
-                    ${factorXPositions.fviii + 30} ${topRowY + 50},
-                    ${factorXPositions.fviii} ${topRowY + 35}`}
-              stroke="#F97316"
-              strokeWidth={1.5}
-              strokeDasharray="6 4"
-              strokeOpacity={0.5}
-              fill="none"
-              markerEnd="url(#arrow-thrombin-small)"
-              strokeLinecap="round"
-            />
-          )}
+              {/* Thrombin → FVIII-vWF (gentle curve up-left to Tenase area) */}
+              {!state.vwfSplit && (
+                <path
+                  d={`M ${thrombinX - 15} ${thrombinY - 20}
+                      C ${thrombinX - 30} ${thrombinY - 50},
+                        ${factorXPositions.fviii + 30} ${topRowY + 50},
+                        ${factorXPositions.fviii} ${topRowY + 35}`}
+                  stroke="#F97316"
+                  strokeWidth={1.5}
+                  strokeDasharray="6 4"
+                  strokeOpacity={0.5}
+                  fill="none"
+                  markerEnd="url(#arrow-thrombin-small)"
+                  strokeLinecap="round"
+                  style={{ animation: 'arrowAppear 0.5s ease-out 0.1s both' }}
+                />
+              )}
 
-          {/* Thrombin → FV (gentle curve up-right to Prothrombinase area) */}
-          {!state.fvActivated && (
-            <path
-              d={`M ${thrombinX + 25} ${thrombinY - 10}
-                  C ${thrombinX + 80} ${thrombinY - 30},
-                    ${factorXPositions.fv - 30} ${topRowY + 50},
-                    ${factorXPositions.fv} ${topRowY + 35}`}
-              stroke="#F97316"
-              strokeWidth={1.5}
-              strokeDasharray="6 4"
-              strokeOpacity={0.5}
-              fill="none"
-              markerEnd="url(#arrow-thrombin-small)"
-              strokeLinecap="round"
-            />
+              {/* Thrombin → FV (gentle curve up-right to Prothrombinase area) */}
+              {!state.fvActivated && (
+                <path
+                  d={`M ${thrombinX + 25} ${thrombinY - 10}
+                      C ${thrombinX + 80} ${thrombinY - 30},
+                        ${factorXPositions.fv - 30} ${topRowY + 50},
+                        ${factorXPositions.fv} ${topRowY + 35}`}
+                  stroke="#F97316"
+                  strokeWidth={1.5}
+                  strokeDasharray="6 4"
+                  strokeOpacity={0.5}
+                  fill="none"
+                  markerEnd="url(#arrow-thrombin-small)"
+                  strokeLinecap="round"
+                  style={{ animation: 'arrowAppear 0.5s ease-out 0.2s both' }}
+                />
+              )}
+            </>
           )}
         </svg>
       )}
 
       {/* ========== BOTTOM ZONE: COMPLEX FORMATION ========== */}
 
-      {/* FIXa migration animation */}
+      {/* FIXa migration animation - from top-right directly to its position in Tenase */}
       {fixaMigrating && !state.fixaArrived && (
         <div
           style={{
             position: 'absolute',
-            left: tenaseX,
-            top: 0,
+            right: width * 0.08,
+            top: bloodstreamHeight * 0.15,
             zIndex: 100,
-            animation: 'fixaMigrateDown 1.2s ease-out forwards',
-            ['--target-y' as string]: `${complexY - 30}px`,
+            animation: 'fixaMigrateToTenase 2.5s ease-in-out forwards',
+            ['--target-x' as string]: `${-(width - tenaseX - width * 0.08 + 18)}px`,
+            ['--target-y' as string]: `${complexY - bloodstreamHeight * 0.15}px`,
             pointerEvents: 'none',
           }}
         >
@@ -915,7 +1033,6 @@ function UnifiedPlateletView({
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              transform: 'translateX(-50%)',
               filter: 'drop-shadow(0 4px 16px rgba(6, 182, 212, 0.6))',
             }}
           >
@@ -1034,78 +1151,160 @@ function UnifiedPlateletView({
         )}
       </div>
 
-      {/* THROMBIN BURST */}
-      {state.thrombinBurst && (
-        <div
-          style={{
-            position: 'absolute',
-            right: 30,
-            top: complexY,
-            transform: 'translateY(-50%)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}
-        >
-          <div style={{ position: 'relative', width: 100, height: 80 }}>
-            {burstParticles.map((p, i) => (
-              <div
-                key={`burst-${i}`}
+      {/* ============ DRAMATIC EXPLOZIA DE TROMBINĂ ============ */}
+      {/* Waves of FIIa converging on fibrinogen in the center */}
+      {state.thrombinBurst && state.phase !== 'clotting' && state.phase !== 'stable' && (
+        <>
+          {/* Source glow at prothrombinase */}
+          <div
+            style={{
+              position: 'absolute',
+              left: prothrombinaseX,
+              top: complexY,
+              transform: 'translate(-50%, -50%)',
+              width: 80,
+              height: 80,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(220, 38, 38, 0.6) 0%, rgba(220, 38, 38, 0.2) 40%, transparent 70%)',
+              animation: 'burstSource 1.5s ease-out forwards',
+              pointerEvents: 'none',
+              zIndex: 25,
+            }}
+          />
+
+          {/* FIIa particles streaming towards center */}
+          {burstWaves.map((particle) => (
+            <div
+              key={`fiia-${particle.id}`}
+              style={{
+                position: 'absolute',
+                left: particle.startX,
+                top: particle.startY,
+                width: particle.size,
+                height: particle.size,
+                zIndex: 30,
+                animation: `fiiaStream ${particle.duration}s ease-out ${particle.delay}s forwards`,
+                ['--end-x' as string]: `${particle.endX - particle.startX}px`,
+                ['--end-y' as string]: `${particle.endY - particle.startY}px`,
+                pointerEvents: 'none',
+              }}
+            >
+              <svg
+                width={particle.size}
+                height={particle.size}
+                viewBox="0 0 24 24"
                 style={{
-                  position: 'absolute',
-                  left: '50%',
-                  top: '50%',
-                  transform: `translate(-50%, -50%) translate(${p.x}px, ${p.y}px)`,
-                  width: 20,
-                  height: 20,
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #DC2626 0%, #991B1B 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 7,
-                  fontWeight: 700,
-                  color: '#FFFFFF',
-                  border: '2px solid #FEE2E2',
-                  boxShadow: '0 2px 6px rgba(220, 38, 38, 0.5)',
-                  animation: `burstRadiate 0.6s ease-out ${p.delay}s both`,
+                  filter: 'drop-shadow(0 2px 6px rgba(220, 38, 38, 0.7))',
                 }}
               >
-                IIa
-              </div>
-            ))}
+                <defs>
+                  <linearGradient id={`burstGrad-${particle.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#EF4444" />
+                    <stop offset="100%" stopColor="#B91C1C" />
+                  </linearGradient>
+                </defs>
+                <circle cx="12" cy="12" r="10" fill={`url(#burstGrad-${particle.id})`} stroke="#FEE2E2" strokeWidth={1.5} />
+                <circle cx="19" cy="6" r="3" fill="#FEE2E2" />
+                <text x="11" y="15" textAnchor="middle" fontSize="7" fontWeight="700" fill="#FFF">FIIa</text>
+              </svg>
+            </div>
+          ))}
+
+          {/* Fibrinogen tokens appearing in center */}
+          {fibrinogenPositions.map((fbg, i) => (
+            <div
+              key={`fbg-${i}`}
+              style={{
+                position: 'absolute',
+                left: fbg.x,
+                top: fbg.y,
+                transform: 'translate(-50%, -50%)',
+                zIndex: 28,
+                animation: `fibrinogenAppear 1.2s ease-out ${fbg.delay}s forwards, fibrinogenCleave 1.8s ease-in-out ${fbg.delay + 2.5}s forwards`,
+                opacity: 0,
+                pointerEvents: 'none',
+              }}
+            >
+              {/* Fibrinogen molecule - elongated shape */}
+              <svg width="50" height="24" viewBox="0 0 50 24">
+                <defs>
+                  <linearGradient id={`fbgGrad-${i}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#FBBF24" />
+                    <stop offset="50%" stopColor="#F59E0B" />
+                    <stop offset="100%" stopColor="#FBBF24" />
+                  </linearGradient>
+                </defs>
+                {/* D-E-D structure */}
+                <ellipse cx="8" cy="12" rx="7" ry="10" fill={`url(#fbgGrad-${i})`} stroke="#D97706" strokeWidth={1.5} />
+                <rect x="14" y="8" width="22" height="8" rx="2" fill="#F59E0B" stroke="#D97706" strokeWidth={1} />
+                <ellipse cx="42" cy="12" rx="7" ry="10" fill={`url(#fbgGrad-${i})`} stroke="#D97706" strokeWidth={1.5} />
+                <text x="25" y="15" textAnchor="middle" fontSize="6" fontWeight="600" fill="#78350F">Fbg</text>
+              </svg>
+            </div>
+          ))}
+
+          {/* Central cleavage zone glow */}
+          <div
+            style={{
+              position: 'absolute',
+              left: width * 0.5,
+              top: bloodstreamHeight * 0.5,
+              transform: 'translate(-50%, -50%)',
+              width: 200,
+              height: 150,
+              borderRadius: '50%',
+              background: 'radial-gradient(ellipse, rgba(251, 191, 36, 0.3) 0%, rgba(251, 191, 36, 0.1) 40%, transparent 70%)',
+              animation: 'cleavageGlow 4s ease-in-out 2s forwards',
+              pointerEvents: 'none',
+              zIndex: 20,
+            }}
+          />
+
+          {/* Burst label */}
+          <div
+            style={{
+              position: 'absolute',
+              left: prothrombinaseX + 60,
+              top: complexY - 50,
+              padding: '6px 12px',
+              background: 'linear-gradient(135deg, #991B1B 0%, #7F1D1D 100%)',
+              border: '2px solid #EF4444',
+              borderRadius: 8,
+              boxShadow: '0 4px 20px rgba(220, 38, 38, 0.5)',
+              animation: 'burstLabelAppear 1s ease-out forwards',
+              zIndex: 35,
+            }}
+          >
+            <div style={{ color: '#FBBF24', fontSize: 11, fontWeight: 800, letterSpacing: 1 }}>
+              EXPLOZIA DE TROMBINĂ
+            </div>
+            <div style={{ color: '#FECACA', fontSize: 9, marginTop: 2, textAlign: 'center' }}>
+              ~350 nM · ×300,000
+            </div>
+          </div>
+
+          {/* Fibrin formation indicator */}
+          {state.fibrinogenCleaved && (
             <div
               style={{
                 position: 'absolute',
-                left: '50%',
-                top: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: 35,
-                height: 35,
-                borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(220, 38, 38, 0.3) 0%, transparent 70%)',
-                animation: 'burstPulse 2s ease-in-out infinite',
+                left: width * 0.5,
+                top: bloodstreamHeight * 0.5 + 60,
+                transform: 'translateX(-50%)',
+                padding: '4px 10px',
+                background: 'rgba(251, 191, 36, 0.9)',
+                border: '2px solid #D97706',
+                borderRadius: 6,
+                animation: 'fibrinLabelAppear 1s ease-out 3s forwards',
+                zIndex: 35,
               }}
-            />
-          </div>
-          <div
-            style={{
-              marginTop: 6,
-              padding: '5px 10px',
-              background: '#FEE2E2',
-              border: '2px solid #DC2626',
-              borderRadius: 5,
-              textAlign: 'center',
-            }}
-          >
-            <div style={{ color: '#DC2626', fontSize: 10, fontWeight: 700 }}>
-              THROMBIN BURST
+            >
+              <div style={{ color: '#78350F', fontSize: 10, fontWeight: 700 }}>
+                Fbg → Fibrină
+              </div>
             </div>
-            <div style={{ color: '#991B1B', fontSize: 8, marginTop: 1 }}>
-              ~350 nM
-            </div>
-          </div>
-        </div>
+          )}
+        </>
       )}
 
       {/* Gla domain anchors with PS and Ca²⁺ */}
@@ -1150,15 +1349,29 @@ function UnifiedPlateletView({
             <rect x={tenaseX - 24} y={membraneY - 20} width={12} height={8} rx={2} fill="#A855F7" stroke="#7C3AED" strokeWidth={1} />
             <text x={tenaseX - 18} y={membraneY - 14} textAnchor="middle" fontSize={5} fill="#FFF" fontWeight={600}>C2</text>
 
-            {/* FIXa - Gla domain + Ca²⁺ (enzyme, vitamin K-dependent) */}
-            <line x1={tenaseX + 18} y1={complexY + 45} x2={tenaseX + 18} y2={membraneY - 15} stroke="#22C55E" strokeWidth={2} strokeDasharray="3 2" opacity={0.7} />
-            <circle cx={tenaseX + 18} cy={membraneY - 18} r={5} fill="#22C55E" stroke="#15803D" strokeWidth={1.5} />
-            <text x={tenaseX + 18} y={membraneY - 15} textAnchor="middle" fontSize={4} fill="#FFF" fontWeight={700}>Gla</text>
-            {/* Ca²⁺ bridge */}
-            <circle cx={tenaseX + 18} cy={membraneY - 9} r={2.5} fill="#F59E0B" stroke="#D97706" strokeWidth={1}>
-              <animate attributeName="opacity" values="0.6;1;0.6" dur="1.5s" repeatCount="indefinite" />
-            </circle>
-            <text x={tenaseX + 28} y={membraneY - 7} fontSize={4} fill="#D97706" fontWeight={600}>Ca²⁺</text>
+            {/* FIXa - Gla domain + Ca²⁺ bridge (enzyme, vitamin K-dependent) */}
+            {/* Ca²⁺ acts as ionic bridge between Gla domain and PS membrane */}
+            <line x1={tenaseX + 18} y1={complexY + 45} x2={tenaseX + 18} y2={membraneY - 22} stroke="#22C55E" strokeWidth={2} strokeDasharray="3 2" opacity={0.7} />
+
+            {/* Gla domain */}
+            <circle cx={tenaseX + 18} cy={membraneY - 22} r={6} fill="#22C55E" stroke="#15803D" strokeWidth={1.5} />
+            <text x={tenaseX + 18} y={membraneY - 19} textAnchor="middle" fontSize={5} fill="#FFF" fontWeight={700}>Gla</text>
+
+            {/* Ca²⁺ ionic bridge - multiple ions forming coordination complex */}
+            {/* Internal Ca²⁺ (stabilizes Gla fold) + External Ca²⁺ (anchors to PS) */}
+            <g>
+              {/* Bridge connector line */}
+              <line x1={tenaseX + 18} y1={membraneY - 16} x2={tenaseX + 18} y2={membraneY - 6} stroke="#F59E0B" strokeWidth={3} strokeLinecap="round" />
+              {/* Ca²⁺ ions as locking pins */}
+              <circle cx={tenaseX + 14} cy={membraneY - 11} r={2.5} fill="#F59E0B" stroke="#D97706" strokeWidth={1} />
+              <circle cx={tenaseX + 22} cy={membraneY - 11} r={2.5} fill="#F59E0B" stroke="#D97706" strokeWidth={1} />
+              {/* Central coordination point touching PS */}
+              <rect x={tenaseX + 14} y={membraneY - 7} width={8} height={4} rx={1} fill="#F59E0B" stroke="#D97706" strokeWidth={1}>
+                <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite" />
+              </rect>
+            </g>
+            <text x={tenaseX + 30} y={membraneY - 10} fontSize={5} fill="#D97706" fontWeight={700}>Ca²⁺</text>
+            <text x={tenaseX + 30} y={membraneY - 4} fontSize={4} fill="#D97706" fontWeight={500}>punte</text>
           </g>
         )}
 
@@ -1172,15 +1385,28 @@ function UnifiedPlateletView({
             <rect x={prothrombinaseX - 24} y={membraneY - 20} width={12} height={8} rx={2} fill="#F97316" stroke="#EA580C" strokeWidth={1} />
             <text x={prothrombinaseX - 18} y={membraneY - 14} textAnchor="middle" fontSize={5} fill="#FFF" fontWeight={600}>C2</text>
 
-            {/* FXa - Gla domain + Ca²⁺ (enzyme, vitamin K-dependent) */}
-            <line x1={prothrombinaseX + 18} y1={complexY + 45} x2={prothrombinaseX + 18} y2={membraneY - 15} stroke="#22C55E" strokeWidth={2} strokeDasharray="3 2" opacity={0.7} />
-            <circle cx={prothrombinaseX + 18} cy={membraneY - 18} r={5} fill="#22C55E" stroke="#15803D" strokeWidth={1.5} />
-            <text x={prothrombinaseX + 18} y={membraneY - 15} textAnchor="middle" fontSize={4} fill="#FFF" fontWeight={700}>Gla</text>
-            {/* Ca²⁺ bridge */}
-            <circle cx={prothrombinaseX + 18} cy={membraneY - 9} r={2.5} fill="#F59E0B" stroke="#D97706" strokeWidth={1}>
-              <animate attributeName="opacity" values="0.6;1;0.6" dur="1.5s" begin="0.3s" repeatCount="indefinite" />
-            </circle>
-            <text x={prothrombinaseX + 28} y={membraneY - 7} fontSize={4} fill="#D97706" fontWeight={600}>Ca²⁺</text>
+            {/* FXa - Gla domain + Ca²⁺ bridge (enzyme, vitamin K-dependent) */}
+            {/* Ca²⁺ acts as ionic bridge between Gla domain and PS membrane */}
+            <line x1={prothrombinaseX + 18} y1={complexY + 45} x2={prothrombinaseX + 18} y2={membraneY - 22} stroke="#22C55E" strokeWidth={2} strokeDasharray="3 2" opacity={0.7} />
+
+            {/* Gla domain */}
+            <circle cx={prothrombinaseX + 18} cy={membraneY - 22} r={6} fill="#22C55E" stroke="#15803D" strokeWidth={1.5} />
+            <text x={prothrombinaseX + 18} y={membraneY - 19} textAnchor="middle" fontSize={5} fill="#FFF" fontWeight={700}>Gla</text>
+
+            {/* Ca²⁺ ionic bridge - multiple ions forming coordination complex */}
+            <g>
+              {/* Bridge connector line */}
+              <line x1={prothrombinaseX + 18} y1={membraneY - 16} x2={prothrombinaseX + 18} y2={membraneY - 6} stroke="#F59E0B" strokeWidth={3} strokeLinecap="round" />
+              {/* Ca²⁺ ions as locking pins */}
+              <circle cx={prothrombinaseX + 14} cy={membraneY - 11} r={2.5} fill="#F59E0B" stroke="#D97706" strokeWidth={1} />
+              <circle cx={prothrombinaseX + 22} cy={membraneY - 11} r={2.5} fill="#F59E0B" stroke="#D97706" strokeWidth={1} />
+              {/* Central coordination point touching PS */}
+              <rect x={prothrombinaseX + 14} y={membraneY - 7} width={8} height={4} rx={1} fill="#F59E0B" stroke="#D97706" strokeWidth={1}>
+                <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" begin="0.5s" repeatCount="indefinite" />
+              </rect>
+            </g>
+            <text x={prothrombinaseX + 30} y={membraneY - 10} fontSize={5} fill="#D97706" fontWeight={700}>Ca²⁺</text>
+            <text x={prothrombinaseX + 30} y={membraneY - 4} fontSize={4} fill="#D97706" fontWeight={500}>punte</text>
           </g>
         )}
 
@@ -1225,10 +1451,10 @@ function UnifiedPlateletView({
           50% { opacity: 0.9; stroke-width: 2; }
         }
         @keyframes thrombinPulse {
-          0%, 100% { box-shadow: 0 4px 16px rgba(220, 38, 38, 0.35); transform: scale(1); }
-          25% { box-shadow: 0 4px 20px rgba(220, 38, 38, 0.5); transform: scale(1.03); }
-          50% { box-shadow: 0 4px 28px rgba(220, 38, 38, 0.65); transform: scale(1.06); }
-          75% { box-shadow: 0 4px 20px rgba(220, 38, 38, 0.5); transform: scale(1.03); }
+          0%, 100% { filter: drop-shadow(0 4px 8px rgba(220, 38, 38, 0.4)); transform: scale(1); }
+          25% { filter: drop-shadow(0 4px 10px rgba(220, 38, 38, 0.5)); transform: scale(1.03); }
+          50% { filter: drop-shadow(0 4px 14px rgba(220, 38, 38, 0.6)); transform: scale(1.06); }
+          75% { filter: drop-shadow(0 4px 10px rgba(220, 38, 38, 0.5)); transform: scale(1.03); }
         }
         @keyframes burstRadiate {
           from { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
@@ -1242,10 +1468,6 @@ function UnifiedPlateletView({
           0%, 100% { r: 4; opacity: 0.4; }
           50% { r: 5.5; opacity: 0.8; }
         }
-        @keyframes fixaMigrateDown {
-          from { opacity: 0; transform: translateY(-30px); }
-          to { opacity: 1; transform: translateY(var(--target-y, 150px)); }
-        }
         @keyframes complexPulse {
           0%, 100% { box-shadow: 0 0 10px rgba(6, 182, 212, 0.15); }
           50% { box-shadow: 0 0 20px rgba(6, 182, 212, 0.4); }
@@ -1253,6 +1475,64 @@ function UnifiedPlateletView({
         @keyframes cofactorDock {
           from { opacity: 1; transform: translateY(0); }
           to { opacity: 1; transform: translateY(var(--dock-distance, 120px)); }
+        }
+        /* Dramatic Thrombin Burst Animations - Slow & Cinematic */
+        @keyframes burstSource {
+          0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0.8; }
+          40% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+          100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
+        }
+        @keyframes fiiaStream {
+          0% {
+            transform: translate(-50%, -50%) scale(0.2);
+            opacity: 0;
+          }
+          10% {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+          }
+          80% {
+            transform: translate(calc(-50% + var(--end-x) * 0.9), calc(-50% + var(--end-y) * 0.9)) scale(1);
+            opacity: 1;
+          }
+          95% {
+            transform: translate(calc(-50% + var(--end-x)), calc(-50% + var(--end-y))) scale(0.8);
+            opacity: 0.8;
+          }
+          100% {
+            transform: translate(calc(-50% + var(--end-x)), calc(-50% + var(--end-y))) scale(0.3);
+            opacity: 0;
+          }
+        }
+        @keyframes fibrinogenAppear {
+          0% { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+          60% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+          100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+        @keyframes fibrinogenCleave {
+          0% { filter: none; opacity: 1; }
+          20% { filter: brightness(1.3) drop-shadow(0 0 6px rgba(220, 38, 38, 0.6)); opacity: 1; }
+          40% { filter: brightness(1.6) drop-shadow(0 0 12px rgba(220, 38, 38, 0.9)); opacity: 1; }
+          60% { filter: brightness(1.4) drop-shadow(0 0 16px rgba(251, 191, 36, 1)); opacity: 0.9; }
+          80% { filter: brightness(1.1) drop-shadow(0 0 8px rgba(251, 191, 36, 0.6)); opacity: 0.5; }
+          100% { filter: none; opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+        }
+        @keyframes cleavageGlow {
+          0% { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+          20% { opacity: 0.4; transform: translate(-50%, -50%) scale(0.8); }
+          50% { opacity: 0.7; transform: translate(-50%, -50%) scale(1.1); }
+          80% { opacity: 0.5; transform: translate(-50%, -50%) scale(1.3); }
+          100% { opacity: 0; transform: translate(-50%, -50%) scale(1.6); }
+        }
+        @keyframes burstLabelAppear {
+          0% { opacity: 0; transform: translateY(15px); }
+          70% { opacity: 1; transform: translateY(-2px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fibrinLabelAppear {
+          0% { opacity: 0; transform: translateX(-50%) scale(0.7); }
+          70% { opacity: 1; transform: translateX(-50%) scale(1.05); }
+          100% { opacity: 1; transform: translateX(-50%) scale(1); }
         }
       `}</style>
     </>
@@ -1353,19 +1633,13 @@ function ComplexAssemblySlot({
         {name}
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 10, alignItems: 'flex-start', marginTop: 6 }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ transform: cofactor.ready ? 'scale(1.1)' : 'scale(1)', opacity: cofactor.ready ? 1 : 0.3 }}>
-            <FactorTokenNew factorId={cofactor.id} isActive={cofactor.ready} enableHover={false} />
-          </div>
-          <div style={{ fontSize: 7, color: '#64748B', marginTop: 3 }}>{cofactor.id}</div>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 10, alignItems: 'center', marginTop: 6 }}>
+        <div style={{ transform: cofactor.ready ? 'scale(1.1)' : 'scale(1)', opacity: cofactor.ready ? 1 : 0.3 }}>
+          <FactorTokenNew factorId={cofactor.id} isActive={cofactor.ready} enableHover={false} />
         </div>
-        <div style={{ color: '#94A3B8', fontSize: 12, fontWeight: 600, marginTop: 10 }}>+</div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ transform: enzyme.ready ? 'scale(0.9)' : 'scale(1)', opacity: enzyme.ready ? 1 : 0.3 }}>
-            <FactorTokenNew factorId={enzyme.id} isActive={enzyme.ready} enableHover={false} />
-          </div>
-          <div style={{ fontSize: 7, color: '#64748B', marginTop: 3 }}>{enzyme.id}</div>
+        <div style={{ color: '#94A3B8', fontSize: 12, fontWeight: 600 }}>+</div>
+        <div style={{ transform: enzyme.ready ? 'scale(0.9)' : 'scale(1)', opacity: enzyme.ready ? 1 : 0.3 }}>
+          <FactorTokenNew factorId={enzyme.id} isActive={enzyme.ready} enableHover={false} />
         </div>
       </div>
 
@@ -1537,7 +1811,7 @@ function ProthrombinaseComplex({
           }}
           onClick={onTriggerBurst}
         >
-          THROMBIN BURST
+          EXPLOZIA DE TROMBINĂ
         </div>
       )}
     </div>

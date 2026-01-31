@@ -29,6 +29,8 @@ export interface AmplificationState {
   fviiaDocked: boolean;  // FVIIIa bound to platelet membrane
   // PAR1 receptor cleavage state
   parCleavageState: PARCleavageState;
+  // FIXa arrival at amplification (before going to propagation)
+  fixaAtAmplification: boolean;
 }
 
 export interface PropagationState {
@@ -82,6 +84,7 @@ const initialState: ThreePanelState = {
     fvaDocked: false,
     fviiaDocked: false,
     parCleavageState: 'intact',
+    fixaAtAmplification: false,
   },
   propagation: {
     fixaArrived: false,
@@ -113,6 +116,7 @@ type ThreePanelAction =
   | { type: 'ACTIVATE_PLATELET' }
   | { type: 'DOCK_FVA' }      // FVa binds to platelet membrane
   | { type: 'DOCK_FVIIIA' }   // FVIIIa binds to platelet membrane
+  | { type: 'FIXA_AT_AMPLIFICATION' }  // FIXa arrives at amplification border
   // PAR1 cleavage actions
   | { type: 'PAR_THROMBIN_BIND' }
   | { type: 'PAR_CLEAVE' }
@@ -166,6 +170,8 @@ function threePanelReducer(state: ThreePanelState, action: ThreePanelAction): Th
       return { ...state, amplification: { ...state.amplification, fvaDocked: true } };
     case 'DOCK_FVIIIA':
       return { ...state, amplification: { ...state.amplification, fviiaDocked: true } };
+    case 'FIXA_AT_AMPLIFICATION':
+      return { ...state, amplification: { ...state.amplification, fixaAtAmplification: true } };
 
     // PAR1 cleavage states
     case 'PAR_THROMBIN_BIND':
@@ -235,6 +241,7 @@ export interface ThreePanelStateHook {
   activatePlatelet: () => void;
   dockFVa: () => void;
   dockFVIIIa: () => void;
+  fixaAtAmplification: () => void;
   // PAR1 cleavage actions
   parThrombinBind: () => void;
   parCleave: () => void;
@@ -282,6 +289,7 @@ export function useThreePanelState(): ThreePanelStateHook {
   const activatePlatelet = useCallback((): void => dispatch({ type: 'ACTIVATE_PLATELET' }), []);
   const dockFVa = useCallback((): void => dispatch({ type: 'DOCK_FVA' }), []);
   const dockFVIIIa = useCallback((): void => dispatch({ type: 'DOCK_FVIIIA' }), []);
+  const fixaAtAmplificationAction = useCallback((): void => dispatch({ type: 'FIXA_AT_AMPLIFICATION' }), []);
 
   // PAR1 cleavage actions
   const parThrombinBind = useCallback((): void => dispatch({ type: 'PAR_THROMBIN_BIND' }), []);
@@ -351,6 +359,7 @@ export function useThreePanelState(): ThreePanelStateHook {
     activatePlatelet,
     dockFVa,
     dockFVIIIa,
+    fixaAtAmplification: fixaAtAmplificationAction,
     // PAR1 cleavage
     parThrombinBind,
     parCleave,

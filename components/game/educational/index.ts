@@ -11,7 +11,6 @@ export {
   type ComplexInfoData,
   type PhaseInfoData,
 } from './FactorInfo';
-export { FactorLegend } from './FactorLegend';
 export { PhaseExplanation, PhaseIndicator } from './PhaseExplanation';
 export { CalciumBridging, CalciumIndicator } from './CalciumBridging';
 export { ReactionEquation, ReactionCascade, REACTIONS } from './ReactionEquation';

@@ -22,8 +22,10 @@ export function TFProtein({
   isActive = true,
   hasVIIa = false,
 }: TFProteinProps): React.ReactElement {
-  const width = 50;
-  const height = 70;
+  const width = 56;
+  const bodyHeight = hasVIIa ? 52 : 36;
+  const pedicleHeight = 46;
+  const height = bodyHeight + pedicleHeight + 4;
 
   return (
     <svg
@@ -36,78 +38,72 @@ export function TFProtein({
         top: y - height,
       }}
     >
-      {/* Main receptor body - simple rectangle */}
+      {/* Transmembrane pedicle */}
       <rect
-        x={8}
-        y={8}
-        width={width - 16}
-        height={height - 20}
-        rx={4}
+        x={width / 2 - 4}
+        y={bodyHeight}
+        width={8}
+        height={pedicleHeight}
+        fill={isActive ? '#16A34A' : '#64748B'}
+      />
+
+      {/* Main receptor body */}
+      <rect
+        x={4}
+        y={2}
+        width={width - 8}
+        height={bodyHeight - 2}
+        rx={5}
         fill={isActive ? '#22C55E' : '#94A3B8'}
         stroke={isActive ? '#15803D' : '#64748B'}
         strokeWidth={2}
       />
 
-      {/* TF Label */}
-      <text
-        x={width / 2}
-        y={28}
-        textAnchor="middle"
-        fontSize={12}
-        fontWeight={700}
-        fill="#FFFFFF"
-      >
-        TF
-      </text>
-
-      {/* Docking indicator when empty */}
-      {!hasVIIa && (
-        <text
-          x={width / 2}
-          y={46}
-          textAnchor="middle"
-          fontSize={8}
-          fill="rgba(255,255,255,0.8)"
-        >
-          +FVII
-        </text>
-      )}
-
-      {/* VIIa bound indicator */}
-      {hasVIIa && (
+      {hasVIIa ? (
         <>
-          <rect
-            x={10}
-            y={38}
-            width={width - 20}
-            height={16}
-            rx={3}
-            fill="#DC2626"
-            stroke="#991B1B"
+          {/* TF:VIIa complex label */}
+          <text
+            x={width / 2}
+            y={22}
+            textAnchor="middle"
+            fontSize={11}
+            fontWeight={700}
+            fill="#FFFFFF"
+          >
+            FT
+          </text>
+          {/* Divider line */}
+          <line
+            x1={10}
+            y1={28}
+            x2={width - 10}
+            y2={28}
+            stroke="rgba(255,255,255,0.4)"
             strokeWidth={1}
           />
           <text
             x={width / 2}
-            y={50}
+            y={44}
             textAnchor="middle"
-            fontSize={9}
-            fontWeight={600}
+            fontSize={11}
+            fontWeight={700}
             fill="#FFFFFF"
           >
             VIIa
           </text>
         </>
+      ) : (
+        <text
+          x={width / 2}
+          y={24}
+          textAnchor="middle"
+          fontSize={13}
+          fontWeight={700}
+          fill="#FFFFFF"
+        >
+          FT
+        </text>
       )}
-
-      {/* Membrane anchor */}
-      <rect
-        x={width / 2 - 6}
-        y={height - 12}
-        width={12}
-        height={8}
-        rx={2}
-        fill={isActive ? '#16A34A' : '#64748B'}
-      />
     </svg>
   );
 }

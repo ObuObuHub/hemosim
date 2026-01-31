@@ -6,33 +6,30 @@ interface GlaDomainProps {
   height?: number;
   color?: string;
   style?: React.CSSProperties;
+  showCalcium?: boolean;
+  isBound?: boolean;
+  animationDelay?: number;
 }
 
 /**
  * GlaDomain - Vitamin K-dependent membrane anchor
- *
- * Medical accuracy:
- * The Gla domain (γ-carboxyglutamate domain) is found in vitamin K-dependent
- * coagulation factors (II, VII, IX, X). It contains 9-12 γ-carboxyglutamate
- * residues that bind Ca²⁺ ions and anchor the factor to phospholipid membranes.
- *
- * Visual: A wavy/squiggly tail extending from the bottom of the factor,
- * representing the flexible membrane-binding domain.
+ * Wavy line with "Gla" label
  */
 export function GlaDomain({
-  width = 16,
-  height = 20,
+  width = 20,
+  height = 28,
   color = '#1F2937',
   style,
+  isBound = false,
 }: GlaDomainProps): React.ReactElement {
-  // Create an S-curve path for the wavy Gla domain
   const cx = width / 2;
 
-  // Control points for smooth S-curve
+  // Smooth sine wave Gla domain path
+  const amplitude = 3;
   const path = `
     M ${cx} 0
-    C ${cx + 6} ${height * 0.25}, ${cx - 6} ${height * 0.5}, ${cx + 4} ${height * 0.75}
-    C ${cx + 8} ${height * 0.85}, ${cx - 2} ${height * 0.95}, ${cx} ${height}
+    Q ${cx + amplitude} ${height * 0.25}, ${cx} ${height * 0.5}
+    Q ${cx - amplitude} ${height * 0.75}, ${cx} ${height}
   `;
 
   return (
@@ -40,18 +37,30 @@ export function GlaDomain({
       width={width}
       height={height}
       viewBox={`0 0 ${width} ${height}`}
-      style={{ marginTop: -2, ...style }}
+      style={{ marginTop: -2, overflow: 'visible', ...style }}
       role="img"
-      aria-label="Gla domain - reziduuri γ-carboxiglutamat"
+      aria-label="Gla domain"
     >
-      {/* Wavy tail representing the Gla domain */}
+      {/* Wavy Gla domain backbone */}
       <path
         d={path}
-        stroke={color}
-        strokeWidth={4}
+        stroke={isBound ? '#3B82F6' : color}
+        strokeWidth={3.5}
         strokeLinecap="round"
         fill="none"
       />
+
+      {/* Gla label */}
+      <text
+        x={cx + 6}
+        y={height * 0.5}
+        fontSize={7}
+        fontWeight={600}
+        fill="#1E293B"
+        style={{ fontFamily: 'system-ui, sans-serif' }}
+      >
+        Gla
+      </text>
     </svg>
   );
 }

@@ -71,7 +71,7 @@ export function FibrinMesh({
 
   // Stage descriptions for medical professionals
   const stageInfo = [
-    { label: 'În așteptare', detail: '' },
+    { label: 'Fibrinogen circulant', detail: 'Substrat disponibil pentru trombină' },
     { label: 'Fibrinogen → Fibrină', detail: 'Trombina clivează fibrinopeptidele A și B' },
     { label: 'Polimerizare', detail: 'Monomerii se autoasamblează în protofibrile' },
     { label: 'FXIII activat', detail: 'Transglutaminaza pregătită pentru cross-linking' },

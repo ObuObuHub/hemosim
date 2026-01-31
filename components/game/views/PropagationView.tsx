@@ -13,6 +13,7 @@ interface PropagationViewProps {
     fvaDocked: boolean;
     // Enzyme arrival
     fixaArrived: boolean;
+    fixaMigrating?: boolean;  // FIXa is actively migrating from SparkFrame
     // Complex formation
     tenaseFormed: boolean;
     prothrombinaseFormed: boolean;
@@ -55,7 +56,8 @@ export function PropagationView({
   const bloodstreamHeight = membraneY;
   const tenaseX = width * 0.28;
   const prothrombinaseX = width * 0.72;
-  const complexY = bloodstreamHeight * 0.55;
+  // Anchor complexes at membrane (like Prothrombinase in Initiation)
+  const complexY = membraneY - 70;
   const substrateY = bloodstreamHeight * 0.18;
 
   // Burst particles positions (radiating pattern)
@@ -185,7 +187,7 @@ export function PropagationView({
           <ComplexAssemblySlot
             name="TENASE"
             subtitle="(Intrinsic Xase)"
-            enzyme={{ id: 'FIXa', docked: state.fixaArrived }}
+            enzyme={{ id: 'FIXa', docked: state.fixaArrived, awaiting: state.fixaMigrating }}
             cofactor={{ id: 'FVIIIa', docked: state.fviiaDocked }}
             canForm={state.fixaArrived && state.fviiaDocked}
             onForm={onFormTenase}
@@ -443,101 +445,6 @@ export function PropagationView({
         )}
       </svg>
 
-      {/* ===== EDUCATIONAL PANEL ===== */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 12,
-          left: 12,
-          padding: '10px 14px',
-          background: 'rgba(255, 255, 255, 0.97)',
-          border: '1px solid #E2E8F0',
-          borderRadius: 8,
-          maxWidth: 200,
-          zIndex: 20,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-        }}
-      >
-        <div style={{ fontWeight: 700, color: '#1E293B', fontSize: 11, marginBottom: 8 }}>
-          FAZA 3: PROPAGARE
-        </div>
-
-        {/* Visual flow diagram */}
-        <div style={{ fontSize: 9, color: '#64748B', lineHeight: 1.6 }}>
-          {/* Tenase reaction */}
-          <div style={{
-            padding: '4px 6px',
-            marginBottom: 4,
-            background: state.tenaseFormed ? 'rgba(6, 182, 212, 0.1)' : 'transparent',
-            borderRadius: 4,
-            border: state.tenaseFormed ? '1px solid rgba(6, 182, 212, 0.3)' : '1px solid transparent',
-          }}>
-            <div style={{ color: '#06B6D4', fontWeight: 600, marginBottom: 2 }}>TENASE</div>
-            <div style={{ fontSize: 8 }}>
-              <span style={{ color: '#7C3AED' }}>VIIIa</span> + <span style={{ color: '#06B6D4' }}>IXa</span>
-            </div>
-            <div style={{ fontSize: 8, marginTop: 2 }}>
-              FX → <span style={{ color: '#22C55E', fontWeight: 600 }}>FXa</span>
-              {state.fxaProduced && <span style={{ marginLeft: 4 }}>✓</span>}
-            </div>
-          </div>
-
-          {/* FXa arrow */}
-          {state.fxaProduced && (
-            <div style={{ textAlign: 'center', color: '#22C55E', fontSize: 10, margin: '2px 0' }}>
-              ↓ FXa
-            </div>
-          )}
-
-          {/* Prothrombinase reaction */}
-          <div style={{
-            padding: '4px 6px',
-            marginBottom: 4,
-            background: state.prothrombinaseFormed ? 'rgba(220, 38, 38, 0.1)' : 'transparent',
-            borderRadius: 4,
-            border: state.prothrombinaseFormed ? '1px solid rgba(220, 38, 38, 0.3)' : '1px solid transparent',
-          }}>
-            <div style={{ color: '#DC2626', fontWeight: 600, marginBottom: 2 }}>PROTROMBINAZĂ</div>
-            <div style={{ fontSize: 8 }}>
-              <span style={{ color: '#F97316' }}>Va</span> + <span style={{ color: '#22C55E' }}>Xa</span>
-            </div>
-            <div style={{ fontSize: 8, marginTop: 2 }}>
-              FII → <span style={{ color: '#DC2626', fontWeight: 600 }}>FIIa</span>
-              {state.thrombinBurst && <span style={{ marginLeft: 4 }}>✓</span>}
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div style={{ borderTop: '1px solid #E2E8F0', marginTop: 6, paddingTop: 6, fontSize: 8 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span>Tenase:</span>
-              <span style={{ color: '#06B6D4', fontWeight: 600 }}>×200.000</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span>Protrombinază:</span>
-              <span style={{ color: '#DC2626', fontWeight: 600 }}>×300.000</span>
-            </div>
-            {state.thrombinBurst && (
-              <div style={{ marginTop: 4, textAlign: 'center', color: '#DC2626', fontWeight: 700 }}>
-                ~350 nM Trombină
-              </div>
-            )}
-          </div>
-
-          {/* Legend */}
-          <div style={{ borderTop: '1px solid #E2E8F0', marginTop: 6, paddingTop: 6, fontSize: 7 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-              <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#22C55E' }}></span>
-              <span>Gla domain (Ca²⁺)</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#DC2626' }}></span>
-              <span>PS (fosfolipide)</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* CSS Animations */}
       <style>{`
         @keyframes substrateFloat {
@@ -565,6 +472,24 @@ export function PropagationView({
           0%, 100% { r: 5; opacity: 0.6; }
           50% { r: 6; opacity: 0.9; }
         }
+        @keyframes receivingPulse {
+          0%, 100% {
+            box-shadow: 0 0 8px rgba(245, 158, 11, 0.2);
+          }
+          50% {
+            box-shadow: 0 0 16px rgba(245, 158, 11, 0.4), 0 0 32px rgba(245, 158, 11, 0.2);
+          }
+        }
+        @keyframes enzymeSlotPulse {
+          0%, 100% {
+            border-color: rgba(245, 158, 11, 0.7);
+            background: rgba(245, 158, 11, 0.1);
+          }
+          50% {
+            border-color: rgba(245, 158, 11, 1);
+            background: rgba(245, 158, 11, 0.25);
+          }
+        }
       `}</style>
     </div>
   );
@@ -575,7 +500,7 @@ export function PropagationView({
 interface ComplexAssemblySlotProps {
   name: string;
   subtitle: string;
-  enzyme: { id: string; docked: boolean };
+  enzyme: { id: string; docked: boolean; awaiting?: boolean };
   cofactor: { id: string; docked: boolean };
   canForm: boolean;
   onForm: () => void;
@@ -593,64 +518,74 @@ function ComplexAssemblySlot({
   color,
   isAutoMode,
 }: ComplexAssemblySlotProps): React.ReactElement {
+  const enzymeAwaiting = enzyme.awaiting && !enzyme.docked;
+
   return (
     <div
       style={{
-        width: 150,
-        padding: '12px',
-        border: canForm ? `2px solid ${color}` : '2px dashed rgba(148, 163, 184, 0.5)',
-        borderRadius: 12,
-        background: canForm ? `${color}10` : 'rgba(248, 250, 252, 0.8)',
+        position: 'relative',
+        padding: '12px 16px',
+        border: `2px dashed ${color}`,
+        borderRadius: 8,
+        background: `${color}08`,
         cursor: canForm && !isAutoMode ? 'pointer' : 'default',
-        transition: 'all 0.3s ease',
+        animation: canForm ? 'complexPulse 2s ease-in-out infinite' : undefined,
       }}
       onClick={() => canForm && !isAutoMode && onForm()}
     >
-      <div style={{ textAlign: 'center', marginBottom: 8 }}>
-        <div style={{ color: canForm ? color : '#94A3B8', fontSize: 11, fontWeight: 700 }}>
-          {name}
-        </div>
-        {subtitle && (
-          <div style={{ color: '#94A3B8', fontSize: 8 }}>{subtitle}</div>
-        )}
+      {/* Label */}
+      <div
+        style={{
+          position: 'absolute',
+          top: -10,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          padding: '2px 8px',
+          background: '#FFFFFF',
+          border: `1px solid ${color}`,
+          borderRadius: 4,
+          fontSize: 9,
+          color: color,
+          fontWeight: 600,
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {name}
       </div>
 
-      {/* Factor slots */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
+      {/* Factor slots - cofactor larger, enzyme smaller with Gla */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 12, alignItems: 'flex-start', marginTop: 8 }}>
+        {/* Cofactor - larger */}
         <div style={{ textAlign: 'center' }}>
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 8,
-              border: `2px ${cofactor.docked ? 'solid' : 'dashed'} ${cofactor.docked ? color : '#CBD5E1'}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: cofactor.docked ? `${color}20` : 'transparent',
-            }}
-          >
-            {cofactor.docked && <FactorTokenNew factorId={cofactor.id} isActive={true} enableHover={false} />}
+          <div style={{ transform: cofactor.docked ? 'scale(1.2)' : 'scale(1)', opacity: cofactor.docked ? 1 : 0.3 }}>
+            <FactorTokenNew factorId={cofactor.id} isActive={cofactor.docked} enableHover={false} />
           </div>
-          <div style={{ fontSize: 8, color: '#64748B', marginTop: 2 }}>{cofactor.id}</div>
+          <div style={{ fontSize: 8, color: '#64748B', marginTop: 4 }}>{cofactor.id}</div>
         </div>
-        <div style={{ color: '#CBD5E1', alignSelf: 'center' }}>+</div>
+        <div style={{ color: '#94A3B8', fontSize: 14, fontWeight: 600, marginTop: 12 }}>+</div>
+        {/* Enzyme - smaller with Gla domain */}
         <div style={{ textAlign: 'center' }}>
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 8,
-              border: `2px ${enzyme.docked ? 'solid' : 'dashed'} ${enzyme.docked ? color : '#CBD5E1'}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: enzyme.docked ? `${color}20` : 'transparent',
-            }}
-          >
-            {enzyme.docked && <FactorTokenNew factorId={enzyme.id} isActive={true} enableHover={false} />}
+          <div style={{
+            transform: enzyme.docked ? 'scale(0.9)' : 'scale(1)',
+            opacity: enzyme.docked ? 1 : enzymeAwaiting ? 0.5 : 0.3,
+            animation: enzymeAwaiting ? 'receivingPulse 1.5s ease-in-out infinite' : undefined,
+          }}>
+            <FactorTokenNew factorId={enzyme.id} isActive={enzyme.docked} enableHover={false} />
           </div>
-          <div style={{ fontSize: 8, color: '#64748B', marginTop: 2 }}>{enzyme.id}</div>
+          {/* Gla domain visualization */}
+          <svg width="20" height="24" style={{ marginTop: -2 }}>
+            <path
+              d="M10 0 Q 5 6, 10 12 Q 15 18, 10 24"
+              stroke="#1E293B"
+              strokeWidth="1.5"
+              fill="none"
+              opacity={enzyme.docked ? 1 : 0.3}
+            />
+          </svg>
+          <div style={{ fontSize: 8, color: enzymeAwaiting ? '#F59E0B' : '#64748B', fontWeight: enzymeAwaiting ? 600 : 400 }}>
+            {enzyme.id}
+            {enzymeAwaiting && <span style={{ fontSize: 7, display: 'block' }}>în drum...</span>}
+          </div>
         </div>
       </div>
 
@@ -687,67 +622,82 @@ function TenaseComplex({
     <div
       style={{
         position: 'relative',
-        padding: '16px 20px',
-        background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%)',
-        border: '2px solid #06B6D4',
-        borderRadius: 16,
-        boxShadow: isProducing ? '0 0 20px rgba(6, 182, 212, 0.4)' : 'none',
+        padding: '16px 20px 24px',
+        border: '2px dashed #06B6D4',
+        borderRadius: 8,
+        background: 'rgba(6, 182, 212, 0.05)',
+        animation: isProducing ? 'complexPulse 2s ease-in-out infinite' : undefined,
       }}
     >
       {/* Label */}
       <div
         style={{
           position: 'absolute',
-          top: -12,
+          top: -10,
           left: '50%',
           transform: 'translateX(-50%)',
-          padding: '4px 12px',
-          background: 'linear-gradient(135deg, #06B6D4 0%, #0891B2 100%)',
+          padding: '2px 8px',
+          background: '#FFFFFF',
+          border: '1px solid #06B6D4',
           borderRadius: 4,
-          color: '#FFFFFF',
-          fontSize: 10,
-          fontWeight: 700,
-        }}
-      >
-        TENASE
-      </div>
-
-      {/* Cofactor + Enzyme arrangement (cofactor on top, larger) */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-        {/* VIIIa - Cofactor (larger, on top) */}
-        <div style={{ transform: 'scale(1.1)' }}>
-          <FactorTokenNew factorId="FVIIIa" isActive={true} enableHover={false} />
-        </div>
-        {/* IXa - Enzyme (smaller, below) */}
-        <div style={{ transform: 'scale(0.9)' }}>
-          <FactorTokenNew factorId="FIXa" isActive={true} enableHover={false} />
-        </div>
-      </div>
-
-      {/* Reaction equation */}
-      <div
-        style={{
-          marginTop: 8,
-          padding: '4px 8px',
-          background: 'rgba(255, 255, 255, 0.9)',
-          borderRadius: 4,
-          textAlign: 'center',
-          fontSize: 10,
+          fontSize: 9,
+          color: '#06B6D4',
           fontWeight: 600,
         }}
       >
-        <span style={{ color: '#15803D' }}>FX</span>
-        <span style={{ color: '#64748B' }}> → </span>
-        <span style={{ color: '#22C55E' }}>FXa</span>
+        Tenase
+      </div>
+
+      {/* Cofactor (FVIIIa - larger) + Enzyme (FIXa - smaller with Gla) */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginTop: 8 }}>
+        {/* FVIIIa - Cofactor (larger, no Gla domain) */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ transform: 'scale(1.2)' }}>
+            <FactorTokenNew factorId="FVIIIa" isActive={true} enableHover={false} />
+          </div>
+          <div style={{ fontSize: 7, color: '#64748B', marginTop: 4 }}>Gla</div>
+        </div>
+
+        {/* FIXa - Enzyme (smaller, has Gla domain) */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ transform: 'scale(0.9)' }}>
+            <FactorTokenNew factorId="FIXa" isActive={true} enableHover={false} />
+          </div>
+          {/* Gla domain visualization */}
+          <svg width="20" height="28" style={{ marginTop: -2 }}>
+            <path
+              d="M10 0 Q 5 8, 10 14 Q 15 20, 10 28"
+              stroke="#1E293B"
+              strokeWidth="2"
+              fill="none"
+            />
+            <text x="16" y="14" fontSize="7" fill="#1E293B" fontWeight="600">Gla</text>
+          </svg>
+        </div>
+      </div>
+
+      {/* Ca²⁺ ions at bottom */}
+      <div style={{
+        position: 'absolute',
+        bottom: 4,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        display: 'flex',
+        gap: 6,
+        alignItems: 'center',
+      }}>
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#F59E0B' }} />
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22C55E' }} />
+        <span style={{ fontSize: 7, color: '#F59E0B', fontWeight: 600 }}>Ca²⁺</span>
       </div>
 
       {/* Produce button */}
       {isProducing && !isAutoMode && (
         <div
           style={{
-            marginTop: 8,
-            padding: '6px 12px',
-            background: '#22C55E',
+            marginTop: 12,
+            padding: '4px 10px',
+            background: '#06B6D4',
             borderRadius: 4,
             textAlign: 'center',
             color: '#FFFFFF',
@@ -760,23 +710,6 @@ function TenaseComplex({
           PRODUCE FXa
         </div>
       )}
-
-      {/* Amplification indicator */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: -8,
-          right: -8,
-          padding: '2px 6px',
-          background: '#06B6D4',
-          borderRadius: 4,
-          color: '#FFFFFF',
-          fontSize: 8,
-          fontWeight: 700,
-        }}
-      >
-        ×200k
-      </div>
     </div>
   );
 }
@@ -794,110 +727,94 @@ function ProthrombinaseComplex({
     <div
       style={{
         position: 'relative',
-        padding: '16px 20px',
-        background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.15) 0%, rgba(249, 115, 22, 0.15) 100%)',
-        border: '2px solid #DC2626',
-        borderRadius: 16,
-        boxShadow: isProducing ? '0 0 20px rgba(220, 38, 38, 0.4)' : 'none',
-        animation: isProducing ? 'complexPulse 1.5s ease-in-out infinite' : 'none',
+        padding: '16px 20px 24px',
+        border: '2px dashed #3B82F6',
+        borderRadius: 8,
+        background: 'rgba(59, 130, 246, 0.05)',
+        animation: isProducing ? 'complexPulse 2s ease-in-out infinite' : undefined,
       }}
     >
       {/* Label */}
       <div
         style={{
           position: 'absolute',
-          top: -12,
+          top: -10,
           left: '50%',
           transform: 'translateX(-50%)',
-          padding: '4px 12px',
-          background: 'linear-gradient(135deg, #DC2626 0%, #991B1B 100%)',
+          padding: '2px 8px',
+          background: '#FFFFFF',
+          border: '1px solid #3B82F6',
           borderRadius: 4,
-          color: '#FFFFFF',
-          fontSize: 10,
-          fontWeight: 700,
+          fontSize: 9,
+          color: '#3B82F6',
+          fontWeight: 600,
           whiteSpace: 'nowrap',
         }}
       >
-        PROTROMBINAZĂ
+        Prothrombinase
       </div>
 
-      {/* Cofactor + Enzyme arrangement */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-        {/* Va - Cofactor (larger, on top) */}
-        <div style={{ transform: 'scale(1.1)' }}>
-          <FactorTokenNew factorId="FVa" isActive={true} enableHover={false} />
+      {/* Cofactor (FVa - larger) + Enzyme (FXa - smaller with Gla) */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginTop: 8 }}>
+        {/* FVa - Cofactor (larger, no Gla domain) */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ transform: 'scale(1.2)' }}>
+            <FactorTokenNew factorId="FVa" isActive={true} enableHover={false} />
+          </div>
         </div>
-        {/* Xa - Enzyme (smaller, below) */}
-        <div style={{ transform: 'scale(0.9)' }}>
-          <FactorTokenNew factorId="FXa" isActive={true} enableHover={false} />
+
+        {/* FXa - Enzyme (smaller, has Gla domain) */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ transform: 'scale(0.9)' }}>
+            <FactorTokenNew factorId="FXa" isActive={true} enableHover={false} />
+          </div>
+          {/* Gla domain visualization */}
+          <svg width="20" height="28" style={{ marginTop: -2 }}>
+            <path
+              d="M10 0 Q 5 8, 10 14 Q 15 20, 10 28"
+              stroke="#1E293B"
+              strokeWidth="2"
+              fill="none"
+            />
+            <text x="16" y="14" fontSize="7" fill="#1E293B" fontWeight="600">Gla</text>
+          </svg>
         </div>
       </div>
 
-      {/* Reaction equation */}
-      <div
-        style={{
-          marginTop: 8,
-          padding: '4px 8px',
-          background: 'rgba(255, 255, 255, 0.9)',
-          borderRadius: 4,
-          textAlign: 'center',
-          fontSize: 10,
-          fontWeight: 600,
-        }}
-      >
-        <span style={{ color: '#7C2D12' }}>FII</span>
-        <span style={{ color: '#64748B' }}> → </span>
-        <span style={{ color: '#DC2626' }}>FIIa</span>
+      {/* Ca²⁺ ions at bottom */}
+      <div style={{
+        position: 'absolute',
+        bottom: 4,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        display: 'flex',
+        gap: 6,
+        alignItems: 'center',
+      }}>
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#F59E0B' }} />
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22C55E' }} />
+        <span style={{ fontSize: 7, color: '#F59E0B', fontWeight: 600 }}>Ca²⁺</span>
       </div>
 
       {/* Trigger burst button */}
       {isProducing && !isAutoMode && (
         <div
           style={{
-            marginTop: 8,
-            padding: '6px 12px',
-            background: '#DC2626',
+            marginTop: 12,
+            padding: '4px 10px',
+            background: '#3B82F6',
             borderRadius: 4,
             textAlign: 'center',
             color: '#FFFFFF',
             fontSize: 9,
             fontWeight: 600,
             cursor: 'pointer',
-            animation: 'buttonPulse 1s ease-in-out infinite',
           }}
           onClick={onTriggerBurst}
         >
           THROMBIN BURST
         </div>
       )}
-
-      {/* Amplification indicator */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: -8,
-          right: -8,
-          padding: '2px 6px',
-          background: '#DC2626',
-          borderRadius: 4,
-          color: '#FFFFFF',
-          fontSize: 8,
-          fontWeight: 700,
-        }}
-      >
-        ×300k
-      </div>
-
-      <style>{`
-        @keyframes complexPulse {
-          0%, 100% { box-shadow: 0 0 20px rgba(220, 38, 38, 0.4); }
-          50% { box-shadow: 0 0 35px rgba(220, 38, 38, 0.6); }
-        }
-        @keyframes buttonPulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-        }
-      `}</style>
     </div>
   );
 }

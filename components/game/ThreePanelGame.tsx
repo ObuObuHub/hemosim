@@ -40,6 +40,7 @@ export function ThreePanelGame({ className = '' }: ThreePanelGameProps): React.R
     activatePlatelet,
     dockFVa,
     dockFVIIIa,
+    fixaAtAmplification,
     parThrombinBind,
     parCleave,
     parActivate,
@@ -125,20 +126,20 @@ export function ThreePanelGame({ className = '' }: ThreePanelGameProps): React.R
           break;
         case 'FIX':
           dockFIX();
-          // FIXa diffuses to propagation (per Hoffman-Monroe model)
+          // FIXa goes to Amplification first (docks at border), then user clicks to send to Propagation
           setTimeout(() => {
-            fixaArrives();
-            // Add flow arrow
+            fixaAtAmplification();
+            // Add flow arrow from Initiation to Amplification
             addFlow({
-              id: 'fixa-flow',
+              id: 'fixa-to-amp-flow',
               from: 'initiation',
-              to: 'propagation',
+              to: 'amplification',
               factor: 'FIXa',
               progress: 1,
               isActive: true,
-              // FIXa particle: blue, travels to platelet surface
+              // FIXa particle: blue, travels to amplification first
               showTravelingParticle: true,
-              particleSize: 8, // Larger for visibility
+              particleSize: 8,
               travelDuration: '1.5s',
               particleKey: Date.now(),
             });
@@ -174,8 +175,26 @@ export function ThreePanelGame({ className = '' }: ThreePanelGameProps): React.R
           break;
       }
     },
-    [dockTFVIIa, dockFIX, dockFX, dockFV, dockFII, produceThrombin, fixaArrives, addFlow]
+    [dockTFVIIa, dockFIX, dockFX, dockFV, dockFII, produceThrombin, fixaAtAmplification, addFlow]
   );
+
+  // Handle FIXa click in Amplification to send it to Propagation
+  const handleFIXaToPropagate = useCallback((): void => {
+    fixaArrives();
+    // Add flow arrow from Amplification to Propagation
+    addFlow({
+      id: 'fixa-to-prop-flow',
+      from: 'amplification',
+      to: 'propagation',
+      factor: 'FIXa',
+      progress: 1,
+      isActive: true,
+      showTravelingParticle: true,
+      particleSize: 8,
+      travelDuration: '1.2s',
+      particleKey: Date.now(),
+    });
+  }, [fixaArrives, addFlow]);
 
   // Handle factor activation in amplification phase
   const handleActivateFactor = useCallback(
@@ -403,11 +422,13 @@ export function ThreePanelGame({ className = '' }: ThreePanelGameProps): React.R
             height={panelDimensions.amplification.height}
             state={state.amplification}
             thrombinAvailable={thrombinAvailable}
+            fixaInPropagation={state.propagation.fixaArrived}
             onActivateFactor={handleActivateFactor}
             onDockCofactor={handleDockCofactor}
             onPARThrombinBind={parThrombinBind}
             onPARCleave={parCleave}
             onPARActivate={parActivate}
+            onFIXaClick={handleFIXaToPropagate}
           />
         </div>
       )}

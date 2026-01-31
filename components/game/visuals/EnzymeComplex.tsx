@@ -87,14 +87,37 @@ export function EnzymeComplex({
     { x: 20, y: 35 },
   ];
 
-  // Catalytic cycle animation state
+  // Enhanced catalytic cycle animation state
+  // 0: Substrate approaching, 1: Binding, 2: Catalysis/Transition, 3: Product release
   const [cyclePhase, setCyclePhase] = useState(0);
+  const [substratePosition, setSubstratePosition] = useState({ x: -50, y: 0 });
 
   useEffect(() => {
     if (isProducing) {
       const interval = setInterval(() => {
-        setCyclePhase((prev) => (prev + 1) % 4);
-      }, 400);
+        setCyclePhase((prev) => {
+          const next = (prev + 1) % 5;
+          // Update substrate position based on phase
+          switch (next) {
+            case 0: // Substrate approaches from left
+              setSubstratePosition({ x: -40, y: 0 });
+              break;
+            case 1: // Substrate enters binding pocket
+              setSubstratePosition({ x: -15, y: 0 });
+              break;
+            case 2: // Substrate bound in active site
+              setSubstratePosition({ x: 0, y: 0 });
+              break;
+            case 3: // Catalysis - conformational change
+              setSubstratePosition({ x: 0, y: 0 });
+              break;
+            case 4: // Product exits to right
+              setSubstratePosition({ x: 30, y: 0 });
+              break;
+          }
+          return next;
+        });
+      }, 350);
       return () => clearInterval(interval);
     }
   }, [isProducing]);
@@ -245,38 +268,190 @@ export function EnzymeComplex({
               }}
             />
 
-            {/* Catalytic activity indicator - substrate conversion */}
+            {/* Enhanced Catalytic Cycle Visualization */}
             {isProducing && (
               <>
-                {/* Energy pulse from catalysis */}
-                <circle
+                {/* Active site pocket outline */}
+                <ellipse
                   cx={70}
                   cy={35}
-                  r={3 + cyclePhase * 2}
+                  rx={14}
+                  ry={10}
                   fill="none"
                   stroke={config.labelColor}
                   strokeWidth={1.5}
-                  opacity={1 - cyclePhase * 0.25}
+                  strokeDasharray={cyclePhase === 2 || cyclePhase === 3 ? 'none' : '4,2'}
+                  opacity={0.6}
+                  style={{
+                    animation: cyclePhase === 2 || cyclePhase === 3 ? 'activeSitePulse 0.4s ease-in-out infinite' : 'none',
+                  }}
                 />
-                {/* Substrate in active site (center) - shows conversion happening */}
-                <g transform={`translate(70, 35)`}>
-                  <circle
-                    r={8}
-                    fill={type === 'tenase' ? '#15803D' : '#7C2D12'}
-                    opacity={cyclePhase < 2 ? 0.9 : 0.4}
-                    style={{ filter: `drop-shadow(0 0 4px ${type === 'tenase' ? 'rgba(21, 128, 61, 0.8)' : 'rgba(124, 45, 18, 0.8)'})` }}
-                  />
-                  <text
-                    x={0}
-                    y={3}
-                    textAnchor="middle"
-                    fontSize={6}
-                    fontWeight={700}
-                    fill="#FFFFFF"
-                  >
-                    {cyclePhase < 2 ? (type === 'tenase' ? 'X' : 'II') : (type === 'tenase' ? 'Xa' : 'IIa')}
-                  </text>
+
+                {/* Catalytic energy burst during transition state */}
+                {cyclePhase === 3 && (
+                  <>
+                    <circle
+                      cx={70}
+                      cy={35}
+                      r={20}
+                      fill="none"
+                      stroke={config.labelColor}
+                      strokeWidth={2}
+                      opacity={0.4}
+                      style={{ animation: 'catalyticBurst 0.35s ease-out forwards' }}
+                    />
+                    <circle
+                      cx={70}
+                      cy={35}
+                      r={12}
+                      fill="none"
+                      stroke={config.labelColor}
+                      strokeWidth={1.5}
+                      opacity={0.6}
+                      style={{ animation: 'catalyticBurst 0.35s ease-out 0.1s forwards' }}
+                    />
+                  </>
+                )}
+
+                {/* Substrate/Product token with position animation */}
+                <g
+                  transform={`translate(${70 + substratePosition.x}, ${35 + substratePosition.y})`}
+                  style={{
+                    transition: 'transform 0.3s ease-in-out',
+                  }}
+                >
+                  {/* Substrate approaching (phases 0-1) */}
+                  {cyclePhase <= 1 && (
+                    <>
+                      <circle
+                        r={9}
+                        fill={type === 'tenase' ? '#15803D' : '#7C2D12'}
+                        stroke={type === 'tenase' ? '#22C55E' : '#DC2626'}
+                        strokeWidth={1.5}
+                        style={{
+                          filter: `drop-shadow(0 0 4px ${type === 'tenase' ? 'rgba(21, 128, 61, 0.6)' : 'rgba(124, 45, 18, 0.6)'})`,
+                        }}
+                      />
+                      <text
+                        x={0}
+                        y={3}
+                        textAnchor="middle"
+                        fontSize={7}
+                        fontWeight={700}
+                        fill="#FFFFFF"
+                      >
+                        {type === 'tenase' ? 'X' : 'II'}
+                      </text>
+                    </>
+                  )}
+
+                  {/* Bound substrate (phase 2) - conformational change */}
+                  {cyclePhase === 2 && (
+                    <>
+                      <ellipse
+                        rx={10}
+                        ry={8}
+                        fill={type === 'tenase' ? '#15803D' : '#7C2D12'}
+                        stroke={config.labelColor}
+                        strokeWidth={2}
+                        style={{
+                          animation: 'substrateConform 0.35s ease-in-out infinite',
+                          filter: `drop-shadow(0 0 6px ${config.glowColor})`,
+                        }}
+                      />
+                      <text
+                        x={0}
+                        y={3}
+                        textAnchor="middle"
+                        fontSize={7}
+                        fontWeight={700}
+                        fill="#FFFFFF"
+                      >
+                        {type === 'tenase' ? 'X' : 'II'}
+                      </text>
+                      {/* Cleavage site indicator */}
+                      <line
+                        x1={-6}
+                        y1={0}
+                        x2={6}
+                        y2={0}
+                        stroke="#FFFFFF"
+                        strokeWidth={2}
+                        strokeDasharray="2,2"
+                        opacity={0.8}
+                        style={{ animation: 'cleavagePulse 0.3s ease-in-out infinite' }}
+                      />
+                    </>
+                  )}
+
+                  {/* Transition state (phase 3) - cleavage happening */}
+                  {cyclePhase === 3 && (
+                    <>
+                      <ellipse
+                        rx={12}
+                        ry={6}
+                        fill={type === 'tenase' ? '#4ADE80' : '#EF4444'}
+                        stroke="#FFFFFF"
+                        strokeWidth={2}
+                        style={{
+                          filter: `drop-shadow(0 0 10px ${config.glowColor})`,
+                        }}
+                      />
+                      <text
+                        x={0}
+                        y={3}
+                        textAnchor="middle"
+                        fontSize={7}
+                        fontWeight={700}
+                        fill="#FFFFFF"
+                      >
+                        {type === 'tenase' ? '✂️Xa' : '✂️FIIa'}
+                      </text>
+                    </>
+                  )}
+
+                  {/* Product release (phase 4) */}
+                  {cyclePhase === 4 && (
+                    <>
+                      <circle
+                        r={9}
+                        fill={type === 'tenase' ? '#4ADE80' : '#EF4444'}
+                        stroke="#FFFFFF"
+                        strokeWidth={1.5}
+                        style={{
+                          animation: 'productExit 0.35s ease-out forwards',
+                          filter: `drop-shadow(0 0 8px ${config.glowColor})`,
+                        }}
+                      />
+                      <text
+                        x={0}
+                        y={3}
+                        textAnchor="middle"
+                        fontSize={7}
+                        fontWeight={700}
+                        fill="#FFFFFF"
+                      >
+                        {type === 'tenase' ? 'Xa' : 'FIIa'}
+                      </text>
+                    </>
+                  )}
                 </g>
+
+                {/* Substrate entry arrow */}
+                {cyclePhase === 0 && (
+                  <g opacity={0.7}>
+                    <line x1={25} y1={35} x2={40} y2={35} stroke={type === 'tenase' ? '#22C55E' : '#DC2626'} strokeWidth={2} />
+                    <polygon points="40,32 46,35 40,38" fill={type === 'tenase' ? '#22C55E' : '#DC2626'} />
+                  </g>
+                )}
+
+                {/* Product exit arrow */}
+                {cyclePhase === 4 && (
+                  <g opacity={0.7}>
+                    <line x1={100} y1={35} x2={115} y2={35} stroke={config.labelColor} strokeWidth={2} />
+                    <polygon points="115,32 121,35 115,38" fill={config.labelColor} />
+                  </g>
+                )}
               </>
             )}
           </svg>
@@ -578,6 +753,57 @@ export function EnzymeComplex({
           }
           50% {
             filter: brightness(1.3) saturate(1.2);
+          }
+        }
+        @keyframes activeSitePulse {
+          0%, 100% {
+            stroke-width: 1.5;
+            opacity: 0.6;
+          }
+          50% {
+            stroke-width: 2.5;
+            opacity: 0.9;
+          }
+        }
+        @keyframes substrateConform {
+          0%, 100% {
+            rx: 10;
+            ry: 8;
+          }
+          50% {
+            rx: 8;
+            ry: 10;
+          }
+        }
+        @keyframes cleavagePulse {
+          0%, 100% {
+            opacity: 0.5;
+            stroke-dashoffset: 0;
+          }
+          50% {
+            opacity: 1;
+            stroke-dashoffset: 4;
+          }
+        }
+        @keyframes catalyticBurst {
+          0% {
+            transform: scale(0.5);
+            opacity: 0.8;
+          }
+          100% {
+            transform: scale(1.5);
+            opacity: 0;
+          }
+        }
+        @keyframes productExit {
+          0% {
+            transform: scale(1);
+          }
+          50% {
+            transform: scale(1.2);
+          }
+          100% {
+            transform: scale(1);
           }
         }
       `}</style>

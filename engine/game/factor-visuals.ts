@@ -67,7 +67,18 @@ export const FACTOR_VISUALS: Record<string, FactorVisual> = {
     activeColor: '#DC2626',   // Bright red (Thrombin/IIa - matches reference)
     width: 60,
     height: 45,
-    hasGlaDomain: true,
+    hasGlaDomain: true, // Prothrombin has Gla domain for membrane binding
+  },
+  // Thrombin (FIIa) - cleaved from prothrombin, loses Gla domain
+  FIIa: {
+    factorId: 'FIIa',
+    inactiveShape: 'enzyme',
+    activeShape: 'enzyme',
+    inactiveColor: '#DC2626',
+    activeColor: '#DC2626',   // Bright red (Thrombin)
+    width: 60,
+    height: 45,
+    hasGlaDomain: false, // Thrombin loses Gla domain when cleaved from prothrombin
   },
   // Cofactors - larger shapes (non-enzymatic, accelerate reactions)
   FV: {
@@ -125,9 +136,10 @@ export const FACTOR_VISUALS: Record<string, FactorVisual> = {
  * Scales dimensions for mobile devices automatically
  */
 export function getFactorVisual(factorId: string): FactorVisual | null {
-  // Handle activated forms (FIXa, FXa, etc.)
+  // Check exact factorId first (e.g., FIIa has its own entry without Gla domain)
+  // Then fall back to base form (e.g., FIXa uses FIX's definition)
   const baseId = factorId.replace(/a$/, '');
-  const visual = FACTOR_VISUALS[baseId] ?? FACTOR_VISUALS[factorId] ?? null;
+  const visual = FACTOR_VISUALS[factorId] ?? FACTOR_VISUALS[baseId] ?? null;
 
   if (!visual) return null;
 

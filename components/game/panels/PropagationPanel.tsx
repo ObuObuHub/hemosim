@@ -186,6 +186,45 @@ export function PropagationPanel({
         </div>
       )}
 
+      {/* FIXa Token arriving at top border */}
+      {state.fixaArrived && !state.tenaseFormed && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 8,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 4,
+            animation: 'factorArriveFromTop 0.8s ease-out',
+            zIndex: 25,
+          }}
+        >
+          <FactorTokenNew
+            factorId="FIXa"
+            isActive
+            style={{
+              filter: 'drop-shadow(0 0 12px rgba(6, 182, 212, 0.8))',
+            }}
+          />
+          <div
+            style={{
+              padding: '2px 8px',
+              background: 'rgba(6, 182, 212, 0.9)',
+              borderRadius: 4,
+              fontSize: 8,
+              fontWeight: 700,
+              color: '#FFFFFF',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            FIXa din Inițiere
+          </div>
+        </div>
+      )}
+
       {/* PRE-DOCKED COFACTORS on membrane (visible from amplification) */}
       {cofactorsDocked && !state.tenaseFormed && (
         <DockedCofactorOnMembrane
@@ -532,6 +571,20 @@ export function PropagationPanel({
 
       {/* CSS Animations */}
       <style>{`
+        @keyframes factorArriveFromTop {
+          0% {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-30px);
+          }
+          60% {
+            opacity: 1;
+            transform: translateX(-50%) translateY(5px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+          }
+        }
         @keyframes fixaArriving {
           0%, 100% { box-shadow: 0 4px 15px rgba(6, 182, 212, 0.5); }
           50% { box-shadow: 0 4px 25px rgba(6, 182, 212, 0.8); }

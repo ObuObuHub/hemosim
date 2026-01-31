@@ -33,7 +33,7 @@ export function PhospholipidMembrane({
 }: PhospholipidMembraneProps): React.ReactElement {
   // Tissue background colors - enhanced contrast for hospital clarity
   const tissueColor = variant === 'fibroblast'
-    ? { top: '#E0A5A5', bottom: '#C89090', label: 'Celulă TF-bearing' }  // Cleaner pink tissue
+    ? { top: '#E0A5A5', bottom: '#C89090', label: 'Celulă FT' }  // Cleaner pink tissue
     : { top: '#FECDD3', bottom: '#FDA4AF', label: 'Trombocit activat' };  // Cleaner rose for platelets
 
   // Phospholipid head color - GOLDEN YELLOW like textbook (phosphatidylcholine - PC)
@@ -226,20 +226,6 @@ export function PhospholipidMembrane({
         fill="#FFFBEB"
         opacity={0.4}
       />
-
-      {/* Membrane label for clarity */}
-      <text
-        x={width - 8}
-        y={bilayerTop + tailLength + 2}
-        textAnchor="end"
-        fontSize={7}
-        fontWeight={600}
-        fill={variant === 'fibroblast' ? '#9F1239' : '#BE123C'}
-        opacity={0.8}
-        style={{ fontFamily: 'system-ui, sans-serif' }}
-      >
-        {variant === 'fibroblast' ? 'MEMBRANA' : 'SUPRAFAȚĂ'}
-      </text>
 
       {/* Membrane fluidity animation - subtle wave effect */}
       <rect

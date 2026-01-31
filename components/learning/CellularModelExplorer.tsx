@@ -751,47 +751,16 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
                 ['--start-y' as string]: `${frameDimensions.initiation.y + (frameDimensions.initiation.height * 0.72) * 0.45 - 18}px`,
               }}
             >
-              <div
+              {/* FIIa - uses FactorTokenNew for consistent design */}
+              <FactorTokenNew
+                factorId="FIIa"
+                isActive={true}
+                enableHover={false}
+                hideGlaDomain={true}
                 style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 4,
-                  filter: 'drop-shadow(0 4px 16px rgba(220, 38, 38, 0.6))',
+                  filter: 'drop-shadow(0 4px 12px rgba(220, 38, 38, 0.5))',
                 }}
-              >
-                <div
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #DC2626 0%, #991B1B 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: '#FFFFFF',
-                    border: '3px solid #FEE2E2',
-                    boxShadow: '0 4px 16px rgba(220, 38, 38, 0.5)',
-                  }}
-                >
-                  IIa
-                </div>
-                <div
-                  style={{
-                    padding: '3px 8px',
-                    background: 'linear-gradient(135deg, #DC2626 0%, #991B1B 100%)',
-                    borderRadius: 5,
-                    fontSize: 8,
-                    fontWeight: 700,
-                    color: '#FFFFFF',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  Trombină → Plt
-                </div>
-              </div>
+              />
             </div>
           </div>
         )}
