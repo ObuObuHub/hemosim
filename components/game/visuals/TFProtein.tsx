@@ -130,7 +130,7 @@ export function TFProtein({
                 </text>
               </svg>
 
-              {/* Gla domain with Ca²⁺ label */}
+              {/* Gla domain with labels */}
               <svg
                 width={50}
                 height={48}
@@ -148,9 +148,13 @@ export function TFProtein({
                   fill="none"
                   strokeLinecap="round"
                 />
-                {/* Combined label */}
-                <text x={24} y={22} fontSize={7} fontWeight={600} fill="#374151" style={{ fontFamily: 'system-ui, sans-serif' }}>
-                  Gla+Ca²⁺
+                {/* Gla label - upper right */}
+                <text x={20} y={10} fontSize={7} fontWeight={600} fill="#374151" style={{ fontFamily: 'system-ui, sans-serif' }}>
+                  Gla
+                </text>
+                {/* Ca²⁺ label - bottom left */}
+                <text x={-6} y={38} fontSize={6} fill="#64748B" style={{ fontFamily: 'system-ui, sans-serif' }}>
+                  Ca²⁺
                 </text>
               </svg>
             </div>

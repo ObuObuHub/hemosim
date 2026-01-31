@@ -684,7 +684,7 @@ export function SparkFrame({
                   </text>
                 </svg>
 
-                {/* Gla domain + Ca²⁺ - extends to membrane */}
+                {/* Gla domain with labels */}
                 <svg
                   width={35}
                   height={50}
@@ -702,11 +702,13 @@ export function SparkFrame({
                     fill="none"
                     strokeLinecap="round"
                   />
-                  <text x={22} y={20} fontSize={8} fontWeight={600} fill="#374151">
+                  {/* Gla label - upper right */}
+                  <text x={20} y={10} fontSize={7} fontWeight={600} fill="#374151">
                     Gla
                   </text>
-                  <text x={20} y={30} fontSize={7} fill="#64748B">
-                    + Ca²⁺
+                  {/* Ca²⁺ label - bottom left */}
+                  <text x={-6} y={42} fontSize={6} fill="#64748B">
+                    Ca²⁺
                   </text>
                 </svg>
               </div>

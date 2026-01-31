@@ -50,16 +50,26 @@ export function GlaDomain({
         fill="none"
       />
 
-      {/* Gla label */}
+      {/* Gla label - upper right */}
       <text
         x={cx + 6}
-        y={height * 0.5}
+        y={height * 0.25}
         fontSize={7}
         fontWeight={600}
         fill="#1E293B"
         style={{ fontFamily: 'system-ui, sans-serif' }}
       >
         Gla
+      </text>
+      {/* Ca²⁺ label - bottom left */}
+      <text
+        x={cx - 14}
+        y={height * 0.8}
+        fontSize={6}
+        fill="#64748B"
+        style={{ fontFamily: 'system-ui, sans-serif' }}
+      >
+        Ca²⁺
       </text>
     </svg>
   );
