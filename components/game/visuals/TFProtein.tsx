@@ -60,11 +60,13 @@ export function TFProtein({
               transform: 'translateX(-50%)',
               padding: '3px 10px',
               background: '#16A34A',
-              borderRadius: 5,
+              borderRadius: 4,
               fontSize: 9,
               color: '#FFFFFF',
               fontWeight: 700,
+              fontFamily: 'system-ui, sans-serif',
               whiteSpace: 'nowrap',
+              letterSpacing: 0.3,
             }}
           >
             TF:VIIa
@@ -85,8 +87,9 @@ export function TFProtein({
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: '#FFFFFF',
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: 700,
+                  fontFamily: 'system-ui, sans-serif',
                 }}
               >
                 FT
@@ -212,9 +215,10 @@ export function TFProtein({
         x={tfWidth / 2}
         y={24}
         textAnchor="middle"
-        fontSize={13}
+        fontSize={11}
         fontWeight={700}
         fill="#FFFFFF"
+        style={{ fontFamily: 'system-ui, sans-serif' }}
       >
         FT
       </text>

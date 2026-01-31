@@ -556,6 +556,7 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
           padding: '8px 16px',
           fontSize: 12,
           fontWeight: 600,
+          fontFamily: 'system-ui, sans-serif',
         }}
         onFocus={(e) => {
           e.currentTarget.style.left = '8px';
@@ -644,10 +645,10 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
                 }}
               />
               <div>
-                <div style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 700 }}>
+                <div style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 700, fontFamily: 'system-ui, sans-serif' }}>
                   MOD DEMONSTRAȚIE
                 </div>
-                <div style={{ color: '#D1FAE5', fontSize: 9 }}>
+                <div style={{ color: '#D1FAE5', fontSize: 9, fontFamily: 'system-ui, sans-serif' }}>
                   Pas {effectiveStepIndex + 1} / {cascadeSteps.length}
                 </div>
               </div>

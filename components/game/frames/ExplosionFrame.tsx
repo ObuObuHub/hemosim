@@ -242,6 +242,7 @@ export function ExplosionFrame({
             color: '#FFFFFF',
             fontSize: 12,
             fontWeight: 700,
+            fontFamily: 'system-ui, sans-serif',
             textShadow: '0 1px 3px rgba(0,0,0,0.6)',
             textAlign: 'center',
           }}
@@ -312,13 +313,13 @@ export function ExplosionFrame({
                   strokeWidth={3}
                   filter="url(#plateletGlow)"
                 />
-                <text x="100" y="45" textAnchor="middle" fontSize="12" fontWeight="600" fill="#64748B">
+                <text x="100" y="45" textAnchor="middle" fontSize="12" fontWeight="600" fill="#64748B" style={{ fontFamily: 'system-ui, sans-serif' }}>
                   Trombocit activat
                 </text>
-                <text x="100" y="60" textAnchor="middle" fontSize="8" fill="#94A3B8">
+                <text x="100" y="60" textAnchor="middle" fontSize="8" fill="#94A3B8" style={{ fontFamily: 'system-ui, sans-serif' }}>
                   Formare pseudopode
                 </text>
-                <text x="100" y="73" textAnchor="middle" fontSize="8" fill="#94A3B8">
+                <text x="100" y="73" textAnchor="middle" fontSize="8" fill="#94A3B8" style={{ fontFamily: 'system-ui, sans-serif' }}>
                   Expunere fosfatidilserină
                 </text>
               </svg>
@@ -338,7 +339,7 @@ export function ExplosionFrame({
                 boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
               }}
             >
-              <span style={{ fontSize: 14, color: '#64748B', fontWeight: 600 }}>
+              <span style={{ fontSize: 14, color: '#64748B', fontWeight: 600, fontFamily: 'system-ui, sans-serif' }}>
                 Trombocit inactiv
               </span>
             </div>
@@ -418,6 +419,7 @@ export function ExplosionFrame({
                   color: '#FFF',
                   fontSize: 12,
                   fontWeight: 600,
+                  fontFamily: 'system-ui, sans-serif',
                   cursor: 'pointer',
                 }}
               >
@@ -441,7 +443,7 @@ export function ExplosionFrame({
                 zIndex: 25,
               }}
             >
-              <div style={{ color: '#059669', fontSize: 11, fontWeight: 500 }}>
+              <div style={{ color: '#059669', fontSize: 11, fontWeight: 500, fontFamily: 'system-ui, sans-serif' }}>
                 Cross-linking în curs...
               </div>
             </div>
@@ -464,7 +466,7 @@ export function ExplosionFrame({
                 textAlign: 'center',
               }}
             >
-              <div style={{ color: '#FFFFFF', fontSize: 12, fontWeight: 700, letterSpacing: 0.5 }}>
+              <div style={{ color: '#FFFFFF', fontSize: 12, fontWeight: 700, fontFamily: 'system-ui, sans-serif', letterSpacing: 0.5 }}>
                 CHEAG STABIL
               </div>
             </div>

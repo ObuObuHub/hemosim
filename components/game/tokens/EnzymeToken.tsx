@@ -88,7 +88,7 @@ export function EnzymeToken({
         x={cx}
         y={cy + 5}
         textAnchor="middle"
-        fontSize={label.length > 4 ? 9 : 10}
+        fontSize={label.length > 5 ? 9 : 10}
         fontWeight={700}
         fill="#FFFFFF"
         style={{ fontFamily: 'system-ui, sans-serif' }}

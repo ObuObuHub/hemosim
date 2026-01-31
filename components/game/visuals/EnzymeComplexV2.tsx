@@ -70,10 +70,11 @@ export function EnzymeComplexV2({
             transform: 'translateX(-50%)',
             padding: '3px 10px',
             background: config.labelBg,
-            borderRadius: 5,
+            borderRadius: 4,
             fontSize: 9,
             color: '#FFFFFF',
             fontWeight: 700,
+            fontFamily: 'system-ui, sans-serif',
             whiteSpace: 'nowrap',
             letterSpacing: 0.3,
           }}
@@ -104,6 +105,7 @@ export function EnzymeComplexV2({
               color: '#FFFFFF',
               fontSize: 11,
               fontWeight: 700,
+              fontFamily: 'system-ui, sans-serif',
               opacity: isFormed ? 1 : 0.5,
               filter: isFormed ? 'none' : 'grayscale(40%)',
             }}
@@ -127,6 +129,7 @@ export function EnzymeComplexV2({
                 color: '#FFFFFF',
                 fontSize: 10,
                 fontWeight: 700,
+                fontFamily: 'system-ui, sans-serif',
                 position: 'relative',
                 opacity: isFormed ? 1 : 0.5,
                 filter: isFormed ? 'none' : 'grayscale(40%)',
@@ -291,6 +294,7 @@ export function EnzymeWithGla({
           color: '#FFFFFF',
           fontSize: 10,
           fontWeight: 700,
+          fontFamily: 'system-ui, sans-serif',
           position: 'relative',
           opacity: isActive ? 1 : 0.5,
         }}

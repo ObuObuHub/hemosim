@@ -67,10 +67,10 @@ export function InstructionBanner({
           ✓
         </div>
         <div>
-          <div style={{ color: '#FFFFFF', fontSize: 13, fontWeight: 700 }}>
+          <div style={{ color: '#FFFFFF', fontSize: 13, fontWeight: 700, fontFamily: 'system-ui, sans-serif' }}>
             CASCADĂ COMPLETĂ
           </div>
-          <div style={{ color: '#D1FAE5', fontSize: 10 }}>
+          <div style={{ color: '#D1FAE5', fontSize: 10, fontFamily: 'system-ui, sans-serif' }}>
             Toate cele {totalSteps} etape finalizate
           </div>
         </div>
@@ -141,6 +141,7 @@ export function InstructionBanner({
             style={{
               fontSize: 16,
               fontWeight: 800,
+              fontFamily: 'system-ui, sans-serif',
               color: phaseColor,
               lineHeight: 1,
             }}
@@ -153,6 +154,7 @@ export function InstructionBanner({
               color: '#94A3B8',
               marginTop: 2,
               fontWeight: 500,
+              fontFamily: 'system-ui, sans-serif',
             }}
           >
             / {totalSteps}
@@ -175,6 +177,7 @@ export function InstructionBanner({
           style={{
             fontSize: 9,
             fontWeight: 600,
+            fontFamily: 'system-ui, sans-serif',
             color: phaseColor,
             textTransform: 'uppercase',
             letterSpacing: 0.5,
@@ -190,6 +193,7 @@ export function InstructionBanner({
           style={{
             fontSize: 12,
             fontWeight: 600,
+            fontFamily: 'system-ui, sans-serif',
             color: '#1E293B',
             lineHeight: 1.3,
             whiteSpace: 'nowrap',

@@ -261,7 +261,7 @@ export function UnifiedPlateletView({
             onClick={() => state.parCleavageState === 'activated' && !isAutoMode && onActivateFactor('vWF-VIII')}
           >
             <FactorTokenNew factorId="FVIII" isActive={false} enableHover={state.parCleavageState === 'activated'} />
-            <span style={{ color: '#64748B', fontSize: 9 }}>─</span>
+            <span style={{ color: '#64748B', fontSize: 9, fontFamily: 'system-ui, sans-serif' }}>─</span>
             <div
               style={{
                 width: 24,
@@ -273,6 +273,7 @@ export function UnifiedPlateletView({
                 justifyContent: 'center',
                 fontSize: 7,
                 fontWeight: 700,
+                fontFamily: 'system-ui, sans-serif',
                 color: '#FFFFFF',
                 border: '2px solid white',
               }}
@@ -305,6 +306,7 @@ export function UnifiedPlateletView({
               justifyContent: 'center',
               fontSize: 6,
               fontWeight: 700,
+              fontFamily: 'system-ui, sans-serif',
               color: '#FFFFFF',
               border: '2px solid white',
             }}
@@ -569,11 +571,11 @@ export function UnifiedPlateletView({
           />
           {/* Enhanced FXa label with substrate info */}
           <g transform={`translate(${(tenaseX + prothrombinaseX) / 2}, ${complexY - 50})`}>
-            <rect x={-35} y={-16} width={70} height={32} rx={5} fill="#DCFCE7" stroke="#22C55E" strokeWidth={2} />
-            <text x={0} y={0} textAnchor="middle" fontSize={11} fontWeight={700} fill="#15803D">
+            <rect x={-35} y={-16} width={70} height={32} rx={4} fill="#DCFCE7" stroke="#22C55E" strokeWidth={2} />
+            <text x={0} y={0} textAnchor="middle" fontSize={11} fontWeight={700} fill="#15803D" style={{ fontFamily: 'system-ui, sans-serif' }}>
               FXa →
             </text>
-            <text x={0} y={12} textAnchor="middle" fontSize={6} fill="#166534">
+            <text x={0} y={12} textAnchor="middle" fontSize={6} fill="#166534" style={{ fontFamily: 'system-ui, sans-serif' }}>
               FX → FXa produs
             </text>
           </g>
@@ -663,7 +665,7 @@ export function UnifiedPlateletView({
                 </defs>
                 <circle cx="12" cy="12" r="10" fill={`url(#burstGrad-${particle.id})`} stroke="#FEE2E2" strokeWidth={1.5} />
                 <circle cx="19" cy="6" r="3" fill="#FEE2E2" />
-                <text x="11" y="15" textAnchor="middle" fontSize="7" fontWeight="700" fill="#FFF">FIIa</text>
+                <text x="11" y="15" textAnchor="middle" fontSize="7" fontWeight="700" fill="#FFF" style={{ fontFamily: 'system-ui, sans-serif' }}>FIIa</text>
               </svg>
             </div>
           ))}
@@ -696,7 +698,7 @@ export function UnifiedPlateletView({
                 <ellipse cx="8" cy="12" rx="7" ry="10" fill={`url(#fbgGrad-${i})`} stroke="#D97706" strokeWidth={1.5} />
                 <rect x="14" y="8" width="22" height="8" rx="2" fill="#F59E0B" stroke="#D97706" strokeWidth={1} />
                 <ellipse cx="42" cy="12" rx="7" ry="10" fill={`url(#fbgGrad-${i})`} stroke="#D97706" strokeWidth={1.5} />
-                <text x="25" y="15" textAnchor="middle" fontSize="6" fontWeight="600" fill="#78350F">Fbg</text>
+                <text x="25" y="15" textAnchor="middle" fontSize="6" fontWeight="600" fill="#78350F" style={{ fontFamily: 'system-ui, sans-serif' }}>Fbg</text>
               </svg>
             </div>
           ))}
@@ -733,10 +735,10 @@ export function UnifiedPlateletView({
               zIndex: 35,
             }}
           >
-            <div style={{ color: '#FBBF24', fontSize: 11, fontWeight: 800, letterSpacing: 1 }}>
+            <div style={{ color: '#FBBF24', fontSize: 11, fontWeight: 800, fontFamily: 'system-ui, sans-serif', letterSpacing: 1 }}>
               EXPLOZIA DE TROMBINĂ
             </div>
-            <div style={{ color: '#FECACA', fontSize: 9, marginTop: 2, textAlign: 'center' }}>
+            <div style={{ color: '#FECACA', fontSize: 9, fontFamily: 'system-ui, sans-serif', marginTop: 2, textAlign: 'center' }}>
               ~350 nM · ×300,000
             </div>
           </div>
@@ -757,7 +759,7 @@ export function UnifiedPlateletView({
                 zIndex: 35,
               }}
             >
-              <div style={{ color: '#78350F', fontSize: 10, fontWeight: 700 }}>
+              <div style={{ color: '#78350F', fontSize: 10, fontWeight: 700, fontFamily: 'system-ui, sans-serif' }}>
                 Fbg → Fibrină
               </div>
             </div>
@@ -791,7 +793,7 @@ export function UnifiedPlateletView({
                   opacity={0.6}
                   style={{ animation: `psPulse 2s ease-in-out ${i * 0.15}s infinite` }}
                 />
-                <text x={x} y={membraneY + 7} textAnchor="middle" fontSize={4} fill="#DC2626" fontWeight={600}>PS</text>
+                <text x={x} y={membraneY + 7} textAnchor="middle" fontSize={4} fill="#DC2626" fontWeight={600} style={{ fontFamily: 'system-ui, sans-serif' }}>PS</text>
               </g>
             ))}
           </g>
@@ -804,7 +806,7 @@ export function UnifiedPlateletView({
             <line x1={tenaseX - 12} y1={complexY + 40} x2={tenaseX - 12} y2={membraneY - 5} stroke="#A855F7" strokeWidth={2} opacity={0.5} />
             <line x1={tenaseX + 12} y1={complexY + 40} x2={tenaseX + 12} y2={membraneY - 5} stroke="#06B6D4" strokeWidth={2} opacity={0.5} />
             {/* Ca²⁺ indicator */}
-            <text x={tenaseX} y={membraneY - 8} textAnchor="middle" fontSize={6} fill="#F59E0B" fontWeight={600}>Ca²⁺</text>
+            <text x={tenaseX} y={membraneY - 8} textAnchor="middle" fontSize={6} fill="#F59E0B" fontWeight={600} style={{ fontFamily: 'system-ui, sans-serif' }}>Ca²⁺</text>
           </g>
         )}
 
@@ -815,7 +817,7 @@ export function UnifiedPlateletView({
             <line x1={prothrombinaseX - 12} y1={complexY + 40} x2={prothrombinaseX - 12} y2={membraneY - 5} stroke="#F97316" strokeWidth={2} opacity={0.5} />
             <line x1={prothrombinaseX + 12} y1={complexY + 40} x2={prothrombinaseX + 12} y2={membraneY - 5} stroke="#22C55E" strokeWidth={2} opacity={0.5} />
             {/* Ca²⁺ indicator */}
-            <text x={prothrombinaseX} y={membraneY - 8} textAnchor="middle" fontSize={6} fill="#F59E0B" fontWeight={600}>Ca²⁺</text>
+            <text x={prothrombinaseX} y={membraneY - 8} textAnchor="middle" fontSize={6} fill="#F59E0B" fontWeight={600} style={{ fontFamily: 'system-ui, sans-serif' }}>Ca²⁺</text>
           </g>
         )}
 
@@ -1048,6 +1050,7 @@ function ComplexAssemblySlot({
           fontSize: 8,
           color: color,
           fontWeight: 600,
+          fontFamily: 'system-ui, sans-serif',
           whiteSpace: 'nowrap',
         }}
       >
@@ -1060,15 +1063,15 @@ function ComplexAssemblySlot({
           <div style={{ transform: cofactor.ready ? 'scale(1.1)' : 'scale(1)', opacity: cofactor.ready ? 1 : 0.3 }}>
             <FactorTokenNew factorId={cofactor.id} isActive={cofactor.ready} enableHover={false} />
           </div>
-          <span style={{ fontSize: 5, color: '#94A3B8', marginTop: 2 }}>cofactor</span>
+          <span style={{ fontSize: 5, color: '#94A3B8', fontFamily: 'system-ui, sans-serif', marginTop: 2 }}>cofactor</span>
         </div>
-        <div style={{ color: '#94A3B8', fontSize: 12, fontWeight: 600 }}>+</div>
+        <div style={{ color: '#94A3B8', fontSize: 12, fontWeight: 600, fontFamily: 'system-ui, sans-serif' }}>+</div>
         {/* Enzyme with role label */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={{ transform: enzyme.ready ? 'scale(0.9)' : 'scale(1)', opacity: enzyme.ready ? 1 : 0.3 }}>
             <FactorTokenNew factorId={enzyme.id} isActive={enzyme.ready} enableHover={false} />
           </div>
-          <span style={{ fontSize: 5, color: '#94A3B8', marginTop: 2 }}>enzimă</span>
+          <span style={{ fontSize: 5, color: '#94A3B8', fontFamily: 'system-ui, sans-serif', marginTop: 2 }}>enzimă</span>
         </div>
       </div>
 
@@ -1083,6 +1086,7 @@ function ComplexAssemblySlot({
             color: '#FFFFFF',
             fontSize: 8,
             fontWeight: 600,
+            fontFamily: 'system-ui, sans-serif',
           }}
         >
           FORMEAZĂ
@@ -1125,6 +1129,7 @@ function TenaseComplex({
           fontSize: 8,
           color: '#FFFFFF',
           fontWeight: 600,
+          fontFamily: 'system-ui, sans-serif',
         }}
       >
         TENAZĂ
@@ -1148,6 +1153,7 @@ function TenaseComplex({
           justifyContent: 'center',
           gap: 12,
           fontSize: 5,
+          fontFamily: 'system-ui, sans-serif',
           color: '#64748B',
         }}
       >
@@ -1166,6 +1172,7 @@ function TenaseComplex({
             color: '#FFFFFF',
             fontSize: 8,
             fontWeight: 600,
+            fontFamily: 'system-ui, sans-serif',
             cursor: 'pointer',
           }}
           onClick={onProduce}
@@ -1210,6 +1217,7 @@ function ProthrombinaseComplex({
           fontSize: 8,
           color: '#FFFFFF',
           fontWeight: 600,
+          fontFamily: 'system-ui, sans-serif',
           whiteSpace: 'nowrap',
         }}
       >
@@ -1233,6 +1241,7 @@ function ProthrombinaseComplex({
           justifyContent: 'center',
           gap: 12,
           fontSize: 5,
+          fontFamily: 'system-ui, sans-serif',
           color: '#64748B',
         }}
       >
@@ -1251,6 +1260,7 @@ function ProthrombinaseComplex({
             color: '#FFFFFF',
             fontSize: 8,
             fontWeight: 600,
+            fontFamily: 'system-ui, sans-serif',
             cursor: 'pointer',
           }}
           onClick={onTriggerBurst}

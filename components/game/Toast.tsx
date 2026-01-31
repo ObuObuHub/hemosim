@@ -65,6 +65,7 @@ export function Toast({
         transform: 'translate(-50%, -50%)',
         fontSize: isPhase ? TOAST_FONT_SIZE_PHASE : TOAST_FONT_SIZE_DEFAULT,
         fontWeight: 700,
+        fontFamily: 'system-ui, sans-serif',
         color,
         backgroundColor: TOAST_BACKGROUND,
         padding: isPhase ? TOAST_PADDING_PHASE : TOAST_PADDING_DEFAULT,

@@ -26,11 +26,11 @@ const PHASE_DISPLAY_NAMES: Record<GamePhase, string> = {
 };
 
 const PHASE_COLORS: Record<GamePhase, string> = {
-  initiation: '#3B82F6', // Blue
-  amplification: '#8B5CF6', // Purple
-  propagation: '#F59E0B', // Amber
-  stabilization: '#22C55E', // Green
-  complete: '#22C55E', // Green
+  initiation: '#22C55E',    // Green - TF-cell, extrinsic pathway
+  amplification: '#EAB308', // Yellow/Amber - platelet activation
+  propagation: '#3B82F6',   // Blue - activated platelet, thrombin burst
+  stabilization: '#8B5CF6', // Purple - fibrin cross-linking
+  complete: '#22C55E',      // Green - success
 };
 
 const DISPLAY_DURATION_MS = 2000;
@@ -110,6 +110,7 @@ export function PhaseUnlockBanner({
           style={{
             fontSize: 28,
             fontWeight: 700,
+            fontFamily: 'system-ui, sans-serif',
             color,
             letterSpacing: '3px',
             textShadow: `0 0 20px ${color}80`,

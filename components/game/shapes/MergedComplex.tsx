@@ -104,7 +104,7 @@ export function MergedComplex({
         fontSize={10}
         fontWeight={700}
         fill="#FFFFFF"
-        style={{ textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}
+        style={{ fontFamily: 'system-ui, sans-serif', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}
       >
         {label}
       </text>

@@ -51,10 +51,10 @@ export function ZymogenShape({ color, label, style }: ZymogenShapeProps): React.
         x={width / 2}
         y={height / 2 + 4}
         textAnchor="middle"
-        fontSize={12}
+        fontSize={11}
         fontWeight={700}
         fill="#FFFFFF"
-        style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
+        style={{ fontFamily: 'system-ui, sans-serif', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
       >
         {label}
       </text>

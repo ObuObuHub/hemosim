@@ -226,6 +226,7 @@ export function SparkFrame({
           left: 12,
           fontSize: 10,
           fontWeight: 500,
+          fontFamily: 'system-ui, sans-serif',
           color: '#94A3B8',
           letterSpacing: 0.5,
         }}
@@ -256,6 +257,7 @@ export function SparkFrame({
             color: '#FFFFFF',
             fontSize: 11,
             fontWeight: 700,
+            fontFamily: 'system-ui, sans-serif',
             textShadow: '0 1px 2px rgba(0,0,0,0.5)',
           }}
         >
@@ -268,6 +270,7 @@ export function SparkFrame({
             right: 12,
             color: 'rgba(255,255,255,0.8)',
             fontSize: 9,
+            fontFamily: 'system-ui, sans-serif',
             textShadow: '0 1px 2px rgba(0,0,0,0.5)',
           }}
         >
@@ -649,11 +652,13 @@ export function SparkFrame({
                 transform: 'translateX(-50%)',
                 padding: '3px 10px',
                 background: '#3B82F6',
-                borderRadius: 5,
+                borderRadius: 4,
                 fontSize: 9,
                 color: '#FFFFFF',
                 fontWeight: 700,
+                fontFamily: 'system-ui, sans-serif',
                 whiteSpace: 'nowrap',
+                letterSpacing: 0.3,
               }}
             >
               Protrombinază
@@ -703,11 +708,11 @@ export function SparkFrame({
                     strokeLinecap="round"
                   />
                   {/* Gla label - upper right */}
-                  <text x={20} y={10} fontSize={7} fontWeight={600} fill="#374151">
+                  <text x={20} y={10} fontSize={7} fontWeight={600} fill="#374151" style={{ fontFamily: 'system-ui, sans-serif' }}>
                     Gla
                   </text>
                   {/* Ca²⁺ label - bottom left */}
-                  <text x={-6} y={42} fontSize={6} fontWeight={600} fill="#64748B">
+                  <text x={-6} y={42} fontSize={6} fontWeight={600} fill="#64748B" style={{ fontFamily: 'system-ui, sans-serif' }}>
                     Ca²⁺
                   </text>
                 </svg>
@@ -727,6 +732,7 @@ export function SparkFrame({
                   color: '#FFFFFF',
                   fontSize: 11,
                   fontWeight: 700,
+                  fontFamily: 'system-ui, sans-serif',
                 }}
               >
                 FVa
