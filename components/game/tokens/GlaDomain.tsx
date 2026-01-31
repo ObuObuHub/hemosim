@@ -66,6 +66,7 @@ export function GlaDomain({
         x={cx - 14}
         y={height * 0.8}
         fontSize={6}
+        fontWeight={600}
         fill="#64748B"
         style={{ fontFamily: 'system-ui, sans-serif' }}
       >

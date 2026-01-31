@@ -153,7 +153,7 @@ export function TFProtein({
                   Gla
                 </text>
                 {/* Ca²⁺ label - bottom left */}
-                <text x={-6} y={38} fontSize={6} fill="#64748B" style={{ fontFamily: 'system-ui, sans-serif' }}>
+                <text x={-6} y={38} fontSize={6} fontWeight={600} fill="#64748B" style={{ fontFamily: 'system-ui, sans-serif' }}>
                   Ca²⁺
                 </text>
               </svg>

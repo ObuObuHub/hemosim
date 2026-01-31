@@ -707,7 +707,7 @@ export function SparkFrame({
                     Gla
                   </text>
                   {/* Ca²⁺ label - bottom left */}
-                  <text x={-6} y={42} fontSize={6} fill="#64748B">
+                  <text x={-6} y={42} fontSize={6} fontWeight={600} fill="#64748B">
                     Ca²⁺
                   </text>
                 </svg>
