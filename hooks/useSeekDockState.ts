@@ -112,6 +112,15 @@ function createInitialState(): SeekDockState {
 // HELPER FUNCTIONS
 // =============================================================================
 
+/**
+ * Log warning in development mode for debugging invalid state transitions
+ */
+function devWarn(message: string, context?: Record<string, unknown>): void {
+  if (process.env.NODE_ENV === 'development') {
+    console.warn(`[useSeekDockState] ${message}`, context ?? '');
+  }
+}
+
 let agentIdCounter = 0;
 
 function generateAgentId(): string {
@@ -288,6 +297,12 @@ function seekDockReducer(state: SeekDockState, action: SeekDockAction): SeekDock
       const socket = getSocketForPort(action.portId);
 
       if (!port || !socket) {
+        devWarn('DOCK_AGENT failed: invalid port or socket', {
+          portId: action.portId,
+          agentId: action.agentId,
+          portFound: !!port,
+          socketFound: !!socket,
+        });
         return state;
       }
 
@@ -349,7 +364,10 @@ function seekDockReducer(state: SeekDockState, action: SeekDockAction): SeekDock
     case 'UNDOCK_AGENT': {
       // Find current port
       const agent = state.agents.find(a => a.id === action.agentId);
-      if (!agent) return state;
+      if (!agent) {
+        devWarn('UNDOCK_AGENT failed: agent not found', { agentId: action.agentId });
+        return state;
+      }
 
       // Update sockets to clear port occupancy
       const updatedSockets = state.sockets.map(s => ({
@@ -387,7 +405,13 @@ function seekDockReducer(state: SeekDockState, action: SeekDockAction): SeekDock
 
     case 'PRODUCE_OUTPUT': {
       const socket = getSocket(action.socketId);
-      if (!socket) return state;
+      if (!socket) {
+        devWarn('PRODUCE_OUTPUT failed: socket not found', {
+          socketId: action.socketId,
+          outputKind: action.outputKind,
+        });
+        return state;
+      }
 
       // Determine spawn position (near socket)
       const spawnPosition = {
@@ -445,7 +469,10 @@ function seekDockReducer(state: SeekDockState, action: SeekDockAction): SeekDock
 
     case 'COMPLETE_MIGRATION': {
       const agent = state.agents.find(a => a.id === action.agentId);
-      if (!agent) return state;
+      if (!agent) {
+        devWarn('COMPLETE_MIGRATION failed: agent not found', { agentId: action.agentId });
+        return state;
+      }
 
       newState = {
         ...state,
@@ -525,7 +552,10 @@ function seekDockReducer(state: SeekDockState, action: SeekDockAction): SeekDock
 
     case 'SNAP_AGENT': {
       const agent = state.agents.find(a => a.id === action.agentId);
-      if (!agent) return state;
+      if (!agent) {
+        devWarn('SNAP_AGENT failed: agent not found', { agentId: action.agentId });
+        return state;
+      }
 
       const snapResult = snap(agent, action.dropPosition, state);
 
@@ -561,6 +591,10 @@ function seekDockReducer(state: SeekDockState, action: SeekDockAction): SeekDock
             sockets: updatedSockets,
           };
         } else {
+          devWarn('SNAP_AGENT failed: port or socket not found after successful snap', {
+            agentId: action.agentId,
+            targetPortId: snapResult.targetPortId,
+          });
           return state;
         }
       } else {

@@ -4,6 +4,21 @@ import { useRef, useEffect, useCallback, useMemo, useState } from 'react';
 import { Factor } from '@/types';
 import { BASIC_MODE_FACTORS, CLINICAL_MODE_FACTORS, SIMPLIFIED_POSITIONS, CANVAS_WIDTH, CANVAS_HEIGHT } from '@/engine/factors';
 import { PrimaryHemostasisModal } from './PrimaryHemostasisModal';
+import {
+  PATHWAY_COLORS,
+  PATHWAY_NAMES,
+  FEEDBACK_COLOR,
+  INHIBITION_COLOR,
+  MEMBRANE_COLORS,
+  FACTOR_LABELS,
+  LAB_TO_FACTORS,
+  type Particle,
+} from './cascade-canvas';
+import {
+  drawWavyCircle,
+  drawMembraneSurface,
+  drawCircularMembraneSurface,
+} from './cascade-canvas';
 
 // Helper: Parsează clinicalNote și evidențiază text între !! cu roșu
 function renderClinicalNote(note: string): React.ReactNode {
@@ -33,260 +48,6 @@ interface CascadeCanvasProps {
   showInhibition?: boolean;
   // Educational scenario
   currentScenario?: string | null;
-}
-
-// Culori conform convențiilor medicale (similar cu Frontiers/Harrison's)
-const PATHWAY_COLORS: Record<string, string> = {
-  intrinsic: '#2563eb',   // Albastru - Calea Intrinsecă (contact)
-  extrinsic: '#16a34a',   // Verde - Calea Extrinsecă (tissue factor)
-  common: '#0d9488',      // Turcoaz - Calea Comună (convergență albastru+verde)
-  platelet: '#dc2626',    // Roșu aprins - Trombocite și complexe (pe membrană)
-  fibrinolysis: '#92400e', // Maro - Fibrinoliză
-  anticoagulant: '#6b8e23', // Olive - Anticoagulanți naturali
-  clot: '#1e293b',        // Negru închis - Cheagul final stabilizat
-};
-
-// Nume căi pentru legendă
-const PATHWAY_NAMES: Record<string, string> = {
-  intrinsic: 'Calea Intrinsecă',
-  extrinsic: 'Calea Extrinsecă',
-  common: 'Calea Comună',
-  platelet: 'Hemostază Primară',
-  fibrinolysis: 'Fibrinoliză',
-  anticoagulant: 'Anticoagulanți',
-};
-
-// Culori pentru tipuri speciale de săgeți
-const FEEDBACK_COLOR = '#f59e0b'; // Amber/Gold pentru feedback pozitiv
-const INHIBITION_COLOR = '#64748b'; // Gri pentru inhibiție (nu roșu - evită confuzia)
-
-// Culori pentru suprafețele membranare (model celular)
-const MEMBRANE_COLORS = {
-  tfCell: '#a67c52',      // Celulă TF (tan/brun) - Inițiere
-  platelet: '#dc2626',    // Trombocit activat (roșu) - Propagare
-  transfer: '#0891b2',    // Xa handoff (cyan)
-};
-
-const FACTOR_LABELS: Record<string, string> = {
-  // Intrinsic - zimogeni
-  F12: 'Factor XII',
-  F11: 'Factor XI',
-  F9: 'Factor IX',
-  F8: 'Factor VIII',
-  // Intrinsic - forme activate
-  F12a: 'Factor XIIa',
-  F11a: 'Factor XIa',
-  F9a: 'Factor IXa',
-  F8a: 'Factor VIIIa',
-  // Extrinsic
-  TF: 'Factor Tisular',
-  F7: 'Factor VII',
-  F7a: 'Factor VIIa',
-  // Common - zimogeni
-  F10: 'Factor X',
-  F5: 'Factor V',
-  F2: 'Protrombină',
-  FBG: 'Fibrinogen',
-  F13: 'Factor XIII',
-  // Common - forme activate
-  F10a: 'Factor Xa',
-  F5a: 'Factor Va',
-  IIa: 'Trombină',
-  FBN: 'Fibrină',
-  F13a: 'Factor XIIIa',
-  // Hemostază primară
-  vWF: 'von Willebrand',
-  PLT: 'Trombocite',
-  // Anticoagulanți
-  TFPI: 'TFPI',
-  TM: 'Trombomodulină',
-  AT: 'Antitrombina',
-  PC: 'Proteina C',
-  APC: 'PC Activată',
-  PS: 'Proteina S',
-  // Fibrinoliză
-  tPA: 't-PA',
-  PLG: 'Plasminogen',
-  PLASMIN: 'Plasm',
-  PAI1: 'PAI-1',
-};
-
-// Mapping lab values to cascade factors for hover highlighting
-const LAB_TO_FACTORS: Record<string, string[]> = {
-  pt: ['TF', 'F7', 'F7a', 'F10', 'F10a', 'F5', 'F5a', 'F2', 'IIa', 'FBG', 'FBN'],  // PT → Extrinsic + Common
-  inr: ['TF', 'F7', 'F7a', 'F10', 'F10a', 'F5', 'F5a', 'F2', 'IIa', 'FBG', 'FBN'], // INR → same as PT
-  aptt: ['F12', 'F12a', 'F11', 'F11a', 'F9', 'F9a', 'F8', 'F8a', 'F10', 'F10a', 'F5', 'F5a', 'F2', 'IIa', 'FBG', 'FBN'], // aPTT → Intrinsic + Common
-  tt: ['IIa', 'FBG', 'FBN'],                        // TT → Thrombin time
-  fibrinogen: ['FBG', 'FBN', 'FIBRIN_NET'],         // Fibrinogen → Clot formation
-  platelets: ['PLT'],                               // Platelets
-  dDimers: ['PLASMIN', 'FBN', 'FIBRIN_NET'],        // D-Dimers → Fibrinolysis
-  bleedingTime: ['PLT', 'vWF'],                     // Bleeding time → Primary hemostasis
-};
-
-// Draw a wavy circle (membrane-like border for platelets)
-function drawWavyCircle(
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  radius: number,
-  amplitude: number = 2,
-  waves: number = 12
-): void {
-  ctx.beginPath();
-  const steps = waves * 8;
-  for (let i = 0; i <= steps; i++) {
-    const angle = (i / steps) * Math.PI * 2;
-    const wave = Math.sin(angle * waves) * amplitude;
-    const r = radius + wave;
-    const x = cx + Math.cos(angle) * r;
-    const y = cy + Math.sin(angle) * r;
-    if (i === 0) {
-      ctx.moveTo(x, y);
-    } else {
-      ctx.lineTo(x, y);
-    }
-  }
-  ctx.closePath();
-}
-
-// Draw a membrane surface with classical phospholipid BILAYER on the BOTTOM
-// Two rows of circles (heads) with tails between them
-function drawMembraneSurface(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  color: string,
-  label?: string
-): void {
-  const circleRadius = 3; // Phospholipid "heads"
-  const spacing = circleRadius * 2.4; // Space between circle centers
-  const bilayerGap = circleRadius * 4; // Gap between the two layers (room for tails)
-  const tailLength = bilayerGap / 2 - 1; // Tails meet in the middle
-  const padding = circleRadius + 2;
-
-  // No background fill - just the bilayer itself
-
-  ctx.fillStyle = color + '50';
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 1;
-
-  const startX = x + padding;
-  const endX = x + width - padding;
-  const count = Math.floor((endX - startX) / spacing);
-  const offset = ((endX - startX) - (count - 1) * spacing) / 2;
-
-  // Outer leaflet (top row - facing the complex)
-  const outerY = y + height - padding - bilayerGap;
-  for (let i = 0; i < count; i++) {
-    const cx = startX + offset + i * spacing;
-    // Head
-    ctx.beginPath();
-    ctx.arc(cx, outerY, circleRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    // Tails (two lines going down)
-    ctx.beginPath();
-    ctx.moveTo(cx - 1, outerY + circleRadius);
-    ctx.lineTo(cx - 1, outerY + circleRadius + tailLength);
-    ctx.moveTo(cx + 1, outerY + circleRadius);
-    ctx.lineTo(cx + 1, outerY + circleRadius + tailLength);
-    ctx.stroke();
-  }
-
-  // Inner leaflet (bottom row - facing cytoplasm)
-  const innerY = y + height - padding;
-  for (let i = 0; i < count; i++) {
-    const cx = startX + offset + i * spacing;
-    // Head
-    ctx.beginPath();
-    ctx.arc(cx, innerY, circleRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    // Tails (two lines going up)
-    ctx.beginPath();
-    ctx.moveTo(cx - 1, innerY - circleRadius);
-    ctx.lineTo(cx - 1, innerY - circleRadius - tailLength);
-    ctx.moveTo(cx + 1, innerY - circleRadius);
-    ctx.lineTo(cx + 1, innerY - circleRadius - tailLength);
-    ctx.stroke();
-  }
-
-  // Optional label above the complex (font size will be scaled by caller)
-  if (label) {
-    ctx.fillStyle = color;
-    ctx.textAlign = 'center';
-    ctx.fillText(label, x + width / 2, y - 8);
-  }
-}
-
-// Draw a circular membrane bilayer (two concentric rings with tails) - same style as rectangular
-function drawCircularMembraneSurface(
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  innerRadius: number, // Where the inner content sits
-  color: string
-): void {
-  const circleRadius = 3; // Same as rectangular version
-  const bilayerGap = circleRadius * 4;
-  const tailLength = bilayerGap / 2 - 1;
-
-  // No background fill - just the bilayer
-  ctx.fillStyle = color + '50';
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 1;
-
-  // Inner leaflet (inner ring - facing the cell interior)
-  const innerRingRadius = innerRadius + 4;
-  const innerCircumference = 2 * Math.PI * innerRingRadius;
-  const innerCount = Math.floor(innerCircumference / (circleRadius * 2.4));
-
-  for (let i = 0; i < innerCount; i++) {
-    const angle = (i / innerCount) * Math.PI * 2;
-    const px = cx + Math.cos(angle) * innerRingRadius;
-    const py = cy + Math.sin(angle) * innerRingRadius;
-    // Head
-    ctx.beginPath();
-    ctx.arc(px, py, circleRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    // Tails (pointing outward)
-    ctx.beginPath();
-    ctx.moveTo(px + Math.cos(angle) * circleRadius, py + Math.sin(angle) * circleRadius);
-    ctx.lineTo(px + Math.cos(angle) * (circleRadius + tailLength), py + Math.sin(angle) * (circleRadius + tailLength));
-    ctx.stroke();
-  }
-
-  // Outer leaflet (outer ring - facing extracellular)
-  const outerRingRadius = innerRingRadius + bilayerGap;
-  const outerCircumference = 2 * Math.PI * outerRingRadius;
-  const outerCount = Math.floor(outerCircumference / (circleRadius * 2.4));
-
-  for (let i = 0; i < outerCount; i++) {
-    const angle = (i / outerCount) * Math.PI * 2;
-    const px = cx + Math.cos(angle) * outerRingRadius;
-    const py = cy + Math.sin(angle) * outerRingRadius;
-    // Head
-    ctx.beginPath();
-    ctx.arc(px, py, circleRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    // Tails (pointing inward)
-    ctx.beginPath();
-    ctx.moveTo(px - Math.cos(angle) * circleRadius, py - Math.sin(angle) * circleRadius);
-    ctx.lineTo(px - Math.cos(angle) * (circleRadius + tailLength), py - Math.sin(angle) * (circleRadius + tailLength));
-    ctx.stroke();
-  }
-}
-
-// Particle system for flow animation
-interface Particle {
-  fromId: string;
-  toId: string;
-  progress: number; // 0 to 1
-  speed: number;
 }
 
 export function CascadeCanvas({
