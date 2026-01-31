@@ -66,7 +66,7 @@ type SeekDockAction =
 // INITIAL STATE
 // =============================================================================
 
-function createInitialState(): SeekDockState {
+function createInitialState(resetKey: number = 0): SeekDockState {
   return {
     mode: 'MANUAL',
     phase: 'idle',
@@ -91,6 +91,7 @@ function createInitialState(): SeekDockState {
       currentTime: 0,
       animatingAgents: [],
       stagingWaypoints: STAGING_WAYPOINTS,
+      resetKey: 0,
     }),
     plateletActivated: false,
     tenaseAssembled: false,
@@ -105,6 +106,7 @@ function createInitialState(): SeekDockState {
     currentTime: 0,
     animatingAgents: [],
     stagingWaypoints: STAGING_WAYPOINTS,
+    resetKey,
   };
 }
 
@@ -239,7 +241,8 @@ function seekDockReducer(state: SeekDockState, action: SeekDockAction): SeekDock
 
     case 'RESET':
       agentIdCounter = 0;
-      newState = createInitialState();
+      // Full reset with incremented key to force component remount
+      newState = createInitialState(state.resetKey + 1);
       break;
 
     case 'SPAWN_AGENT': {
@@ -679,7 +682,7 @@ export interface SeekDockStateHook {
 }
 
 export function useSeekDockState(): SeekDockStateHook {
-  const [state, dispatch] = useReducer(seekDockReducer, null, createInitialState);
+  const [state, dispatch] = useReducer(seekDockReducer, 0, createInitialState);
 
   const setMode = useCallback((mode: 'AUTO' | 'MANUAL') => {
     dispatch({ type: 'SET_MODE', mode });

@@ -27,6 +27,8 @@ interface ExplosionFrameProps {
   mode?: PlayMode;
   // FIXa migration state from initiation
   fixaMigrating?: boolean;
+  // FIXa is waiting in right panel (arrived from left, waiting for tenase)
+  fixaWaiting?: boolean;
 }
 
 /**
@@ -61,6 +63,7 @@ export function ExplosionFrame({
   onCrosslinkFibrin,
   mode = 'manual',
   fixaMigrating = false,
+  fixaWaiting = false,
 }: ExplosionFrameProps): React.ReactElement {
   const isAutoMode = mode === 'auto';
 
@@ -366,6 +369,7 @@ export function ExplosionFrame({
           canBurst={canBurst}
           isAutoMode={isAutoMode}
           fixaMigrating={fixaMigrating}
+          fixaWaiting={fixaWaiting}
         />
       )}
 

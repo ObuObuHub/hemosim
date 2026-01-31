@@ -10,9 +10,9 @@ interface EnzymeTokenProps {
 }
 
 /**
- * EnzymeToken - Medical textbook style with subtle pac-man shape
+ * EnzymeToken - Medical textbook style with active site cleft
  * Represents active serine proteases (FIXa, FXa, FIIa, FVIIa, FXIa, etc.)
- * Circle with small notch in top-right corner = active site that cleaves substrates
+ * Circle with slot at top = active site pocket where substrates bind
  */
 export function EnzymeToken({
   color,
@@ -25,11 +25,18 @@ export function EnzymeToken({
   const cy = height / 2;
   const r = Math.min(width, height) / 2 - 4;
 
-  // Notch position: top-right corner (like pac-man looking up-right)
-  const notchAngle = -45 * (Math.PI / 180); // -45 degrees (top-right)
-  const notchX = cx + (r - 1) * Math.cos(notchAngle);
-  const notchY = cy + (r - 1) * Math.sin(notchAngle);
-  const notchR = r * 0.28; // Notch size relative to main circle
+  // Active site slot parameters
+  const slotHalfWidth = r * 0.18;   // Half-width of slot
+  const slotDepth = r * 0.45;       // How deep into circle
+  const bottomRadius = slotHalfWidth * 0.9; // Rounded bottom
+
+  // Slot edges on circle perimeter
+  const slotLeftX = cx - slotHalfWidth;
+  const slotRightX = cx + slotHalfWidth;
+  const slotTopY = cy - r;
+
+  // Bottom of slot (where the semicircle is)
+  const slotBottomY = slotTopY + slotDepth;
 
   return (
     <svg
@@ -50,20 +57,36 @@ export function EnzymeToken({
         strokeWidth={2}
       />
 
-      {/* Subtle notch in top-right - represents enzyme active site */}
-      <circle
-        cx={notchX}
-        cy={notchY}
-        r={notchR}
-        fill="#F8FAFC"
+      {/* Active site slot - rectangular with rounded bottom */}
+      <path
+        d={`
+          M ${slotLeftX} ${slotTopY - 1}
+          L ${slotLeftX} ${slotBottomY - bottomRadius}
+          A ${bottomRadius} ${bottomRadius} 0 0 0 ${slotRightX} ${slotBottomY - bottomRadius}
+          L ${slotRightX} ${slotTopY - 1}
+          Z
+        `}
+        fill="#E2E8F0"
+      />
+
+      {/* Slot border */}
+      <path
+        d={`
+          M ${slotLeftX} ${slotTopY}
+          L ${slotLeftX} ${slotBottomY - bottomRadius}
+          A ${bottomRadius} ${bottomRadius} 0 0 0 ${slotRightX} ${slotBottomY - bottomRadius}
+          L ${slotRightX} ${slotTopY}
+        `}
+        fill="none"
         stroke="#FFFFFF"
         strokeWidth={1.5}
+        strokeLinecap="round"
       />
 
       {/* Label */}
       <text
         x={cx}
-        y={cy + 4}
+        y={cy + 5}
         textAnchor="middle"
         fontSize={label.length > 4 ? 9 : 10}
         fontWeight={700}

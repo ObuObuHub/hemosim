@@ -1,7 +1,5 @@
 'use client';
 
-import { FactorTokenNew } from '../tokens/FactorTokenNew';
-
 interface TFProteinProps {
   x: number;
   y: number;
@@ -14,23 +12,25 @@ interface TFProteinProps {
  * Tissue Factor (TF) protein - Medical textbook style
  *
  * Medical accuracy (Hoffman-Monroe model):
- * - TF is a transmembrane glycoprotein on fibroblasts
- * - TF acts as cofactor for FVIIa
- * - TF:VIIa complex activates FIX and FX
- * - When hasVIIa=true, displays grouped like intrinsic tenase (FVIIIa + FIXa)
+ * - TF is a transmembrane glycoprotein (type I membrane protein)
+ * - TF acts as cofactor for FVIIa (allosteric activation)
+ * - FVIIa has a Gla domain (γ-carboxyglutamic acid) that binds Ca²⁺ and membrane
+ * - TF:VIIa complex is the extrinsic tenase - activates FIX and FX
+ * - The serine protease active site on FVIIa cleaves substrates
  */
 export function TFProtein({
   x,
   y,
   isActive = true,
   hasVIIa = false,
+  isProducing = false,
 }: TFProteinProps): React.ReactElement {
   const tfWidth = 56;
   const bodyHeight = 36;
   const pedicleHeight = 46;
   const svgHeight = bodyHeight + pedicleHeight + 4;
 
-  // When hasVIIa, show as grouped complex similar to Tenase
+  // When hasVIIa, show anatomically accurate TF:VIIa complex (Extrinsic Tenase)
   if (hasVIIa) {
     return (
       <div
@@ -41,13 +41,13 @@ export function TFProtein({
           transform: 'translateX(-50%)',
         }}
       >
-        {/* Complex container */}
+        {/* Complex container - medical textbook style */}
         <div
           style={{
             position: 'relative',
-            padding: '12px 12px 8px',
+            padding: '14px 14px 10px',
             border: '2px solid #16A34A',
-            borderRadius: 8,
+            borderRadius: 10,
             background: 'rgba(22, 163, 74, 0.08)',
           }}
         >
@@ -55,49 +55,96 @@ export function TFProtein({
           <div
             style={{
               position: 'absolute',
-              top: -9,
+              top: -10,
               left: '50%',
               transform: 'translateX(-50%)',
-              padding: '2px 7px',
+              padding: '3px 10px',
               background: '#16A34A',
-              borderRadius: 4,
-              fontSize: 8,
+              borderRadius: 5,
+              fontSize: 9,
               color: '#FFFFFF',
-              fontWeight: 600,
+              fontWeight: 700,
               whiteSpace: 'nowrap',
             }}
           >
             TF:VIIa
           </div>
 
-          {/* Factors side by side */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {/* TF - custom visual (green box) */}
+          {/* Enzyme + Cofactor layout */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, position: 'relative' }}>
+            {/* TF - Cofactor (rectangular) */}
             <div
               style={{
-                width: 40,
-                height: 32,
+                width: 44,
+                height: 36,
                 background: '#22C55E',
                 border: '2px solid #15803D',
-                borderRadius: 5,
+                borderRadius: 6,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: '#FFFFFF',
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: 700,
               }}
             >
               FT
             </div>
-            {/* FVIIa - using FactorTokenNew to keep original color */}
-            <div style={{ transform: 'scale(0.85)' }}>
-              <FactorTokenNew factorId="FVIIa" isActive={true} enableHover={false} />
+
+            {/* FVIIa - Enzyme (circular) with Gla domain */}
+            <div style={{ position: 'relative' }}>
+              {/* FVIIa serine protease with active site slot */}
+              <svg width={42} height={42} viewBox="0 0 42 42">
+                {/* Main circle */}
+                <circle cx={21} cy={21} r={18} fill="#DC2626" stroke="#991B1B" strokeWidth={2} />
+                {/* Active site slot */}
+                <path
+                  d={`M ${21 - 3.5} 3 L ${21 - 3.5} ${3 + 9} A 3 3 0 0 0 ${21 + 3.5} ${3 + 9} L ${21 + 3.5} 3 Z`}
+                  fill="#E2E8F0"
+                />
+                <path
+                  d={`M ${21 - 3.5} 3 L ${21 - 3.5} ${3 + 9 - 2.5} A 2.5 2.5 0 0 0 ${21 + 3.5} ${3 + 9 - 2.5} L ${21 + 3.5} 3`}
+                  fill="none"
+                  stroke="#FFFFFF"
+                  strokeWidth={1.5}
+                  strokeLinecap="round"
+                />
+                {/* Label */}
+                <text x={21} y={26} textAnchor="middle" fontSize={10} fontWeight={700} fill="#FFFFFF" style={{ fontFamily: 'system-ui, sans-serif' }}>
+                  FVIIa
+                </text>
+              </svg>
+
+              {/* Gla domain */}
+              <svg
+                width={35}
+                height={48}
+                style={{
+                  position: 'absolute',
+                  left: 8,
+                  top: 38,
+                  overflow: 'visible',
+                }}
+              >
+                <path
+                  d="M 12 0 Q 16 12, 12 22 Q 8 32, 14 42"
+                  stroke="#1F2937"
+                  strokeWidth={3}
+                  fill="none"
+                  strokeLinecap="round"
+                />
+                <text x={22} y={18} fontSize={8} fontWeight={600} fill="#374151">
+                  Gla
+                </text>
+                <text x={20} y={28} fontSize={7} fill="#64748B">
+                  + Ca²⁺
+                </text>
+              </svg>
             </div>
           </div>
         </div>
 
-        {/* Transmembrane pedicle below the complex */}
+        {/* Transmembrane pedicle */}
         <div
           style={{
             width: 8,
@@ -106,6 +153,16 @@ export function TFProtein({
             margin: '0 auto',
           }}
         />
+
+        {/* Active site animation */}
+        <style>
+          {`
+            @keyframes activeSitePulse {
+              0%, 100% { transform: scale(1); opacity: 0.8; }
+              50% { transform: scale(1.2); opacity: 1; }
+            }
+          `}
+        </style>
       </div>
     );
   }

@@ -33,6 +33,19 @@ export type IIaMigrationState =
   | 'arrived';           // FIIa arrived at platelet IIa slot
 
 /**
+ * Enzymatic Activation Phase - E + S → ES → E + P mechanism
+ * Shows the biochemically accurate sequence of substrate binding, catalysis, and product release
+ * Used for TF-VIIa activating FIX, FX and Prothrombinase activating FII
+ */
+export type ActivationPhase =
+  | 'inactive'      // Not started - substrate in plasma
+  | 'approaching'   // Substrate moving toward enzyme active site
+  | 'es_complex'    // Substrate bound to enzyme (ES complex)
+  | 'cleaving'      // Cleavage animation at active site
+  | 'releasing'     // Product emerging from enzyme
+  | 'complete';     // Done - product at final position
+
+/**
  * Initiation Phase State
  * Location: TF-bearing cell surface (subendothelium, monocytes)
  * Educational focus: TF-VIIa complex formation and initial factor activation
@@ -44,6 +57,10 @@ export interface InitiationState {
   fvDocked: boolean;          // FV present for prothrombinase
   fiiDocked: boolean;         // Prothrombin present
   thrombinProduced: boolean;  // Small thrombin amounts (~0.35 nM)
+  // Enzymatic activation phase tracking (E + S → ES → E + P)
+  fixActivationPhase: ActivationPhase;   // FIX → FIXa by TF-VIIa
+  fxActivationPhase: ActivationPhase;    // FX → FXa by TF-VIIa
+  fiiActivationPhase: ActivationPhase;   // FII → FIIa by Prothrombinase
   // FIXa deterministic migration state
   fixaMigrationState: FixaMigrationState;
   // IIa (thrombin) cross-frame migration state
@@ -134,6 +151,8 @@ export interface CascadeState {
   // Learning mode control
   mode: PlayMode;
   currentStepIndex: number;
+  // Reset key - changes on restart to force component remount
+  resetKey: number;
 }
 
 // =============================================================================
@@ -148,6 +167,10 @@ const initialState: CascadeState = {
     fvDocked: false,
     fiiDocked: false,
     thrombinProduced: false,
+    // Enzymatic activation phases
+    fixActivationPhase: 'inactive',
+    fxActivationPhase: 'inactive',
+    fiiActivationPhase: 'inactive',
     fixaMigrationState: 'inactive',
     iiaMigrationState: 'inactive',
     fixaMigrating: false,
@@ -181,6 +204,7 @@ const initialState: CascadeState = {
   cascadeCompleted: false,
   mode: 'manual',
   currentStepIndex: 0,
+  resetKey: 0,
 };
 
 // =============================================================================
@@ -195,6 +219,10 @@ type CascadeAction =
   | { type: 'DOCK_FV' }
   | { type: 'DOCK_FII' }
   | { type: 'PRODUCE_THROMBIN' }
+  // Enzymatic activation phase actions (E + S → ES → E + P)
+  | { type: 'START_ACTIVATION'; factor: 'FIX' | 'FX' | 'FII' }
+  | { type: 'ADVANCE_ACTIVATION_PHASE'; factor: 'FIX' | 'FX' | 'FII' }
+  | { type: 'COMPLETE_ACTIVATION'; factor: 'FIX' | 'FX' | 'FII' }
   // FIXa deterministic migration
   | { type: 'HOLD_FIXA_FOR_MIGRATION' }  // FIXa moves to hold slot
   | { type: 'START_FIXA_GLIDE' }         // Begin migration animation
@@ -265,6 +293,48 @@ function cascadeReducer(state: CascadeState, action: CascadeAction): CascadeStat
       return { ...state, initiation: { ...state.initiation, fiiDocked: true } };
     case 'PRODUCE_THROMBIN':
       return { ...state, initiation: { ...state.initiation, thrombinProduced: true } };
+
+    // Enzymatic activation phase management (E + S → ES → E + P)
+    case 'START_ACTIVATION': {
+      const phaseKey = `${action.factor.toLowerCase()}ActivationPhase` as
+        | 'fixActivationPhase'
+        | 'fxActivationPhase'
+        | 'fiiActivationPhase';
+      return {
+        ...state,
+        initiation: { ...state.initiation, [phaseKey]: 'approaching' as ActivationPhase },
+      };
+    }
+    case 'ADVANCE_ACTIVATION_PHASE': {
+      const phaseKey = `${action.factor.toLowerCase()}ActivationPhase` as
+        | 'fixActivationPhase'
+        | 'fxActivationPhase'
+        | 'fiiActivationPhase';
+      const currentPhase = state.initiation[phaseKey];
+      const phaseOrder: ActivationPhase[] = ['inactive', 'approaching', 'es_complex', 'cleaving', 'releasing', 'complete'];
+      const currentIndex = phaseOrder.indexOf(currentPhase);
+      const nextPhase = currentIndex < phaseOrder.length - 1 ? phaseOrder[currentIndex + 1] : 'complete';
+      return {
+        ...state,
+        initiation: { ...state.initiation, [phaseKey]: nextPhase },
+      };
+    }
+    case 'COMPLETE_ACTIVATION': {
+      const phaseKey = `${action.factor.toLowerCase()}ActivationPhase` as
+        | 'fixActivationPhase'
+        | 'fxActivationPhase'
+        | 'fiiActivationPhase';
+      // Set phase to complete and mark the factor as docked/activated
+      const dockedKey = `${action.factor.toLowerCase()}Docked` as 'fixDocked' | 'fxDocked' | 'fiiDocked';
+      return {
+        ...state,
+        initiation: {
+          ...state.initiation,
+          [phaseKey]: 'complete' as ActivationPhase,
+          [dockedKey]: true,
+        },
+      };
+    }
 
     // FIXa deterministic migration states
     case 'HOLD_FIXA_FOR_MIGRATION':
@@ -412,11 +482,13 @@ function cascadeReducer(state: CascadeState, action: CascadeAction): CascadeStat
     case 'COMPLETE_CASCADE':
       return { ...state, cascadeCompleted: true };
     case 'RESTART_LEARNING':
-      return { ...initialState, mode: state.mode };
+      // Full reset with incremented key to force component remount
+      return { ...initialState, resetKey: state.resetKey + 1 };
 
     // Mode control
     case 'SET_MODE':
-      return { ...initialState, mode: action.mode };
+      // Reset with new mode and incremented key to force component remount
+      return { ...initialState, mode: action.mode, resetKey: state.resetKey + 1 };
     case 'SET_STEP_INDEX':
       return { ...state, currentStepIndex: action.index };
     case 'ADVANCE_STEP':
@@ -440,6 +512,10 @@ export interface CascadeStateHook {
   dockFV: () => void;
   dockFII: () => void;
   produceThrombin: () => void;
+  // Enzymatic activation actions (E + S → ES → E + P)
+  startActivation: (factor: 'FIX' | 'FX' | 'FII') => void;
+  advanceActivationPhase: (factor: 'FIX' | 'FX' | 'FII') => void;
+  completeActivation: (factor: 'FIX' | 'FX' | 'FII') => void;
   // FIXa deterministic migration
   holdFixaForMigration: () => void;
   startFixaGlide: () => void;
@@ -513,6 +589,20 @@ export function useCascadeState(): CascadeStateHook {
   const dockFV = useCallback((): void => dispatch({ type: 'DOCK_FV' }), []);
   const dockFII = useCallback((): void => dispatch({ type: 'DOCK_FII' }), []);
   const produceThrombin = useCallback((): void => dispatch({ type: 'PRODUCE_THROMBIN' }), []);
+
+  // Enzymatic activation actions (E + S → ES → E + P)
+  const startActivation = useCallback(
+    (factor: 'FIX' | 'FX' | 'FII'): void => dispatch({ type: 'START_ACTIVATION', factor }),
+    []
+  );
+  const advanceActivationPhase = useCallback(
+    (factor: 'FIX' | 'FX' | 'FII'): void => dispatch({ type: 'ADVANCE_ACTIVATION_PHASE', factor }),
+    []
+  );
+  const completeActivation = useCallback(
+    (factor: 'FIX' | 'FX' | 'FII'): void => dispatch({ type: 'COMPLETE_ACTIVATION', factor }),
+    []
+  );
 
   // FIXa deterministic migration
   const holdFixaForMigration = useCallback((): void => dispatch({ type: 'HOLD_FIXA_FOR_MIGRATION' }), []);
@@ -628,6 +718,10 @@ export function useCascadeState(): CascadeStateHook {
     dockFV,
     dockFII,
     produceThrombin,
+    // Enzymatic activation (E + S → ES → E + P)
+    startActivation,
+    advanceActivationPhase,
+    completeActivation,
     // FIXa deterministic migration
     holdFixaForMigration,
     startFixaGlide,

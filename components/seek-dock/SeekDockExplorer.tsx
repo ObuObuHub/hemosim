@@ -216,6 +216,7 @@ export function SeekDockExplorer({ className = '' }: SeekDockExplorerProps): Rea
 
       {/* Main Canvas */}
       <div
+        key={`canvas-${state.resetKey}`}
         style={{
           flex: 1,
           position: 'relative',

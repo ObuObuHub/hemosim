@@ -74,10 +74,25 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
     holdFiiaForMigration,
     startFiiaGlide,
     completeFiiaMigration,
+    // Enzymatic activation (E + S → ES → E + P)
+    startActivation,
+    advanceActivationPhase,
+    completeActivation,
     // Learning mode control
     setMode,
     advanceStep,
   } = useCascadeState();
+
+  /**
+   * ENZYMATIC ACTIVATION TIMING CONFIG
+   * Based on biochemical E + S → ES → E + P mechanism
+   */
+  const ACTIVATION_TIMING = {
+    approaching: 800,   // Substrate glides to enzyme (ms)
+    es_complex: 400,    // Brief pause showing complex
+    cleaving: 500,      // Cleavage effect
+    releasing: 1200,    // Product emerges and moves smoothly
+  };
 
   // Measure container dimensions for responsive layout
   useEffect(() => {
@@ -211,11 +226,12 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
   ]);
 
   // Separate effect to complete migration after animation
+  // Timeout matches fixaFloatToTenase animation duration (1600ms) in UnifiedPlateletView
   useEffect(() => {
     if (initiation.fixaMigrationState === 'migrating' && !platelet.fixaArrived) {
       const timer = setTimeout(() => {
         completeFixaMigration();
-      }, 2000);
+      }, 1600);
 
       return () => clearTimeout(timer);
     }
@@ -269,6 +285,77 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
     }
   }, [initiation.iiaMigrationState, completeFiiaMigration]);
 
+  /**
+   * ENZYMATIC ACTIVATION PHASE ORCHESTRATION
+   *
+   * Auto-advances through activation phases (approaching → es_complex → cleaving → releasing → complete)
+   * Each phase has a specific timing to show the E + S → ES → E + P biochemical mechanism.
+   */
+
+  // FIX activation phase orchestration
+  useEffect(() => {
+    const phase = initiation.fixActivationPhase;
+    if (phase === 'inactive' || phase === 'complete') return;
+
+    const timing = ACTIVATION_TIMING[phase as keyof typeof ACTIVATION_TIMING];
+    if (!timing) return;
+
+    const timer = setTimeout(() => {
+      if (phase === 'releasing') {
+        // Complete activation - set fixDocked and trigger migration hold
+        completeActivation('FIX');
+        holdFixaForMigration();
+      } else {
+        advanceActivationPhase('FIX');
+      }
+    }, timing);
+
+    return () => clearTimeout(timer);
+  }, [initiation.fixActivationPhase, advanceActivationPhase, completeActivation, holdFixaForMigration]);
+
+  // FX activation phase orchestration
+  useEffect(() => {
+    const phase = initiation.fxActivationPhase;
+    if (phase === 'inactive' || phase === 'complete') return;
+
+    const timing = ACTIVATION_TIMING[phase as keyof typeof ACTIVATION_TIMING];
+    if (!timing) return;
+
+    const timer = setTimeout(() => {
+      if (phase === 'releasing') {
+        // Complete activation - set fxDocked
+        completeActivation('FX');
+      } else {
+        advanceActivationPhase('FX');
+      }
+    }, timing);
+
+    return () => clearTimeout(timer);
+  }, [initiation.fxActivationPhase, advanceActivationPhase, completeActivation]);
+
+  // FII activation phase orchestration
+  useEffect(() => {
+    const phase = initiation.fiiActivationPhase;
+    if (phase === 'inactive' || phase === 'complete') return;
+
+    const timing = ACTIVATION_TIMING[phase as keyof typeof ACTIVATION_TIMING];
+    if (!timing) return;
+
+    const timer = setTimeout(() => {
+      if (phase === 'releasing') {
+        // Complete activation - set fiiDocked and trigger thrombin production
+        completeActivation('FII');
+        setTimeout(() => {
+          produceThrombin();
+        }, 100);
+      } else {
+        advanceActivationPhase('FII');
+      }
+    }, timing);
+
+    return () => clearTimeout(timer);
+  }, [initiation.fiiActivationPhase, advanceActivationPhase, completeActivation, produceThrombin]);
+
   // Responsive layout calculation
   const isMobile = dimensions.width < 600;
   const gap = 4;
@@ -306,8 +393,20 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
       };
 
   /**
-   * Handle factor docking in initiation phase
+   * Handle enzymatic activation start (E + S → ES → E + P)
+   * Educational note: Shows biochemically accurate substrate-enzyme binding and catalysis
+   */
+  const handleStartActivation = useCallback(
+    (factor: 'FIX' | 'FX' | 'FII'): void => {
+      startActivation(factor);
+    },
+    [startActivation]
+  );
+
+  /**
+   * Handle factor docking in initiation phase (legacy path)
    * Educational note: TF-VIIa complex forms first, then activates downstream factors
+   * NOTE: FIX, FX, FII now use handleStartActivation for enzymatic visualization
    */
   const handleDockFactor = useCallback(
     (factorId: string): void => {
@@ -316,30 +415,24 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
           dockTFVIIa();
           break;
         case 'FIX':
+          // Legacy path (for auto mode or fallback)
           dockFIX();
           // FIXa activated - moves to hold position waiting for platelet activation
-          // DETERMINISTIC: FIXa stays in hold slot until plateletActivated triggers migration
           holdFixaForMigration();
           break;
         case 'FX':
+          // Legacy path (for auto mode or fallback)
           dockFX();
           break;
         case 'FV':
           dockFV();
           break;
         case 'FII':
+          // Legacy path (for auto mode or fallback)
           dockFII();
           // Trace thrombin produced (~0.35 nM)
-          // Educational: Small amounts insufficient for fibrin clot,
-          // but enough to activate platelet surface
-          // NOTE: The cross-frame migration is now orchestrated by useEffects above
-          // that watch iiaMigrationState and trigger the animation sequence
           setTimeout(() => {
             produceThrombin();
-            // Migration orchestration is handled by the iiaMigrationState effects:
-            // 1. thrombinProduced triggers holdFiiaForMigration (400ms delay)
-            // 2. held_for_migration triggers startFiiaGlide (400ms delay)
-            // 3. migrating triggers completeFiiaMigration (800ms animation)
           }, 300);
           break;
       }
@@ -606,6 +699,7 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
         {/* Initiation Phase Frame (Left/Top) */}
         {dimensions.width > 0 && (
           <div
+            key={`initiation-${state.resetKey}`}
             style={{
               position: 'absolute',
               left: frameDimensions.initiation.x,
@@ -617,6 +711,7 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
               height={frameDimensions.initiation.height}
               state={state.initiation}
               onDockFactor={handleDockFactor}
+              onStartActivation={handleStartActivation}
               showFiiaMigration={state.initiation.fiiaMigrating}
               mode={state.mode}
               iiaMigrationState={state.initiation.iiaMigrationState}
@@ -627,6 +722,7 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
         {/* Platelet Surface Frame (Right/Bottom) */}
         {dimensions.width > 0 && (
           <div
+            key={`platelet-${state.resetKey}`}
             style={{
               position: 'absolute',
               left: frameDimensions.platelet.x,
@@ -650,6 +746,7 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
               onActivateFXIII={activateFXIII}
               onCrosslinkFibrin={crosslinkFibrin}
               fixaMigrating={state.initiation.fixaMigrationState === 'migrating'}
+              fixaWaiting={state.initiation.fixaMigrationState === 'held_for_migration'}
               mode={state.mode}
             />
           </div>
@@ -664,6 +761,7 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
         {/* Animated from SparkFrame fiiaHold position to ExplosionFrame IIa slot */}
         {state.initiation.iiaMigrationState === 'migrating' && !isMobile && (
           <div
+            key={`fiia-migration-${state.resetKey}`}
             style={{
               position: 'absolute',
               left: 0,

@@ -26,6 +26,7 @@ export interface UnifiedPlateletViewProps {
   canBurst: boolean;
   isAutoMode: boolean;
   fixaMigrating: boolean;
+  fixaWaiting?: boolean;
 }
 
 /**
@@ -54,6 +55,7 @@ export function UnifiedPlateletView({
   canBurst,
   isAutoMode,
   fixaMigrating,
+  fixaWaiting = false,
 }: UnifiedPlateletViewProps): React.ReactElement {
   // ===== TOP ZONE: Cofactor Activation =====
   const topRowY = bloodstreamHeight * 0.15;
@@ -472,44 +474,38 @@ export function UnifiedPlateletView({
 
       {/* ========== BOTTOM ZONE: COMPLEX FORMATION ========== */}
 
-      {/* FIXa migration animation - from top-right directly to its position in Tenase */}
+      {/* FIXa WAITING - arrived from left panel, waiting for tenase formation (faded) */}
+      {fixaWaiting && !fixaMigrating && !state.fixaArrived && (
+        <div
+          style={{
+            position: 'absolute',
+            left: 30,
+            top: bloodstreamHeight * 0.45,
+            zIndex: 20,
+            opacity: 0.35,
+            filter: 'grayscale(30%)',
+            animation: 'fadeInSlide 0.8s ease-out',
+          }}
+        >
+          <FactorTokenNew factorId="FIXa" isActive={true} enableHover={false} />
+        </div>
+      )}
+
+      {/* FIXa migration animation - smoothly floats from waiting position into Tenase slot */}
       {fixaMigrating && !state.fixaArrived && (
         <div
           style={{
             position: 'absolute',
-            right: width * 0.08,
-            top: bloodstreamHeight * 0.15,
+            left: 30,
+            top: bloodstreamHeight * 0.45,
             zIndex: 100,
-            animation: 'fixaMigrateToTenase 2.5s ease-in-out forwards',
-            ['--target-x' as string]: `${-(width - tenaseX - width * 0.08 + 18)}px`,
-            ['--target-y' as string]: `${complexY - bloodstreamHeight * 0.15}px`,
+            animation: 'fixaFloatToTenase 1.6s ease-in-out forwards',
+            ['--end-x' as string]: `${tenaseX - 30 + 10}px`,
+            ['--end-y' as string]: `${complexY - bloodstreamHeight * 0.45}px`,
             pointerEvents: 'none',
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              filter: 'drop-shadow(0 4px 16px rgba(6, 182, 212, 0.6))',
-            }}
-          >
-            <FactorTokenNew factorId="FIXa" isActive={true} enableHover={false} />
-            <div
-              style={{
-                marginTop: 4,
-                padding: '3px 8px',
-                background: 'linear-gradient(135deg, #06B6D4 0%, #0891B2 100%)',
-                borderRadius: 5,
-                fontSize: 8,
-                fontWeight: 700,
-                color: '#FFFFFF',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              FIXa → Tenază
-            </div>
-          </div>
+          <FactorTokenNew factorId="FIXa" isActive={true} enableHover={false} />
         </div>
       )}
 
@@ -935,9 +931,29 @@ export function UnifiedPlateletView({
           from { opacity: 0; transform: translateY(-40px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes fixaMigrateToTenase {
-          0% { opacity: 1; transform: translate(0, 0); }
-          100% { opacity: 1; transform: translate(var(--target-x, -200px), var(--target-y, 150px)); }
+        @keyframes fixaFloatToTenase {
+          0% {
+            opacity: 0.4;
+            transform: translate(0, 0) scale(1);
+            filter: grayscale(30%);
+          }
+          40% {
+            opacity: 0.85;
+            transform: translate(var(--end-x), calc(var(--end-y) - 25px)) scale(1.05);
+            filter: grayscale(0%);
+          }
+          70% {
+            opacity: 1;
+            transform: translate(var(--end-x), calc(var(--end-y) - 10px)) scale(1.02);
+          }
+          100% {
+            opacity: 1;
+            transform: translate(var(--end-x), var(--end-y)) scale(0.9);
+          }
+        }
+        @keyframes fadeInSlide {
+          0% { opacity: 0; transform: translateX(-30px); }
+          100% { opacity: 1; transform: translateX(0); }
         }
       `}</style>
     </>

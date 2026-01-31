@@ -290,6 +290,9 @@ export interface SeekDockState {
 
   // Staging waypoints (for HOLDING state)
   stagingWaypoints: StagingWaypoint[];
+
+  // Reset key - changes on reset to force component remount
+  resetKey: number;
 }
 
 /**
