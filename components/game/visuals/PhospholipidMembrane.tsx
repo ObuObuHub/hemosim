@@ -108,19 +108,6 @@ export function PhospholipidMembrane({
         fill={`url(#tissue-gradient-${variant})`}
       />
 
-      {/* Cell type label at bottom */}
-      <text
-        x={8}
-        y={height - 4}
-        fontSize={8}
-        fontWeight={700}
-        fill={variant === 'fibroblast' ? '#881337' : '#9F1239'}
-        opacity={0.7}
-        style={{ fontFamily: 'system-ui, sans-serif', letterSpacing: '0.5px' }}
-      >
-        {tissueColor.label}
-      </text>
-
       {/* Top row of phospholipids (facing bloodstream) */}
       {topRowHeads.map((head, i) => {
         // Every 2nd-3rd head shows PS when exposed (medical: PS exposure provides binding sites)

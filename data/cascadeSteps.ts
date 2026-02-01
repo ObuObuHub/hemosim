@@ -3,13 +3,17 @@
 /**
  * Cascade step definitions for Auto/Manual mode
  * Based on the Hoffman-Monroe cellular model of coagulation
+ *
+ * IMPORTANT: Instructions describe BIOCHEMICAL EVENTS, not UI actions.
+ * ❌ "Apasă pe FVII pentru a forma complexul"
+ * ✅ "Factorul VII din plasmă se leagă de Factorul tisular (FT)"
  */
 
 export type PlayMode = 'manual' | 'auto';
 
 export interface CascadeStep {
   id: string;
-  instruction: string;      // Romanian text for instruction banner
+  instruction: string;      // Romanian biochemical description
   actionKey: string;        // Maps to state action in TwoFrameGame
   isAutomatic: boolean;     // Auto-triggered vs user-triggered in manual mode
   delayMs: number;          // Delay before this step executes in auto mode
@@ -19,17 +23,17 @@ export interface CascadeStep {
 /**
  * Complete cascade step sequence (24 steps)
  *
- * Phases:
- * - Initiation (Steps 1-5): TF-bearing cell surface
- * - Amplification (Steps 6-15): Platelet surface activation
- * - Propagation (Steps 16-20): Complex formation and thrombin burst
- * - Clotting (Steps 21-24): Fibrin mesh stabilization
+ * Phases per Panel:
+ * - SparkFrame - Inițiere (Steps 1-5): TF-bearing cell surface
+ * - ExplosionFrame - Amplificare (Steps 6-15): Platelet surface activation
+ * - ExplosionFrame - Propagare (Steps 16-20): Complex formation and thrombin burst
+ * - ExplosionFrame - Coagulare (Steps 21-24): Fibrin mesh stabilization
  */
 export const cascadeSteps: CascadeStep[] = [
-  // ============ INITIATION PHASE (Spark Frame) ============
+  // ============ INITIATION PHASE - SparkFrame (5 steps) ============
   {
     id: 'dock-tf-vii',
-    instruction: 'Apasă pe FVII pentru a forma complexul TF-VIIa',
+    instruction: 'Factorul VII din plasmă se leagă de Factorul tisular (FT) expus pe suprafața celulei',
     actionKey: 'TF+FVII',
     isAutomatic: false,
     delayMs: 2500,
@@ -37,7 +41,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'dock-fix',
-    instruction: 'Apasă pe FIX pentru activare - FIXa va migra către trombocit',
+    instruction: 'Complexul TF-VIIa activează FIX prin clivaj proteolitic',
     actionKey: 'FIX',
     isAutomatic: false,
     delayMs: 3000,
@@ -45,7 +49,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'dock-fx',
-    instruction: 'Apasă pe FX pentru activare de către TF-VIIa',
+    instruction: 'TF-VIIa activează FX - formarea enzimei active FXa',
     actionKey: 'FX',
     isAutomatic: false,
     delayMs: 2500,
@@ -53,7 +57,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'dock-fv',
-    instruction: 'Apasă pe FV pentru a forma complexul Protrombinase',
+    instruction: 'FVa se leagă de FXa formând complexul Protrombinază',
     actionKey: 'FV',
     isAutomatic: false,
     delayMs: 2500,
@@ -61,25 +65,25 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'dock-fii',
-    instruction: 'Apasă pe FII pentru a produce Trombină',
+    instruction: 'Protrombinaza convertește protrombina (FII) în trombină (FIIa)',
     actionKey: 'FII',
     isAutomatic: false,
     delayMs: 2500,
     phase: 'initiation',
   },
 
-  // ============ AMPLIFICATION PHASE (Explosion Frame) ============
+  // ============ AMPLIFICATION PHASE - ExplosionFrame (10 steps) ============
   {
     id: 'thrombin-arrives',
-    instruction: 'Trombina migrează către suprafața trombocitului...',
+    instruction: 'Trombina migrează spre suprafața trombocitului',
     actionKey: 'THROMBIN_ARRIVES',
     isAutomatic: true,
-    delayMs: 2500, // Wait for thrombin migration animation
+    delayMs: 2500,
     phase: 'amplification',
   },
   {
     id: 'par-bind',
-    instruction: 'Trombina se leagă de receptorul PAR1...',
+    instruction: 'Trombina se leagă de receptorul PAR1',
     actionKey: 'PAR_BIND',
     isAutomatic: true,
     delayMs: 1500,
@@ -87,7 +91,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'par-cleave',
-    instruction: 'Apasă pe receptorul PAR1 pentru clivare',
+    instruction: 'Trombina clivează receptorul PAR1 al trombocitului',
     actionKey: 'PAR_CLEAVE',
     isAutomatic: false,
     delayMs: 2000,
@@ -95,7 +99,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'par-activate',
-    instruction: 'PAR1 se activează și transmite semnalul...',
+    instruction: 'PAR1 activat transmite semnalul de activare intracelular',
     actionKey: 'PAR_ACTIVATE',
     isAutomatic: true,
     delayMs: 2500,
@@ -103,7 +107,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'split-vwf',
-    instruction: 'Apasă pe complexul vWF-FVIII pentru a elibera FVIII',
+    instruction: 'Trombina eliberează FVIII din complexul vWF-FVIII',
     actionKey: 'vWF-VIII',
     isAutomatic: false,
     delayMs: 2500,
@@ -111,7 +115,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'activate-fv',
-    instruction: 'Apasă pe FV pentru activare',
+    instruction: 'Trombina activează FV → FVa',
     actionKey: 'FV_AMP',
     isAutomatic: false,
     delayMs: 2500,
@@ -119,7 +123,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'activate-fxi',
-    instruction: 'Apasă pe FXI pentru activare (buclă feedback pozitiv)',
+    instruction: 'Trombina activează FXI → FXIa (buclă feedback pozitiv)',
     actionKey: 'FXI',
     isAutomatic: false,
     delayMs: 2500,
@@ -127,7 +131,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'platelet-activate',
-    instruction: 'Trombocitul se activează și expune fosfolipide...',
+    instruction: 'Trombocitul se activează și expune fosfatidilserină',
     actionKey: 'PLATELET_ACTIVATE',
     isAutomatic: true,
     delayMs: 2000,
@@ -135,7 +139,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'dock-fva',
-    instruction: 'FVa se ancorează pe membrana trombocitului...',
+    instruction: 'FVa se ancorează pe membrana trombocitului activat',
     actionKey: 'DOCK_FVA',
     isAutomatic: true,
     delayMs: 2000,
@@ -143,17 +147,17 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'dock-fviiia',
-    instruction: 'FVIIIa se ancorează pe membrana trombocitului...',
+    instruction: 'FVIIIa se ancorează pe membrana trombocitului activat',
     actionKey: 'DOCK_FVIIIA',
     isAutomatic: true,
     delayMs: 2000,
     phase: 'amplification',
   },
 
-  // ============ PROPAGATION PHASE (Explosion Frame) ============
+  // ============ PROPAGATION PHASE - ExplosionFrame (5 steps) ============
   {
     id: 'fixa-arrives',
-    instruction: 'FIXa sosește de la faza de inițiere...',
+    instruction: 'FIXa sosește de la celula care exprimă FT',
     actionKey: 'FIXA_ARRIVES',
     isAutomatic: true,
     delayMs: 1500,
@@ -161,7 +165,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'form-tenase',
-    instruction: 'Apasă pentru a forma complexul Tenase (FIXa + FVIIIa)',
+    instruction: 'FIXa + FVIIIa formează complexul Tenază pe suprafața trombocitului',
     actionKey: 'TENASE',
     isAutomatic: false,
     delayMs: 3000,
@@ -169,7 +173,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'produce-fxa',
-    instruction: 'Tenase convertește FX → FXa (×200.000 amplificare)',
+    instruction: 'Tenaza convertește FX → FXa (amplificare ×200.000)',
     actionKey: 'PRODUCE_FXA',
     isAutomatic: false,
     delayMs: 2500,
@@ -185,17 +189,17 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'thrombin-burst',
-    instruction: 'Apasă pentru a genera explozia de trombină! (×300.000)',
+    instruction: 'Explozia de trombină: generarea masivă de trombină',
     actionKey: 'BURST',
     isAutomatic: false,
     delayMs: 10000,
     phase: 'propagation',
   },
 
-  // ============ CLOTTING PHASE (Fibrin Formation) ============
+  // ============ CLOTTING PHASE - ExplosionFrame (4 steps) ============
   {
     id: 'cleave-fibrinogen',
-    instruction: 'Trombina clivează fibrinogenul în monomeri de fibrină...',
+    instruction: 'Trombina clivează fibrinogenul eliberând fibrinopeptidele A și B',
     actionKey: 'FIBRINOGEN_CLEAVE',
     isAutomatic: true,
     delayMs: 8000,
@@ -203,7 +207,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'polymerize-fibrin',
-    instruction: 'Monomerii de fibrină se autoasamblează în protofibrile...',
+    instruction: 'Monomerii de fibrină se autoasamblează în protofibrile',
     actionKey: 'FIBRIN_POLYMERIZE',
     isAutomatic: true,
     delayMs: 5000,
@@ -211,7 +215,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'activate-fxiii',
-    instruction: 'Trombina activează FXIII pentru stabilizarea cheagului...',
+    instruction: 'Trombina activează FXIII → FXIIIa',
     actionKey: 'FXIII_ACTIVATE',
     isAutomatic: true,
     delayMs: 5000,
@@ -219,7 +223,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'crosslink-fibrin',
-    instruction: 'Apasă pentru a forma legături covalente între fibrele de fibrină',
+    instruction: 'FXIIIa formează legături covalente între fibrele de fibrină',
     actionKey: 'FIBRIN_CROSSLINK',
     isAutomatic: false,
     delayMs: 6000,
@@ -314,4 +318,70 @@ export function getNextStep(stepIndex: number): CascadeStep | null {
  */
 export function getTotalAutoPlayDuration(): number {
   return cascadeSteps.reduce((total, step) => total + step.delayMs, 0);
+}
+
+// =============================================================================
+// PANEL-SPECIFIC HELPER FUNCTIONS
+// =============================================================================
+
+/** Step ranges per panel */
+const PANEL_RANGES = {
+  spark: { start: 0, end: 4 },     // 5 steps (Initiation)
+  platelet: { start: 5, end: 23 }, // 19 steps (Amplification + Propagation + Clotting)
+} as const;
+
+export type PanelId = 'spark' | 'platelet';
+
+/**
+ * Get all steps for a specific panel
+ */
+export function getStepsForPanel(panelId: PanelId): CascadeStep[] {
+  const range = PANEL_RANGES[panelId];
+  return cascadeSteps.slice(range.start, range.end + 1);
+}
+
+/**
+ * Get the number of steps for a specific panel
+ */
+export function getPanelStepCount(panelId: PanelId): number {
+  const range = PANEL_RANGES[panelId];
+  return range.end - range.start + 1;
+}
+
+/**
+ * Convert a global step index to panel-local index
+ * Returns -1 if the step doesn't belong to the specified panel
+ */
+export function getLocalStepIndex(panelId: PanelId, globalIndex: number): number {
+  const range = PANEL_RANGES[panelId];
+  if (globalIndex < range.start || globalIndex > range.end) {
+    return -1;
+  }
+  return globalIndex - range.start;
+}
+
+/**
+ * Convert a panel-local step index to global index
+ */
+export function getGlobalStepIndex(panelId: PanelId, localIndex: number): number {
+  const range = PANEL_RANGES[panelId];
+  return range.start + localIndex;
+}
+
+/**
+ * Check if a global step index belongs to a specific panel
+ */
+export function isStepInPanel(panelId: PanelId, globalIndex: number): boolean {
+  const range = PANEL_RANGES[panelId];
+  return globalIndex >= range.start && globalIndex <= range.end;
+}
+
+/**
+ * Get the phase name for a platelet panel step (based on local index)
+ */
+export function getPlateletPhaseName(localIndex: number): string {
+  if (localIndex < 0) return 'Inactiv';
+  if (localIndex < 10) return 'Amplificare';  // Steps 0-9 locally (5-14 globally)
+  if (localIndex < 15) return 'Propagare';    // Steps 10-14 locally (15-19 globally)
+  return 'Coagulare';                          // Steps 15-18 locally (20-23 globally)
 }

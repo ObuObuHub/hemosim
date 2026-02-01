@@ -23,7 +23,7 @@ export function TFProtein({
   y,
   isActive = true,
   hasVIIa = false,
-  isProducing = false,
+  isProducing: _isProducing = false,
 }: TFProteinProps): React.ReactElement {
   const tfWidth = 56;
   const bodyHeight = 36;
@@ -128,7 +128,7 @@ export function TFProtein({
               {/* FVIIa serine protease with active site slot */}
               <svg width={42} height={42} viewBox="0 0 42 42">
                 {/* Main circle */}
-                <circle cx={21} cy={21} r={18} fill="#DC2626" stroke="#991B1B" strokeWidth={2} />
+                <circle cx={21} cy={21} r={18} fill="#1D4ED8" stroke="#1E40AF" strokeWidth={2} />
                 {/* Active site slot */}
                 <path
                   d={`M ${21 - 3.5} 3 L ${21 - 3.5} ${3 + 9} A 3 3 0 0 0 ${21 + 3.5} ${3 + 9} L ${21 + 3.5} 3 Z`}

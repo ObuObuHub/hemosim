@@ -24,16 +24,21 @@ export function FibrinMesh({
   isStable,
   onClotStabilized,
 }: FibrinMeshProps): React.ReactElement {
+  // Derive initial state from isStable prop
   const [fibrinogenCleaved, setFibrinogenCleaved] = useState(isStable);
   const [fxiiiActivated, setFxiiiActivated] = useState(isStable);
   const [cleavageAnimating, setCleavageAnimating] = useState(false);
   const [activationAnimating, setActivationAnimating] = useState(false);
   const hasNotified = useRef(false);
 
+  // Sync state when isStable prop changes from false to true
   useEffect(() => {
     if (isStable && !fibrinogenCleaved && !fxiiiActivated) {
-      setFibrinogenCleaved(true);
-      setFxiiiActivated(true);
+      // Use microtask to avoid synchronous setState in effect
+      queueMicrotask(() => {
+        setFibrinogenCleaved(true);
+        setFxiiiActivated(true);
+      });
     }
   }, [isStable, fibrinogenCleaved, fxiiiActivated]);
 

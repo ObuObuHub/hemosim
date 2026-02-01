@@ -7,7 +7,9 @@ import { FactorTokenNew } from '../tokens/FactorTokenNew';
 import { TFProtein } from '../visuals/TFProtein';
 import { ESComplexGlow, CleavageAnimation, ProductReleaseGlow } from '../visuals/EnzymaticActivation';
 import { InhibitorToken } from '../tokens/InhibitorToken';
-import type { SparkState, PlayMode, IIaMigrationState, ActivationPhase } from '@/hooks/useCascadeState';
+import { PanelInstructionBanner } from '../PanelInstructionBanner';
+import type { SparkState, PlayMode, IIaMigrationState } from '@/hooks/useCascadeState';
+import type { CascadeStep } from '@/data/cascadeSteps';
 
 interface SparkFrameProps {
   width: number;
@@ -22,6 +24,15 @@ interface SparkFrameProps {
   iiaMigrationState?: IIaMigrationState;
   /** Show anticoagulant system (inhibitor tokens) */
   showAnticoagulant?: boolean;
+  /** Panel instruction banner props */
+  panelStep?: {
+    currentStep: CascadeStep | null;
+    currentStepIndex: number;
+    totalSteps: number;
+    isPanelComplete: boolean;
+    isPanelActive: boolean;
+    phaseName: string;
+  };
 }
 
 /**
@@ -47,6 +58,7 @@ export function SparkFrame({
   mode = 'manual',
   iiaMigrationState = 'inactive',
   showAnticoagulant = false,
+  panelStep,
 }: SparkFrameProps): React.ReactElement {
   const isAutoMode = mode === 'auto';
 
@@ -175,11 +187,11 @@ export function SparkFrame({
   const handleFVBind = (): void => {
     if (state.fvDocked || !state.fxDocked || isAutoMode || fvBinding) return;
     setFvBinding(true);
-    // Animation completes, then dock
+    // Animation completes, then dock (matches 1s animation duration)
     setTimeout(() => {
       onDockFactor('FV');
       setFvBinding(false);
-    }, 1500);
+    }, 1000);
   };
 
   // Handler: FII activation - starts enzymatic E + S → ES → E + P sequence
@@ -210,6 +222,21 @@ export function SparkFrame({
         overflow: 'hidden',
       }}
     >
+      {/* Panel Instruction Banner */}
+      {panelStep && (
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100 }}>
+          <PanelInstructionBanner
+            panelId="spark"
+            currentStep={panelStep.currentStep}
+            currentStepIndex={panelStep.currentStepIndex}
+            totalSteps={panelStep.totalSteps}
+            isComplete={panelStep.isPanelComplete}
+            isActive={panelStep.isPanelActive}
+            phaseName={panelStep.phaseName}
+          />
+        </div>
+      )}
+
       {/* Plasma background */}
       <div
         style={{
@@ -221,22 +248,6 @@ export function SparkFrame({
           background: 'linear-gradient(180deg, #F1F5F9 0%, #F8FAFC 100%)',
         }}
       />
-
-      {/* Plasma label */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 8,
-          left: 12,
-          fontSize: 10,
-          fontWeight: 500,
-          fontFamily: 'system-ui, sans-serif',
-          color: '#94A3B8',
-          letterSpacing: 0.5,
-        }}
-      >
-        Plasmă
-      </div>
 
       {/* Membrane */}
       <div
@@ -266,21 +277,21 @@ export function SparkFrame({
           <div
             style={{
               color: '#FFFFFF',
-              fontSize: 11,
+              fontSize: 16,
               fontWeight: 700,
               fontFamily: 'system-ui, sans-serif',
-              textShadow: '0 1px 3px rgba(0,0,0,0.6)',
+              textShadow: '0 2px 4px rgba(0,0,0,0.7)',
             }}
           >
             CELULĂ CARE EXPRIMĂ FACTOR TISULAR
           </div>
           <div
             style={{
-              color: 'rgba(255,255,255,0.75)',
-              fontSize: 8,
+              color: 'rgba(255,255,255,0.85)',
+              fontSize: 11,
               fontFamily: 'system-ui, sans-serif',
-              textShadow: '0 1px 2px rgba(0,0,0,0.5)',
-              marginTop: 2,
+              textShadow: '0 1px 3px rgba(0,0,0,0.6)',
+              marginTop: 4,
             }}
           >
             Fibroblast subendotelial / Monocit activat
@@ -598,7 +609,7 @@ export function SparkFrame({
         </div>
       )}
 
-      {/* FV BINDING - animating smoothly from left margin to join FXa */}
+      {/* FV BINDING - animating directly to prothrombinase position */}
       {fvBinding && (
         <div
           style={{
@@ -606,9 +617,10 @@ export function SparkFrame({
             left: layout.positions.fv.x - 22,
             top: layout.positions.fv.y,
             zIndex: 25,
-            animation: 'fvBindToProthrombinase 1.5s cubic-bezier(0.25, 0.1, 0.25, 1) forwards',
-            ['--target-x' as string]: `${width * 0.55 + 25 - layout.positions.fv.x + 22}px`,
-            ['--target-y' as string]: `${layout.membraneY - 85 + 20 - layout.positions.fv.y}px`,
+            animation: 'fvBindToProthrombinase 1s ease-out forwards',
+            // Target: FVa position inside prothrombinase (accounting for container transform and padding)
+            ['--target-x' as string]: `${width * 0.55 - 47 - (layout.positions.fv.x - 22)}px`,
+            ['--target-y' as string]: `${layout.membraneY - 87 - layout.positions.fv.y}px`,
           }}
         >
           <FactorTokenNew factorId="FV" isActive={false} enableHover={false} />
@@ -967,22 +979,7 @@ export function SparkFrame({
         @keyframes fvBindToProthrombinase {
           0% {
             transform: translate(0, 0) scale(1);
-            opacity: 0.6;
-            filter: grayscale(20%);
-          }
-          15% {
-            transform: translate(calc(var(--target-x) * 0.1), calc(var(--target-y) * 0.05 - 15px)) scale(1.05);
-            opacity: 0.75;
-            filter: grayscale(10%);
-          }
-          50% {
-            transform: translate(calc(var(--target-x) * 0.5), calc(var(--target-y) * 0.4 - 20px)) scale(1.08);
-            opacity: 0.9;
-            filter: grayscale(0%);
-          }
-          80% {
-            transform: translate(calc(var(--target-x) * 0.9), calc(var(--target-y) * 0.85 - 8px)) scale(1.03);
-            opacity: 1;
+            opacity: 0.7;
           }
           100% {
             transform: translate(var(--target-x), var(--target-y)) scale(1);
@@ -1117,7 +1114,7 @@ interface ActivationArrowSVGProps {
   curved?: boolean;
 }
 
-function ActivationArrowSVG({
+function _ActivationArrowSVG({
   fromX,
   fromY,
   toX,

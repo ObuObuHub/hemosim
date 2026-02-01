@@ -7,9 +7,9 @@ import { SparkFrame } from '../game/frames/SparkFrame';
 import { ExplosionFrame } from '../game/frames/ExplosionFrame';
 import { FactorTokenNew } from '../game/tokens/FactorTokenNew';
 import { useCascadeState } from '@/hooks/useCascadeState';
+import { usePanelStepState } from '@/hooks/usePanelStepState';
 import { ModeToggle } from '../game/ModeToggle';
 import { useAutoPlayController } from '@/hooks/useAutoPlayController';
-import { cascadeSteps, getNextStep, getCurrentStepIndex } from '@/data/cascadeSteps';
 
 interface CellularModelExplorerProps {
   className?: string;
@@ -60,7 +60,6 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
     startPlateletFXActivation,
     advancePlateletFXPhase,
     completePlateletFXActivation,
-    produceFXa,
     formProthrombinase,
     // Platelet FII activation (Prothrombinase)
     startPlateletFIIActivation,
@@ -154,44 +153,6 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
     [parCleave, startPlateletFXActivation, startPlateletFIIActivation, cleaveFibrinogen, polymerizeFibrin, activateFXIII, crosslinkFibrin, advanceStep]
   );
 
-  // Calculate actual step index based on cascade state (for manual mode accuracy)
-  const calculatedStepIndex = useMemo(
-    () =>
-      getCurrentStepIndex({
-        spark: {
-          tfVIIaDocked: state.initiation.tfVIIaDocked,
-          fixDocked: state.initiation.fixDocked,
-          fxDocked: state.initiation.fxDocked,
-          fvDocked: state.initiation.fvDocked,
-          fiiDocked: state.initiation.fiiDocked,
-          thrombinProduced: state.initiation.thrombinProduced,
-        },
-        explosion: {
-          thrombinArrived: state.platelet.thrombinArrived,
-          parCleavageState: state.platelet.parCleavageState,
-          vwfSplit: state.platelet.vwfSplit,
-          fvActivated: state.platelet.fvActivated,
-          fxiActivated: state.platelet.fxiActivated,
-          plateletActivated: state.platelet.plateletActivated,
-          fvaDocked: state.platelet.fvaDocked,
-          fviiaDocked: state.platelet.fviiaDocked,
-          fixaArrived: state.platelet.fixaArrived,
-          tenaseFormed: state.platelet.tenaseFormed,
-          fxaProduced: state.platelet.fxaProduced,
-          prothrombinaseFormed: state.platelet.prothrombinaseFormed,
-          thrombinBurst: state.platelet.thrombinBurst,
-          fibrinogenCleaved: state.platelet.fibrinogenCleaved,
-          fibrinPolymerized: state.platelet.fibrinPolymerized,
-          fxiiiActivated: state.platelet.fxiiiActivated,
-          fibrinCrosslinked: state.platelet.fibrinCrosslinked,
-        },
-      }),
-    [state.initiation, state.platelet]
-  );
-
-  // Use calculated index for manual mode, stored index for auto mode
-  const effectiveStepIndex = state.mode === 'auto' ? state.currentStepIndex : calculatedStepIndex;
-
   // Auto-play controller for demonstration mode
   useAutoPlayController({
     isActive: state.mode === 'auto',
@@ -199,13 +160,14 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
     callbacks: autoPlayCallbacks,
   });
 
-  // Get current step for instructional banner
-  const currentStep = getNextStep(effectiveStepIndex);
-
   // Unified view: No phase transition needed
   // Both amplification and propagation activities are visible simultaneously
   // Each activity is gated by its own prerequisites, not by phase
   const { platelet, initiation } = state;
+
+  // Panel-specific step state for instruction banners
+  const sparkPanelState = usePanelStepState('spark', state);
+  const plateletPanelState = usePanelStepState('platelet', state);
 
   /**
    * FIXa DETERMINISTIC MIGRATION TRIGGER
@@ -487,15 +449,15 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
         // Mobile: vertical stack (initiation on top, platelet below)
         initiation: {
           width: dimensions.width - 16,
-          height: (dimensions.height - 32 - gap) * 0.35,
+          height: (dimensions.height - 24 - gap) * 0.35,
           x: 8,
           y: 8,
         },
         platelet: {
           width: dimensions.width - 16,
-          height: (dimensions.height - 32 - gap) * 0.65,
+          height: (dimensions.height - 24 - gap) * 0.65,
           x: 8,
-          y: 8 + (dimensions.height - 32 - gap) * 0.35 + gap,
+          y: 8 + (dimensions.height - 24 - gap) * 0.35 + gap,
         },
       }
     : {
@@ -690,70 +652,111 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
         Salt la conținut interactiv
       </a>
 
-      {/* Header with learning mode toggle and restart button */}
+      {/* Restart Button (bottom-left) */}
       <div
         style={{
           position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          padding: '12px',
+          bottom: 12,
+          left: 12,
           zIndex: 200,
-          pointerEvents: 'none',
+          pointerEvents: 'auto',
         }}
       >
-        {/* Learning Mode Toggle (left side) */}
-        <div style={{ pointerEvents: 'auto' }}>
-          <ModeToggle
-            mode={state.mode}
-            onModeChange={setMode}
-            disabled={state.cascadeCompleted}
-          />
-        </div>
+        <button
+          type="button"
+          onClick={restartLearning}
+          aria-label="Repornește explorarea"
+          style={{
+            padding: '6px 14px',
+            background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
+            border: 'none',
+            borderRadius: 16,
+            color: '#FFFFFF',
+            fontSize: 11,
+            fontWeight: 700,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            fontFamily: 'system-ui, sans-serif',
+            letterSpacing: 0.3,
+            boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)';
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.4)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)';
+            e.currentTarget.style.boxShadow = '0 2px 8px rgba(59, 130, 246, 0.3)';
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.outline = '2px solid rgba(59, 130, 246, 0.5)';
+            e.currentTarget.style.outlineOffset = '2px';
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.outline = 'none';
+          }}
+        >
+          Repornește
+        </button>
+      </div>
 
-        
-        {/* Right side buttons */}
-        <div style={{ pointerEvents: 'auto', display: 'flex', gap: 8 }}>
-          {/* Restart Learning Button */}
-          <button
-            type="button"
-            onClick={restartLearning}
-            aria-label="Repornește explorarea"
+      {/* Learning Mode Toggle (bottom-right) */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 12,
+          right: 12,
+          zIndex: 200,
+          pointerEvents: 'auto',
+        }}
+      >
+        <ModeToggle
+          mode={state.mode}
+          onModeChange={setMode}
+          disabled={state.cascadeCompleted}
+        />
+      </div>
+
+      {/* Model Title (bottom-center, between panels) */}
+      {!isMobile && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 14,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            zIndex: 150,
+            pointerEvents: 'none',
+          }}
+        >
+          <span
             style={{
-              padding: '6px 12px',
-              background: 'rgba(100, 116, 139, 0.4)',
-              border: '2px solid #64748B',
-              borderRadius: 6,
-              color: '#E2E8F0',
               fontSize: 11,
-              fontWeight: 700,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
+              fontWeight: 600,
               fontFamily: 'system-ui, sans-serif',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(100, 116, 139, 0.6)';
-              e.currentTarget.style.borderColor = '#94A3B8';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(100, 116, 139, 0.4)';
-              e.currentTarget.style.borderColor = '#64748B';
-            }}
-            onFocus={(e) => {
-              e.currentTarget.style.outline = '2px solid #3B82F6';
-              e.currentTarget.style.outlineOffset = '2px';
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.outline = 'none';
+              color: '#64748B',
+              letterSpacing: 0.5,
             }}
           >
-            Repornește
-          </button>
+            Modelul Celular
+          </span>
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              fontFamily: 'system-ui, sans-serif',
+              color: '#64748B',
+              letterSpacing: 0.5,
+              marginLeft: 12,
+            }}
+          >
+            Hoffman-Monroe
+          </span>
         </div>
-      </div>
+      )}
 
       {/* Main content landmark */}
       <main id="cascade-content">
@@ -776,6 +779,7 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
               showFiiaMigration={state.initiation.fiiaMigrating}
               mode={state.mode}
               iiaMigrationState={state.initiation.iiaMigrationState}
+              panelStep={sparkPanelState}
             />
           </div>
         )}
@@ -810,6 +814,7 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
               fixaMigrating={state.initiation.fixaMigrationState === 'migrating'}
               fixaWaiting={state.initiation.fixaMigrationState === 'held_for_migration'}
               mode={state.mode}
+              panelStep={plateletPanelState}
             />
           </div>
         )}

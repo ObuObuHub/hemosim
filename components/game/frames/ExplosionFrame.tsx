@@ -6,7 +6,9 @@ import { PhospholipidMembrane } from '../visuals/PhospholipidMembrane';
 import { FibrinMesh } from '../visuals/FibrinMesh';
 import { UnifiedPlateletView } from './UnifiedPlateletView';
 import { InhibitorToken } from '../tokens/InhibitorToken';
+import { PanelInstructionBanner } from '../PanelInstructionBanner';
 import type { ExplosionState, PlayMode } from '@/hooks/useCascadeState';
+import type { CascadeStep } from '@/data/cascadeSteps';
 
 interface ExplosionFrameProps {
   width: number;
@@ -33,6 +35,15 @@ interface ExplosionFrameProps {
   fixaWaiting?: boolean;
   /** Show anticoagulant system (inhibitor tokens) */
   showAnticoagulant?: boolean;
+  /** Panel instruction banner props */
+  panelStep?: {
+    currentStep: CascadeStep | null;
+    currentStepIndex: number;
+    totalSteps: number;
+    isPanelComplete: boolean;
+    isPanelActive: boolean;
+    phaseName: string;
+  };
 }
 
 /**
@@ -70,6 +81,7 @@ export function ExplosionFrame({
   fixaMigrating = false,
   fixaWaiting = false,
   showAnticoagulant = false,
+  panelStep,
 }: ExplosionFrameProps): React.ReactElement {
   const isAutoMode = mode === 'auto';
 
@@ -206,6 +218,21 @@ export function ExplosionFrame({
         overflow: 'hidden',
       }}
     >
+      {/* Panel Instruction Banner */}
+      {panelStep && (
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100 }}>
+          <PanelInstructionBanner
+            panelId="platelet"
+            currentStep={panelStep.currentStep}
+            currentStepIndex={panelStep.currentStepIndex}
+            totalSteps={panelStep.totalSteps}
+            isComplete={panelStep.isPanelComplete}
+            isActive={panelStep.isPanelActive}
+            phaseName={panelStep.phaseName}
+          />
+        </div>
+      )}
+
       {/* Bloodstream background */}
       <div
         style={{
@@ -261,10 +288,10 @@ export function ExplosionFrame({
           <div
             style={{
               color: '#FFFFFF',
-              fontSize: 11,
+              fontSize: 16,
               fontWeight: 700,
               fontFamily: 'system-ui, sans-serif',
-              textShadow: '0 1px 3px rgba(0,0,0,0.6)',
+              textShadow: '0 2px 4px rgba(0,0,0,0.7)',
             }}
           >
             {isDormant ? 'TROMBOCIT CIRCULANT' :
@@ -275,11 +302,11 @@ export function ExplosionFrame({
           </div>
           <div
             style={{
-              color: 'rgba(255,255,255,0.75)',
-              fontSize: 8,
+              color: 'rgba(255,255,255,0.85)',
+              fontSize: 11,
               fontFamily: 'system-ui, sans-serif',
-              textShadow: '0 1px 2px rgba(0,0,0,0.5)',
-              marginTop: 2,
+              textShadow: '0 1px 3px rgba(0,0,0,0.6)',
+              marginTop: 4,
             }}
           >
             {isDormant ? 'În așteptare pentru activare' :
@@ -290,7 +317,6 @@ export function ExplosionFrame({
           </div>
         </div>
       </div>
-
 
       {/* Platelet visualization - visible in dormant and active states */}
       {(isDormant || (isActive && !state.fxiActivated && !state.vwfSplit && !state.fvActivated)) && (

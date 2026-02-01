@@ -36,7 +36,7 @@ export function EnzymeComplexV2({
   x = 0,
   y = 0,
 }: EnzymeComplexV2Props): React.ReactElement {
-  const uniqueId = useId();
+  const _uniqueId = useId();
 
   // Configuration based on complex type
   const config = getComplexConfig(type);
@@ -220,7 +220,7 @@ function getComplexConfig(type: 'extrinsic-tenase' | 'intrinsic-tenase' | 'proth
         labelBg: '#16A34A',
         borderColor: '#16A34A',
         bgColor: 'rgba(22, 163, 74, 0.08)',
-        enzyme: { label: 'FVIIa', bg: '#DC2626', border: '#991B1B' },
+        enzyme: { label: 'FVIIa', bg: '#1D4ED8', border: '#1E40AF' },
         cofactor: { label: 'FT', bg: '#22C55E', border: '#15803D' },
       };
 
@@ -262,7 +262,7 @@ interface EnzymeWithGlaProps {
 }
 
 export function EnzymeWithGla({
-  factorId,
+  factorId: _factorId,
   label,
   bgColor,
   borderColor,

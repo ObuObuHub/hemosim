@@ -34,7 +34,7 @@ export const FACTOR_VISUALS: Record<string, FactorVisual> = {
     inactiveShape: 'zymogen',
     activeShape: 'enzyme',
     inactiveColor: '#1D4ED8', // Blue (zymogen in plasma)
-    activeColor: '#DC2626',   // Red when activated (TF-VIIa complex)
+    activeColor: '#1D4ED8',   // Blue when activated (matches FVII)
     width: 55,
     height: 40,
     hasGlaDomain: true,

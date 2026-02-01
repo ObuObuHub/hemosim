@@ -95,7 +95,7 @@ export const FACTOR_COLORS = {
   // Enzymes (active) - vibrant
   enzyme: {
     FIIa: '#DC2626',    // Thrombin - Red
-    FVIIa: '#DC2626',   // Red
+    FVIIa: '#1D4ED8',   // Blue (matches FVII)
     FIXa: '#06B6D4',    // Cyan
     FXa: '#22C55E',     // Green
     FXIa: '#3B82F6',    // Blue
@@ -275,7 +275,7 @@ export const COMPLEX_STYLES = {
     labelBg: '#16A34A',
     borderColor: '#16A34A',
     bgColor: 'rgba(22, 163, 74, 0.08)',
-    enzyme: { label: 'FVIIa', bg: '#DC2626', border: '#991B1B' },
+    enzyme: { label: 'FVIIa', bg: '#1D4ED8', border: '#1E40AF' },
     cofactor: { label: 'FT', bg: '#22C55E', border: '#15803D' },
   },
   'intrinsic-tenase': {

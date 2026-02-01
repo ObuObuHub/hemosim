@@ -24,7 +24,7 @@ export function FXIaMembraneBound({
   const anchorHeight = 24;
   const tokenWidth = 55;
   const tokenHeight = 40;
-  const totalHeight = tokenHeight + anchorHeight + 4;
+  const _totalHeight = tokenHeight + anchorHeight + 4;
 
   return (
     <div
