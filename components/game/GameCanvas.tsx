@@ -15,6 +15,7 @@ import { GameOverScreen } from './GameOverScreen';
 import { VictoryScreen } from './VictoryScreen';
 import { PhaseUnlockBanner } from './PhaseUnlockBanner';
 import { TutorialOverlay } from './TutorialOverlay';
+import { AnticoagulantOverlay } from './overlays/AnticoagulantOverlay';
 import { ZymogenShape } from './shapes';
 
 interface GameCanvasProps {
@@ -75,6 +76,9 @@ export const GameCanvas = forwardRef<HTMLDivElement, GameCanvasProps>(function G
   // Phase unlock banner state
   const [showPhaseUnlock, setShowPhaseUnlock] = useState<GamePhase | null>(null);
   const prevPhaseRef = useRef<GamePhase>(gameState.phase);
+
+  // Anticoagulant overlay state
+  const [showAnticoagulant, setShowAnticoagulant] = useState(false);
 
   // Track phase changes and show unlock banner
   // Note: This pattern triggers the set-state-in-effect lint warning
@@ -246,6 +250,41 @@ export const GameCanvas = forwardRef<HTMLDivElement, GameCanvasProps>(function G
       {/* Tutorial Overlay (shown on first play) */}
       {showTutorial && gameState.gameResult === null && (
         <TutorialOverlay onDismiss={handleDismissTutorial} />
+      )}
+
+      {/* Anticoagulant Toggle Button - positioned in header area */}
+      {gameState.gameResult === null && (
+        <button
+          onClick={() => setShowAnticoagulant(!showAnticoagulant)}
+          style={{
+            position: 'absolute',
+            top: 128,
+            right: 16,
+            padding: '6px 12px',
+            background: showAnticoagulant ? '#8B5CF6' : '#334155',
+            border: '1px solid #475569',
+            borderRadius: 6,
+            color: '#FFF',
+            fontSize: 11,
+            fontWeight: 600,
+            cursor: 'pointer',
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+          }}
+        >
+          <span style={{ fontSize: 13 }}>🛡️</span>
+          Anticoagulant
+        </button>
+      )}
+
+      {/* Anticoagulant Overlay */}
+      {showAnticoagulant && gameState.gameResult === null && (
+        <AnticoagulantOverlay
+          isOpen={showAnticoagulant}
+          onClose={() => setShowAnticoagulant(false)}
+        />
       )}
     </div>
   );

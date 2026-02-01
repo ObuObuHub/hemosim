@@ -46,6 +46,18 @@ export type ActivationPhase =
   | 'complete';     // Done - product at final position
 
 /**
+ * Thrombin Burst Phase - Dramatic visualization of massive thrombin generation
+ * Shows the ~350 nM thrombin burst with converging particles, explosion effect,
+ * and thrombin cleaving fibrinogen to form fibrin.
+ */
+export type BurstPhase =
+  | 'inactive'       // Before burst starts
+  | 'converging'     // FIIa particles moving from prothrombinase to center
+  | 'explosion'      // Central amplification effect showing concentration
+  | 'cleaving'       // Thrombin actively cleaving fibrinogen molecules
+  | 'polymerizing';  // Fibrin mesh forming (transition to FibrinMesh)
+
+/**
  * Initiation Phase State
  * Location: TF-bearing cell surface (subendothelium, monocytes)
  * Educational focus: TF-VIIa complex formation and initial factor activation
@@ -111,9 +123,17 @@ export interface PlateletSurfaceState {
   // Propagation Phase - Enzyme complex formation
   fixaArrived: boolean;           // FIXa from initiation phase
   tenaseFormed: boolean;          // FIXa + FVIIIa complex (×200,000 amplification)
+  // FXIa amplification - FXIa activates FIX → FIXa (positive feedback)
+  fxiaActivatingFix: boolean;     // FXIa is actively converting FIX → FIXa
+  fxiaFixaProduced: boolean;      // FIXa has been produced by FXIa (amplification)
+  // FX activation by Tenase (E + S → ES → E + P)
+  plateletFxActivationPhase: ActivationPhase;  // Full enzymatic activation sequence
   fxaProduced: boolean;           // FXa product from Tenase
   prothrombinaseFormed: boolean;  // FXa + FVa complex (×300,000 amplification)
+  // FII activation by Prothrombinase (E + S → ES → E + P)
+  plateletFiiActivationPhase: ActivationPhase; // Full enzymatic activation sequence
   thrombinBurst: boolean;         // ~350 nM thrombin generated
+  burstPhase: BurstPhase;         // Dramatic burst visualization phase
 
   // Clotting Phase - Fibrin mesh formation
   fibrinogenCleaved: boolean;     // Thrombin cleaves fibrinopeptides A & B
@@ -191,9 +211,15 @@ const initialState: CascadeState = {
     // Propagation
     fixaArrived: false,
     tenaseFormed: false,
+    // FXIa amplification
+    fxiaActivatingFix: false,
+    fxiaFixaProduced: false,
+    plateletFxActivationPhase: 'inactive',
     fxaProduced: false,
     prothrombinaseFormed: false,
+    plateletFiiActivationPhase: 'inactive',
     thrombinBurst: false,
+    burstPhase: 'inactive',
     // Fibrin formation
     fibrinogenCleaved: false,
     fibrinPolymerized: false,
@@ -254,9 +280,23 @@ type CascadeAction =
   // Propagation actions
   | { type: 'FIXA_ARRIVES' }
   | { type: 'FORM_TENASE' }
+  // FXIa amplification (FXIa activates FIX → FIXa)
+  | { type: 'START_FXIA_FIX_ACTIVATION' }
+  | { type: 'COMPLETE_FXIA_FIX_ACTIVATION' }
+  // Platelet FX activation (Tenase: E + S → ES → E + P)
+  | { type: 'START_PLATELET_FX_ACTIVATION' }
+  | { type: 'ADVANCE_PLATELET_FX_PHASE' }
+  | { type: 'COMPLETE_PLATELET_FX_ACTIVATION' }
   | { type: 'PRODUCE_FXA' }
   | { type: 'FORM_PROTHROMBINASE' }
+  // Platelet FII activation (Prothrombinase: E + S → ES → E + P)
+  | { type: 'START_PLATELET_FII_ACTIVATION' }
+  | { type: 'ADVANCE_PLATELET_FII_PHASE' }
+  | { type: 'COMPLETE_PLATELET_FII_ACTIVATION' }
   | { type: 'THROMBIN_BURST' }
+  // Burst phase progression
+  | { type: 'SET_BURST_PHASE'; phase: BurstPhase }
+  | { type: 'ADVANCE_BURST_PHASE' }
   // Fibrin formation actions
   | { type: 'CLEAVE_FIBRINOGEN' }
   | { type: 'POLYMERIZE_FIBRIN' }
@@ -427,15 +467,59 @@ function cascadeReducer(state: CascadeState, action: CascadeAction): CascadeStat
       return { ...state, platelet: { ...state.platelet, fixaArrived: true } };
     case 'FORM_TENASE':
       return { ...state, platelet: { ...state.platelet, tenaseFormed: true } };
+    // FXIa amplification (FXIa activates FIX → FIXa)
+    case 'START_FXIA_FIX_ACTIVATION':
+      return { ...state, platelet: { ...state.platelet, fxiaActivatingFix: true } };
+    case 'COMPLETE_FXIA_FIX_ACTIVATION':
+      return { ...state, platelet: { ...state.platelet, fxiaActivatingFix: false, fxiaFixaProduced: true } };
+    // Platelet FX activation phases (Tenase: E + S → ES → E + P)
+    case 'START_PLATELET_FX_ACTIVATION':
+      return { ...state, platelet: { ...state.platelet, plateletFxActivationPhase: 'approaching' } };
+    case 'ADVANCE_PLATELET_FX_PHASE': {
+      const currentPhase = state.platelet.plateletFxActivationPhase;
+      const phaseOrder: ActivationPhase[] = ['inactive', 'approaching', 'es_complex', 'cleaving', 'releasing', 'complete'];
+      const currentIndex = phaseOrder.indexOf(currentPhase);
+      const nextPhase = currentIndex < phaseOrder.length - 1 ? phaseOrder[currentIndex + 1] : 'complete';
+      return { ...state, platelet: { ...state.platelet, plateletFxActivationPhase: nextPhase } };
+    }
+    case 'COMPLETE_PLATELET_FX_ACTIVATION':
+      return { ...state, platelet: { ...state.platelet, plateletFxActivationPhase: 'complete', fxaProduced: true } };
     case 'PRODUCE_FXA':
-      return { ...state, platelet: { ...state.platelet, fxaProduced: true } };
+      return { ...state, platelet: { ...state.platelet, plateletFxActivationPhase: 'complete', fxaProduced: true } };
     case 'FORM_PROTHROMBINASE':
       return { ...state, platelet: { ...state.platelet, prothrombinaseFormed: true } };
+    // Platelet FII activation phases (Prothrombinase: E + S → ES → E + P)
+    case 'START_PLATELET_FII_ACTIVATION':
+      return { ...state, platelet: { ...state.platelet, plateletFiiActivationPhase: 'approaching' } };
+    case 'ADVANCE_PLATELET_FII_PHASE': {
+      const currentPhase = state.platelet.plateletFiiActivationPhase;
+      const phaseOrder: ActivationPhase[] = ['inactive', 'approaching', 'es_complex', 'cleaving', 'releasing', 'complete'];
+      const currentIndex = phaseOrder.indexOf(currentPhase);
+      const nextPhase = currentIndex < phaseOrder.length - 1 ? phaseOrder[currentIndex + 1] : 'complete';
+      return { ...state, platelet: { ...state.platelet, plateletFiiActivationPhase: nextPhase } };
+    }
+    case 'COMPLETE_PLATELET_FII_ACTIVATION':
+      return { ...state, platelet: { ...state.platelet, plateletFiiActivationPhase: 'complete', thrombinBurst: true, phase: 'burst', burstPhase: 'converging' } };
     case 'THROMBIN_BURST':
       return {
         ...state,
-        platelet: { ...state.platelet, thrombinBurst: true, phase: 'burst' },
+        platelet: { ...state.platelet, thrombinBurst: true, phase: 'burst', burstPhase: 'converging' },
       };
+    // Burst phase progression
+    case 'SET_BURST_PHASE':
+      return {
+        ...state,
+        platelet: { ...state.platelet, burstPhase: action.phase },
+      };
+    case 'ADVANCE_BURST_PHASE': {
+      const phaseOrder: BurstPhase[] = ['inactive', 'converging', 'explosion', 'cleaving', 'polymerizing'];
+      const currentIndex = phaseOrder.indexOf(state.platelet.burstPhase);
+      const nextPhase = currentIndex < phaseOrder.length - 1 ? phaseOrder[currentIndex + 1] : 'polymerizing';
+      return {
+        ...state,
+        platelet: { ...state.platelet, burstPhase: nextPhase },
+      };
+    }
 
     // Fibrin formation (clotting phase)
     case 'CLEAVE_FIBRINOGEN':
@@ -547,9 +631,23 @@ export interface CascadeStateHook {
   // Propagation actions
   fixaArrives: () => void;
   formTenase: () => void;
+  // FXIa amplification (FXIa activates FIX → FIXa)
+  startFxiaFixActivation: () => void;
+  completeFxiaFixActivation: () => void;
+  // Platelet FX activation (Tenase)
+  startPlateletFXActivation: () => void;
+  advancePlateletFXPhase: () => void;
+  completePlateletFXActivation: () => void;
   produceFXa: () => void;
   formProthrombinase: () => void;
+  // Platelet FII activation (Prothrombinase)
+  startPlateletFIIActivation: () => void;
+  advancePlateletFIIPhase: () => void;
+  completePlateletFIIActivation: () => void;
   thrombinBurst: () => void;
+  // Burst phase progression
+  setBurstPhase: (phase: BurstPhase) => void;
+  advanceBurstPhase: () => void;
   // Fibrin formation
   cleaveFibrinogen: () => void;
   polymerizeFibrin: () => void;
@@ -644,9 +742,26 @@ export function useCascadeState(): CascadeStateHook {
   // Propagation actions
   const fixaArrives = useCallback((): void => dispatch({ type: 'FIXA_ARRIVES' }), []);
   const formTenase = useCallback((): void => dispatch({ type: 'FORM_TENASE' }), []);
+  // FXIa amplification (FXIa activates FIX → FIXa)
+  const startFxiaFixActivation = useCallback((): void => dispatch({ type: 'START_FXIA_FIX_ACTIVATION' }), []);
+  const completeFxiaFixActivation = useCallback((): void => dispatch({ type: 'COMPLETE_FXIA_FIX_ACTIVATION' }), []);
+  // Platelet FX activation (Tenase)
+  const startPlateletFXActivation = useCallback((): void => dispatch({ type: 'START_PLATELET_FX_ACTIVATION' }), []);
+  const advancePlateletFXPhase = useCallback((): void => dispatch({ type: 'ADVANCE_PLATELET_FX_PHASE' }), []);
+  const completePlateletFXActivation = useCallback((): void => dispatch({ type: 'COMPLETE_PLATELET_FX_ACTIVATION' }), []);
   const produceFXa = useCallback((): void => dispatch({ type: 'PRODUCE_FXA' }), []);
   const formProthrombinase = useCallback((): void => dispatch({ type: 'FORM_PROTHROMBINASE' }), []);
+  // Platelet FII activation (Prothrombinase)
+  const startPlateletFIIActivation = useCallback((): void => dispatch({ type: 'START_PLATELET_FII_ACTIVATION' }), []);
+  const advancePlateletFIIPhase = useCallback((): void => dispatch({ type: 'ADVANCE_PLATELET_FII_PHASE' }), []);
+  const completePlateletFIIActivation = useCallback((): void => dispatch({ type: 'COMPLETE_PLATELET_FII_ACTIVATION' }), []);
   const thrombinBurst = useCallback((): void => dispatch({ type: 'THROMBIN_BURST' }), []);
+  // Burst phase progression
+  const setBurstPhase = useCallback(
+    (phase: BurstPhase): void => dispatch({ type: 'SET_BURST_PHASE', phase }),
+    []
+  );
+  const advanceBurstPhase = useCallback((): void => dispatch({ type: 'ADVANCE_BURST_PHASE' }), []);
 
   // Fibrin formation
   const cleaveFibrinogen = useCallback((): void => dispatch({ type: 'CLEAVE_FIBRINOGEN' }), []);
@@ -753,9 +868,23 @@ export function useCascadeState(): CascadeStateHook {
     // Propagation
     fixaArrives,
     formTenase,
+    // FXIa amplification
+    startFxiaFixActivation,
+    completeFxiaFixActivation,
+    // Platelet FX activation (Tenase)
+    startPlateletFXActivation,
+    advancePlateletFXPhase,
+    completePlateletFXActivation,
     produceFXa,
     formProthrombinase,
+    // Platelet FII activation (Prothrombinase)
+    startPlateletFIIActivation,
+    advancePlateletFIIPhase,
+    completePlateletFIIActivation,
     thrombinBurst,
+    // Burst phase progression
+    setBurstPhase,
+    advanceBurstPhase,
     // Fibrin formation
     cleaveFibrinogen,
     polymerizeFibrin,

@@ -6,6 +6,7 @@ import { PhospholipidMembrane } from '../visuals/PhospholipidMembrane';
 import { FactorTokenNew } from '../tokens/FactorTokenNew';
 import { TFProtein } from '../visuals/TFProtein';
 import { ESComplexGlow, CleavageAnimation, ProductReleaseGlow } from '../visuals/EnzymaticActivation';
+import { InhibitorToken } from '../tokens/InhibitorToken';
 import type { SparkState, PlayMode, IIaMigrationState, ActivationPhase } from '@/hooks/useCascadeState';
 
 interface SparkFrameProps {
@@ -19,6 +20,8 @@ interface SparkFrameProps {
   mode?: PlayMode;
   /** IIa cross-frame migration state - when 'migrating', FIIa is rendered at container level */
   iiaMigrationState?: IIaMigrationState;
+  /** Show anticoagulant system (inhibitor tokens) */
+  showAnticoagulant?: boolean;
 }
 
 /**
@@ -43,6 +46,7 @@ export function SparkFrame({
   showFiiaMigration = false,
   mode = 'manual',
   iiaMigrationState = 'inactive',
+  showAnticoagulant = false,
 }: SparkFrameProps): React.ReactElement {
   const isAutoMode = mode === 'auto';
 
@@ -249,32 +253,38 @@ export function SparkFrame({
           height={layout.membraneHeight}
           variant="fibroblast"
         />
+        {/* Cell type label - centered */}
         <div
           style={{
             position: 'absolute',
-            bottom: 8,
-            left: 12,
-            color: '#FFFFFF',
-            fontSize: 11,
-            fontWeight: 700,
-            fontFamily: 'system-ui, sans-serif',
-            textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            textAlign: 'center',
           }}
         >
-          FAZA 1 · INIȚIERE
-        </div>
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 8,
-            right: 12,
-            color: 'rgba(255,255,255,0.8)',
-            fontSize: 9,
-            fontFamily: 'system-ui, sans-serif',
-            textShadow: '0 1px 2px rgba(0,0,0,0.5)',
-          }}
-        >
-          Celula TF-bearing
+          <div
+            style={{
+              color: '#FFFFFF',
+              fontSize: 11,
+              fontWeight: 700,
+              fontFamily: 'system-ui, sans-serif',
+              textShadow: '0 1px 3px rgba(0,0,0,0.6)',
+            }}
+          >
+            CELULĂ CARE EXPRIMĂ FACTOR TISULAR
+          </div>
+          <div
+            style={{
+              color: 'rgba(255,255,255,0.75)',
+              fontSize: 8,
+              fontFamily: 'system-ui, sans-serif',
+              textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+              marginTop: 2,
+            }}
+          >
+            Fibroblast subendotelial / Monocit activat
+          </div>
         </div>
       </div>
 
@@ -611,7 +621,7 @@ export function SparkFrame({
           style={{
             position: 'absolute',
             left: width * 0.50,
-            top: layout.membraneY - 60,
+            top: layout.membraneY - 75,
             zIndex: 15,
           }}
         >
@@ -627,19 +637,19 @@ export function SparkFrame({
           style={{
             position: 'absolute',
             left: width * 0.55,
-            top: layout.membraneY - 85,
+            top: layout.membraneY - 105,
             transform: 'translateX(-50%)',
             zIndex: 15,
           }}
         >
-          {/* Complex container - standardized with UnifiedPlateletView */}
+          {/* Complex container - identical to TF:VIIa style */}
           <div
             style={{
               position: 'relative',
               padding: '12px 16px 20px',
-              border: '2px solid #3B82F6',
+              border: '2px solid #DC2626',
               borderRadius: 8,
-              background: 'rgba(59, 130, 246, 0.08)',
+              background: 'rgba(220, 38, 38, 0.08)',
             }}
           >
             {/* Label badge */}
@@ -650,7 +660,7 @@ export function SparkFrame({
                 left: '50%',
                 transform: 'translateX(-50%)',
                 padding: '2px 7px',
-                background: '#3B82F6',
+                background: '#DC2626',
                 borderRadius: 4,
                 fontSize: 8,
                 color: '#FFFFFF',
@@ -662,32 +672,63 @@ export function SparkFrame({
               PROTROMBINAZĂ
             </div>
 
-            {/* Enzyme + Cofactor layout - matches UnifiedPlateletView pattern */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
-              {/* FVa - Cofactor (scaled up) */}
-              <div style={{ transform: 'scale(1.1)' }}>
-                <FactorTokenNew factorId="FVa" isActive={true} enableHover={false} />
-              </div>
-              {/* FXa - Enzyme (scaled down, with Gla domain) */}
-              <div style={{ transform: 'scale(0.85)' }}>
-                <FactorTokenNew factorId="FXa" isActive={true} enableHover={false} />
-              </div>
-            </div>
+            {/* Enzyme + Cofactor layout - identical to TF:VIIa */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, position: 'relative' }}>
+              {/* FVa - Cofactor */}
+              <FactorTokenNew factorId="FVa" isActive={true} enableHover={false} />
 
-            {/* Role labels - matches UnifiedPlateletView */}
-            <div
-              style={{
-                marginTop: 4,
-                display: 'flex',
-                justifyContent: 'center',
-                gap: 12,
-                fontSize: 5,
-                fontFamily: 'system-ui, sans-serif',
-                color: '#64748B',
-              }}
-            >
-              <span title="FVa = cofactor, pozitionează FXa și protrombina">cofactor</span>
-              <span title="FXa = serină protează, enzima activă">enzimă</span>
+              {/* FXa - Enzyme (circular) with Gla domain - same structure as FVIIa */}
+              <div style={{ position: 'relative' }}>
+                {/* FXa serine protease with active site slot */}
+                <svg width={42} height={42} viewBox="0 0 42 42">
+                  {/* Main circle */}
+                  <circle cx={21} cy={21} r={18} fill="#22C55E" stroke="#16A34A" strokeWidth={2} />
+                  {/* Active site slot */}
+                  <path
+                    d={`M ${21 - 3.5} 3 L ${21 - 3.5} ${3 + 9} A 3 3 0 0 0 ${21 + 3.5} ${3 + 9} L ${21 + 3.5} 3 Z`}
+                    fill="#E2E8F0"
+                  />
+                  <path
+                    d={`M ${21 - 3.5} 3 L ${21 - 3.5} ${3 + 9 - 2.5} A 2.5 2.5 0 0 0 ${21 + 3.5} ${3 + 9 - 2.5} L ${21 + 3.5} 3`}
+                    fill="none"
+                    stroke="#FFFFFF"
+                    strokeWidth={1.5}
+                    strokeLinecap="round"
+                  />
+                  {/* Label */}
+                  <text x={21} y={26} textAnchor="middle" fontSize={10} fontWeight={700} fill="#FFFFFF" style={{ fontFamily: 'system-ui, sans-serif' }}>
+                    FXa
+                  </text>
+                </svg>
+
+                {/* Gla domain with labels - identical positioning to FVIIa */}
+                <svg
+                  width={50}
+                  height={48}
+                  style={{
+                    position: 'absolute',
+                    left: 4,
+                    top: 38,
+                    overflow: 'visible',
+                  }}
+                >
+                  <path
+                    d="M 12 0 Q 16 12, 12 22 Q 8 32, 14 42"
+                    stroke="#1F2937"
+                    strokeWidth={3}
+                    fill="none"
+                    strokeLinecap="round"
+                  />
+                  {/* Gla label */}
+                  <text x={20} y={10} fontSize={7} fontWeight={600} fill="#374151" style={{ fontFamily: 'system-ui, sans-serif' }}>
+                    Gla
+                  </text>
+                  {/* Ca²⁺ label */}
+                  <text x={-6} y={38} fontSize={6} fontWeight={600} fill="#64748B" style={{ fontFamily: 'system-ui, sans-serif' }}>
+                    Ca²⁺
+                  </text>
+                </svg>
+              </div>
             </div>
           </div>
         </div>
@@ -947,6 +988,91 @@ export function SparkFrame({
             transform: translate(var(--target-x), var(--target-y)) scale(1);
             opacity: 1;
           }
+        }
+      `}</style>
+
+      {/* Anticoagulant System - TFPI inhibits TF-VIIa and FXa */}
+      {showAnticoagulant && (
+        <>
+          {/* TFPI - positioned near TF-VIIa */}
+          <div
+            style={{
+              position: 'absolute',
+              left: layout.positions.tf.x + 60,
+              top: layout.membraneY - 120,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 4,
+              animation: 'fadeInAnticoagulant 0.3s ease-out',
+            }}
+          >
+            <InhibitorToken
+              color="#8B5CF6"
+              label="TFPI"
+              width={44}
+              height={40}
+            />
+            <div style={{ fontSize: 8, color: '#8B5CF6', fontWeight: 600, fontFamily: 'system-ui' }}>
+              TFPI
+            </div>
+          </div>
+
+          {/* TFPI inhibition arrow to TF-VIIa */}
+          {state.tfVIIaDocked && (
+            <svg
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'none',
+              }}
+            >
+              <defs>
+                <marker
+                  id="inhibit-arrow-tfpi"
+                  markerWidth="8"
+                  markerHeight="8"
+                  refX="6"
+                  refY="4"
+                  orient="auto"
+                >
+                  <path d="M0,0 L0,8 L4,4 Z" fill="#8B5CF6" />
+                </marker>
+              </defs>
+              {/* Arrow from TFPI to TF-VIIa */}
+              <line
+                x1={layout.positions.tf.x + 82}
+                y1={layout.membraneY - 80}
+                x2={layout.positions.tf.x + 40}
+                y2={layout.membraneY - 50}
+                stroke="#8B5CF6"
+                strokeWidth={2}
+                strokeDasharray="4 2"
+                markerEnd="url(#inhibit-arrow-tfpi)"
+                opacity={0.8}
+              />
+              {/* Inhibition symbol ⊣ */}
+              <text
+                x={layout.positions.tf.x + 55}
+                y={layout.membraneY - 60}
+                fill="#8B5CF6"
+                fontSize={12}
+                fontWeight={700}
+              >
+                ⊣
+              </text>
+            </svg>
+          )}
+        </>
+      )}
+
+      <style>{`
+        @keyframes fadeInAnticoagulant {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </div>

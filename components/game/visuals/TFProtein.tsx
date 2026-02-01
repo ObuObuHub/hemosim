@@ -72,27 +72,42 @@ export function TFProtein({
           </div>
 
           {/* Enzyme + Cofactor layout - standardized */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, position: 'relative' }}>
-            {/* TF - Cofactor (rectangular) with pedicle */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 6, position: 'relative' }}>
+            {/* TF - Cofactor with concave indent (lock and key design) */}
             <div style={{ position: 'relative' }}>
-              <div
-                style={{
-                  width: 44,
-                  height: 36,
-                  background: '#22C55E',
-                  border: '2px solid #15803D',
-                  borderRadius: 6,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#FFFFFF',
-                  fontSize: 11,
-                  fontWeight: 700,
-                  fontFamily: 'system-ui, sans-serif',
-                }}
-              >
-                FT
-              </div>
+              <svg width={48} height={36} viewBox="0 0 48 36">
+                {/* TF body with concave right edge for enzyme to "fit" */}
+                <path
+                  d={`
+                    M 6 2
+                    H 42
+                    A 4 4 0 0 1 46 6
+                    V 8
+                    C 40 8, 40 28, 46 28
+                    V 30
+                    A 4 4 0 0 1 42 34
+                    H 6
+                    A 4 4 0 0 1 2 30
+                    V 6
+                    A 4 4 0 0 1 6 2
+                    Z
+                  `}
+                  fill="#22C55E"
+                  stroke="#15803D"
+                  strokeWidth={2}
+                />
+                <text
+                  x={22}
+                  y={22}
+                  textAnchor="middle"
+                  fontSize={11}
+                  fontWeight={700}
+                  fill="#FFFFFF"
+                  style={{ fontFamily: 'system-ui, sans-serif' }}
+                >
+                  FT
+                </text>
+              </svg>
               {/* Transmembrane pedicle - attached to TF, ends at membrane surface */}
               <div
                 style={{
@@ -162,21 +177,6 @@ export function TFProtein({
             </div>
           </div>
 
-          {/* Role labels - standardized */}
-          <div
-            style={{
-              marginTop: 4,
-              display: 'flex',
-              justifyContent: 'center',
-              gap: 12,
-              fontSize: 5,
-              fontFamily: 'system-ui, sans-serif',
-              color: '#64748B',
-            }}
-          >
-            <span title="TF = cofactor transmembranar, inițiator al căii extrinseci">cofactor</span>
-            <span title="FVIIa = serină protează, enzima activă">enzimă</span>
-          </div>
         </div>
 
         {/* Active site animation */}
@@ -213,21 +213,32 @@ export function TFProtein({
         fill={isActive ? '#16A34A' : '#64748B'}
       />
 
-      {/* Main TF receptor body */}
-      <rect
-        x={4}
-        y={2}
-        width={tfWidth - 8}
-        height={bodyHeight - 2}
-        rx={5}
+      {/* Main TF receptor body with concave indent (lock and key design) */}
+      <path
+        d={`
+          M ${4 + 5} 2
+          H ${tfWidth - 4 - 5}
+          A 5 5 0 0 1 ${tfWidth - 4} ${2 + 5}
+          V ${bodyHeight / 2 - 10}
+          C ${tfWidth - 4 - 6} ${bodyHeight / 2 - 10},
+            ${tfWidth - 4 - 6} ${bodyHeight / 2 + 10},
+            ${tfWidth - 4} ${bodyHeight / 2 + 10}
+          V ${bodyHeight - 2 - 5}
+          A 5 5 0 0 1 ${tfWidth - 4 - 5} ${bodyHeight - 2}
+          H ${4 + 5}
+          A 5 5 0 0 1 4 ${bodyHeight - 2 - 5}
+          V ${2 + 5}
+          A 5 5 0 0 1 ${4 + 5} 2
+          Z
+        `}
         fill={isActive ? '#22C55E' : '#94A3B8'}
         stroke={isActive ? '#15803D' : '#64748B'}
         strokeWidth={2}
       />
 
-      {/* TF label */}
+      {/* TF label - shifted slightly left to account for indent */}
       <text
-        x={tfWidth / 2}
+        x={tfWidth / 2 - 2}
         y={24}
         textAnchor="middle"
         fontSize={11}

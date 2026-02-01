@@ -8,7 +8,6 @@ import { ExplosionFrame } from '../game/frames/ExplosionFrame';
 import { FactorTokenNew } from '../game/tokens/FactorTokenNew';
 import { useCascadeState } from '@/hooks/useCascadeState';
 import { ModeToggle } from '../game/ModeToggle';
-import { InstructionBanner } from '../game/InstructionBanner';
 import { useAutoPlayController } from '@/hooks/useAutoPlayController';
 import { cascadeSteps, getNextStep, getCurrentStepIndex } from '@/data/cascadeSteps';
 
@@ -36,7 +35,7 @@ interface CellularModelExplorerProps {
 export function CellularModelExplorer({ className = '' }: CellularModelExplorerProps): React.ReactElement {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-
+  
   // Use the cascade state hook for learning state management
   const {
     state,
@@ -57,15 +56,28 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
     parCleave,
     parActivate,
     formTenase,
+    // Platelet FX activation (Tenase)
+    startPlateletFXActivation,
+    advancePlateletFXPhase,
+    completePlateletFXActivation,
     produceFXa,
     formProthrombinase,
+    // Platelet FII activation (Prothrombinase)
+    startPlateletFIIActivation,
+    advancePlateletFIIPhase,
+    completePlateletFIIActivation,
     thrombinBurst,
+    // Burst phase progression
+    advanceBurstPhase,
     // Fibrin formation
     cleaveFibrinogen,
     polymerizeFibrin,
     activateFXIII,
     crosslinkFibrin,
     restartLearning,
+    // FXIa amplification
+    startFxiaFixActivation,
+    completeFxiaFixActivation,
     // FIXa deterministic migration
     holdFixaForMigration,
     startFixaGlide,
@@ -129,9 +141,9 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
       activateFXI: () => handleActivateFactorRef.current('FXI'),
       parCleave,
       formTenase: () => handleFormComplexRef.current('tenase'),
-      produceFXa,
+      produceFXa: startPlateletFXActivation,
       formProthrombinase: () => handleFormComplexRef.current('prothrombinase'),
-      triggerBurst: () => handleFormComplexRef.current('burst'),
+      triggerBurst: startPlateletFIIActivation,
       // Fibrin formation callbacks
       cleaveFibrinogen,
       polymerizeFibrin,
@@ -139,7 +151,7 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
       crosslinkFibrin,
       advanceStep,
     }),
-    [parCleave, produceFXa, cleaveFibrinogen, polymerizeFibrin, activateFXIII, crosslinkFibrin, advanceStep]
+    [parCleave, startPlateletFXActivation, startPlateletFIIActivation, cleaveFibrinogen, polymerizeFibrin, activateFXIII, crosslinkFibrin, advanceStep]
   );
 
   // Calculate actual step index based on cascade state (for manual mode accuracy)
@@ -284,6 +296,116 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
       return () => clearTimeout(timer);
     }
   }, [initiation.iiaMigrationState, completeFiiaMigration]);
+
+  /**
+   * PLATELET FX ACTIVATION PHASE ORCHESTRATION (Tenase: E + S → ES → E + P)
+   * Auto-advances through: approaching → es_complex → cleaving → releasing → complete
+   */
+  useEffect(() => {
+    const phase = platelet.plateletFxActivationPhase;
+    if (phase === 'inactive' || phase === 'complete') return;
+
+    const timing = ACTIVATION_TIMING[phase as keyof typeof ACTIVATION_TIMING];
+    if (!timing) return;
+
+    const timer = setTimeout(() => {
+      if (phase === 'releasing') {
+        completePlateletFXActivation();
+      } else {
+        advancePlateletFXPhase();
+      }
+    }, timing);
+
+    return () => clearTimeout(timer);
+  }, [platelet.plateletFxActivationPhase, advancePlateletFXPhase, completePlateletFXActivation]);
+
+  /**
+   * PLATELET FII ACTIVATION PHASE ORCHESTRATION (Prothrombinase: E + S → ES → E + P)
+   * Auto-advances through: approaching → es_complex → cleaving → releasing → complete
+   */
+  useEffect(() => {
+    const phase = platelet.plateletFiiActivationPhase;
+    if (phase === 'inactive' || phase === 'complete') return;
+
+    const timing = ACTIVATION_TIMING[phase as keyof typeof ACTIVATION_TIMING];
+    if (!timing) return;
+
+    const timer = setTimeout(() => {
+      if (phase === 'releasing') {
+        completePlateletFIIActivation();
+      } else {
+        advancePlateletFIIPhase();
+      }
+    }, timing);
+
+    return () => clearTimeout(timer);
+  }, [platelet.plateletFiiActivationPhase, advancePlateletFIIPhase, completePlateletFIIActivation]);
+
+  /**
+   * THROMBIN BURST PHASE ORCHESTRATION
+   * Dramatic visualization: converging → explosion → cleaving → polymerizing
+   *
+   * Timing:
+   * - converging: 1.5s - FIIa particles stream toward center
+   * - explosion: 1.0s - Central amplification effect (~350 nM)
+   * - cleaving: 3.0s - FIIa cleaving fibrinogen visualization
+   * - polymerizing: triggers fibrinogenCleaved and transition to FibrinMesh
+   */
+  const BURST_PHASE_TIMING = {
+    converging: 2000,   // 2s for particles to reach center
+    explosion: 1500,    // 1.5s for explosion effect
+    cleaving: 10000,    // 10s for cleavage visualization (very slow, cinematic)
+  };
+
+  useEffect(() => {
+    const phase = platelet.burstPhase;
+    if (phase === 'inactive' || phase === 'polymerizing') return;
+
+    const timing = BURST_PHASE_TIMING[phase as keyof typeof BURST_PHASE_TIMING];
+    if (!timing) return;
+
+    const timer = setTimeout(() => {
+      advanceBurstPhase();
+    }, timing);
+
+    return () => clearTimeout(timer);
+  }, [platelet.burstPhase, advanceBurstPhase]);
+
+  /**
+   * FXIa AMPLIFICATION ORCHESTRATION
+   *
+   * Educational note: FXIa activates FIX → FIXa as part of the positive feedback loop.
+   * This is distinct from the TF:VIIa pathway (initiation phase).
+   * Shows only AFTER Tenase forms to avoid confusion with initiation.
+   *
+   * Timing:
+   * - 1.5s delay after Tenase forms → START_FXIA_FIX_ACTIVATION
+   * - 2s animation → COMPLETE_FXIA_FIX_ACTIVATION
+   */
+  useEffect(() => {
+    // Start FXIa amplification after Tenase forms (requires FXIa to be activated)
+    if (
+      platelet.fxiActivated &&
+      platelet.tenaseFormed &&
+      !platelet.fxiaActivatingFix &&
+      !platelet.fxiaFixaProduced
+    ) {
+      const timer = setTimeout(() => {
+        startFxiaFixActivation();
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [platelet.fxiActivated, platelet.tenaseFormed, platelet.fxiaActivatingFix, platelet.fxiaFixaProduced, startFxiaFixActivation]);
+
+  // Complete FXIa activation after animation
+  useEffect(() => {
+    if (platelet.fxiaActivatingFix) {
+      const timer = setTimeout(() => {
+        completeFxiaFixActivation();
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [platelet.fxiaActivatingFix, completeFxiaFixActivation]);
 
   /**
    * ENZYMATIC ACTIVATION PHASE ORCHESTRATION
@@ -592,72 +714,10 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
           />
         </div>
 
-        {/* Instructional Banner (center) - guided mode only */}
-        {state.mode === 'manual' && !state.cascadeCompleted && (
-          <div
-            style={{
-              flex: 1,
-              display: 'flex',
-              justifyContent: 'center',
-              padding: '0 16px',
-              pointerEvents: 'auto',
-            }}
-          >
-            <InstructionBanner
-              currentStep={currentStep}
-              currentStepIndex={effectiveStepIndex}
-              totalSteps={cascadeSteps.length}
-              isComplete={state.cascadeCompleted}
-            />
-          </div>
-        )}
-
-        {/* Demonstration mode progress indicator */}
-        {state.mode === 'auto' && !state.cascadeCompleted && (
-          <div
-            style={{
-              flex: 1,
-              display: 'flex',
-              justifyContent: 'center',
-              padding: '0 16px',
-              pointerEvents: 'auto',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '8px 16px',
-                background: 'rgba(34, 197, 94, 0.95)',
-                borderRadius: 8,
-                boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)',
-              }}
-            >
-              <div
-                style={{
-                  width: 16,
-                  height: 16,
-                  borderRadius: '50%',
-                  border: '2px solid rgba(255, 255, 255, 0.3)',
-                  borderTopColor: '#FFFFFF',
-                  animation: 'spin 1s linear infinite',
-                }}
-              />
-              <div>
-                <div style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 700, fontFamily: 'system-ui, sans-serif' }}>
-                  MOD DEMONSTRAȚIE
-                </div>
-                <div style={{ color: '#D1FAE5', fontSize: 9, fontFamily: 'system-ui, sans-serif' }}>
-                  Pas {effectiveStepIndex + 1} / {cascadeSteps.length}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Restart Learning Button (right side) */}
-        <div style={{ pointerEvents: 'auto' }}>
+        
+        {/* Right side buttons */}
+        <div style={{ pointerEvents: 'auto', display: 'flex', gap: 8 }}>
+          {/* Restart Learning Button */}
           <button
             type="button"
             onClick={restartLearning}
@@ -737,7 +797,8 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
               onActivateFactor={handleActivateFactor}
               onDockCofactor={handleDockCofactor}
               onFormComplex={handleFormComplex}
-              onProduceFXa={produceFXa}
+              onFXClick={startPlateletFXActivation}
+              onFIIClick={startPlateletFIIActivation}
               onPARThrombinBind={parThrombinBind}
               onPARCleave={parCleave}
               onPARActivate={parActivate}
@@ -822,7 +883,8 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
           }
         `}
       </style>
-    </div>
+
+          </div>
   );
 }
 

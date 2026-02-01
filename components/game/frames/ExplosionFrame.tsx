@@ -5,6 +5,7 @@ import { useMemo, useEffect } from 'react';
 import { PhospholipidMembrane } from '../visuals/PhospholipidMembrane';
 import { FibrinMesh } from '../visuals/FibrinMesh';
 import { UnifiedPlateletView } from './UnifiedPlateletView';
+import { InhibitorToken } from '../tokens/InhibitorToken';
 import type { ExplosionState, PlayMode } from '@/hooks/useCascadeState';
 
 interface ExplosionFrameProps {
@@ -30,6 +31,8 @@ interface ExplosionFrameProps {
   fixaMigrating?: boolean;
   // FIXa is waiting in right panel (arrived from left, waiting for tenase)
   fixaWaiting?: boolean;
+  /** Show anticoagulant system (inhibitor tokens) */
+  showAnticoagulant?: boolean;
 }
 
 /**
@@ -66,6 +69,7 @@ export function ExplosionFrame({
   mode = 'manual',
   fixaMigrating = false,
   fixaWaiting = false,
+  showAnticoagulant = false,
 }: ExplosionFrameProps): React.ReactElement {
   const isAutoMode = mode === 'auto';
 
@@ -564,7 +568,237 @@ export function ExplosionFrame({
             transform: translateX(-50%) scale(1);
           }
         }
+        @keyframes fadeInAnticoagulant {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
       `}</style>
+
+      {/* Anticoagulant System */}
+      {showAnticoagulant && (
+        <>
+          {/* AT (Antithrombin) - inhibits FIIa, FXa, FIXa, FXIa */}
+          <div
+            style={{
+              position: 'absolute',
+              right: 12,
+              top: 8,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 2,
+              animation: 'fadeInAnticoagulant 0.3s ease-out',
+            }}
+          >
+            <InhibitorToken
+              color="#06B6D4"
+              label="AT"
+              width={40}
+              height={36}
+            />
+            <div style={{ fontSize: 7, color: '#06B6D4', fontWeight: 600, fontFamily: 'system-ui' }}>
+              Antitrombină
+            </div>
+          </div>
+
+          {/* aPC (Activated Protein C) - inhibits FVa, FVIIIa */}
+          <div
+            style={{
+              position: 'absolute',
+              right: 60,
+              top: 8,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 2,
+              animation: 'fadeInAnticoagulant 0.3s ease-out 0.1s both',
+            }}
+          >
+            <InhibitorToken
+              color="#EC4899"
+              label="aPC"
+              width={40}
+              height={36}
+            />
+            <div style={{ fontSize: 7, color: '#EC4899', fontWeight: 600, fontFamily: 'system-ui' }}>
+              Prot. C act.
+            </div>
+          </div>
+
+          {/* Plasmin - inhibits Fibrin (only show if fibrin exists) */}
+          {(isClotting || isStable) && (
+            <div
+              style={{
+                position: 'absolute',
+                right: 108,
+                top: 8,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 2,
+                animation: 'fadeInAnticoagulant 0.3s ease-out 0.2s both',
+              }}
+            >
+              <InhibitorToken
+                color="#F97316"
+                label="Plasmin"
+                width={40}
+                height={36}
+              />
+              <div style={{ fontSize: 7, color: '#F97316', fontWeight: 600, fontFamily: 'system-ui' }}>
+                Fibrinoliză
+              </div>
+            </div>
+          )}
+
+          {/* Inhibition arrows overlay */}
+          <svg
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              width: '100%',
+              height: '100%',
+              pointerEvents: 'none',
+            }}
+          >
+            <defs>
+              <marker
+                id="inhibit-arrow-at"
+                markerWidth="6"
+                markerHeight="6"
+                refX="5"
+                refY="3"
+                orient="auto"
+              >
+                <path d="M0,0 L0,6 L3,3 Z" fill="#06B6D4" />
+              </marker>
+              <marker
+                id="inhibit-arrow-apc"
+                markerWidth="6"
+                markerHeight="6"
+                refX="5"
+                refY="3"
+                orient="auto"
+              >
+                <path d="M0,0 L0,6 L3,3 Z" fill="#EC4899" />
+              </marker>
+              <marker
+                id="inhibit-arrow-plasmin"
+                markerWidth="6"
+                markerHeight="6"
+                refX="5"
+                refY="3"
+                orient="auto"
+              >
+                <path d="M0,0 L0,6 L3,3 Z" fill="#F97316" />
+              </marker>
+            </defs>
+
+            {/* AT inhibition arrows - to thrombin area */}
+            {state.thrombinBurst && (
+              <g opacity={0.7}>
+                <line
+                  x1={width - 32}
+                  y1={50}
+                  x2={width * 0.5}
+                  y2={layout.burstY + 20}
+                  stroke="#06B6D4"
+                  strokeWidth={1.5}
+                  strokeDasharray="3 2"
+                  markerEnd="url(#inhibit-arrow-at)"
+                />
+                <text
+                  x={width * 0.7}
+                  y={layout.burstY - 5}
+                  fill="#06B6D4"
+                  fontSize={10}
+                  fontWeight={700}
+                >
+                  ⊣
+                </text>
+              </g>
+            )}
+
+            {/* aPC inhibition arrows - to FVa and FVIIIa positions */}
+            {(state.fvaDocked || state.fviiaDocked) && (
+              <g opacity={0.7}>
+                {state.fvaDocked && (
+                  <>
+                    <line
+                      x1={width - 80}
+                      y1={50}
+                      x2={layout.prothrombinaseX - 20}
+                      y2={layout.complexY - 10}
+                      stroke="#EC4899"
+                      strokeWidth={1.5}
+                      strokeDasharray="3 2"
+                      markerEnd="url(#inhibit-arrow-apc)"
+                    />
+                    <text
+                      x={layout.prothrombinaseX + 10}
+                      y={layout.complexY - 30}
+                      fill="#EC4899"
+                      fontSize={10}
+                      fontWeight={700}
+                    >
+                      ⊣FVa
+                    </text>
+                  </>
+                )}
+                {state.fviiaDocked && (
+                  <>
+                    <line
+                      x1={width - 80}
+                      y1={50}
+                      x2={layout.tenaseX + 20}
+                      y2={layout.complexY - 10}
+                      stroke="#EC4899"
+                      strokeWidth={1.5}
+                      strokeDasharray="3 2"
+                      markerEnd="url(#inhibit-arrow-apc)"
+                    />
+                    <text
+                      x={layout.tenaseX - 25}
+                      y={layout.complexY - 30}
+                      fill="#EC4899"
+                      fontSize={10}
+                      fontWeight={700}
+                    >
+                      ⊣FVIIIa
+                    </text>
+                  </>
+                )}
+              </g>
+            )}
+
+            {/* Plasmin inhibition arrow - to fibrin */}
+            {(isClotting || isStable) && (
+              <g opacity={0.7}>
+                <line
+                  x1={width - 128}
+                  y1={50}
+                  x2={width * 0.5}
+                  y2={layout.membraneY - 30}
+                  stroke="#F97316"
+                  strokeWidth={1.5}
+                  strokeDasharray="3 2"
+                  markerEnd="url(#inhibit-arrow-plasmin)"
+                />
+                <text
+                  x={width * 0.45}
+                  y={layout.membraneY - 45}
+                  fill="#F97316"
+                  fontSize={10}
+                  fontWeight={700}
+                >
+                  ⊣Fibrină
+                </text>
+              </g>
+            )}
+          </svg>
+        </>
+      )}
     </div>
   );
 }
