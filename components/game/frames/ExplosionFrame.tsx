@@ -14,7 +14,8 @@ interface ExplosionFrameProps {
   onActivateFactor: (factorId: string) => void;
   onDockCofactor?: (cofactorId: 'FVa' | 'FVIIIa') => void;
   onFormComplex: (complexType: 'tenase' | 'prothrombinase' | 'burst') => void;
-  onProduceFXa?: () => void;
+  onFXClick?: () => void;
+  onFIIClick?: () => void;
   onPARThrombinBind?: () => void;
   onPARCleave?: () => void;
   onPARActivate?: () => void;
@@ -52,7 +53,8 @@ export function ExplosionFrame({
   onActivateFactor,
   onDockCofactor,
   onFormComplex,
-  onProduceFXa,
+  onFXClick,
+  onFIIClick,
   onPARThrombinBind,
   onPARCleave,
   onPARActivate,
@@ -99,35 +101,29 @@ export function ExplosionFrame({
   const isClotting = state.phase === 'clotting';
   const isStable = state.phase === 'stable';
 
-  // Check prerequisites for complex formation (not phase-based)
-  const canFormTenase = state.fixaArrived && state.fviiaDocked && !state.tenaseFormed && !isAutoMode;
-  const canProduceFXaButton = state.tenaseFormed && !state.fxaProduced && !isAutoMode;
-  const canFormProthrombinase = state.fxaProduced && state.fvaDocked && !state.prothrombinaseFormed && !isAutoMode;
-  const canBurst = state.prothrombinaseFormed && !state.thrombinBurst && !isAutoMode;
+  // Check prerequisites for substrate activation (not phase-based)
+  const canActivateFX = state.tenaseFormed && state.plateletFxActivationPhase === 'inactive' && !state.fxaProduced && !isAutoMode;
+  const canActivateFII = state.prothrombinaseFormed && state.plateletFiiActivationPhase === 'inactive' && !state.thrombinBurst && !isAutoMode;
 
-  // Auto-trigger fibrin formation after burst (slow for dramatic effect)
+  // Handler to enter clotting phase (shows interactive FibrinMesh)
+  const handleEnterClottingPhase = (): void => {
+    // Just trigger phase transition - FibrinMesh handles the interactive part
+    onCleaveFibrinogen?.();
+  };
+
+  // Auto-trigger clot formation after burst (auto mode only)
   useEffect(() => {
-    if (state.thrombinBurst && !state.fibrinogenCleaved && onCleaveFibrinogen) {
-      const timer = setTimeout(() => onCleaveFibrinogen(), 8000);
+    if (isAutoMode && state.thrombinBurst && !state.fibrinCrosslinked && onCleaveFibrinogen) {
+      const timer = setTimeout(() => {
+        // Direct transition to stable clot
+        onCleaveFibrinogen();
+        onPolymerizeFibrin?.();
+        onActivateFXIII?.();
+        onCrosslinkFibrin?.();
+      }, 2000); // 2s delay after burst
       return () => clearTimeout(timer);
     }
-  }, [state.thrombinBurst, state.fibrinogenCleaved, onCleaveFibrinogen]);
-
-  // Auto-polymerize fibrin after cleavage
-  useEffect(() => {
-    if (state.fibrinogenCleaved && !state.fibrinPolymerized && onPolymerizeFibrin) {
-      const timer = setTimeout(() => onPolymerizeFibrin(), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [state.fibrinogenCleaved, state.fibrinPolymerized, onPolymerizeFibrin]);
-
-  // Auto-activate FXIII after polymerization
-  useEffect(() => {
-    if (state.fibrinPolymerized && !state.fxiiiActivated && onActivateFXIII) {
-      const timer = setTimeout(() => onActivateFXIII(), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [state.fibrinPolymerized, state.fxiiiActivated, onActivateFXIII]);
+  }, [isAutoMode, state.thrombinBurst, state.fibrinCrosslinked, onCleaveFibrinogen, onPolymerizeFibrin, onActivateFXIII, onCrosslinkFibrin]);
 
   // Auto-dock cofactors after activation
   useEffect(() => {
@@ -143,6 +139,22 @@ export function ExplosionFrame({
       return () => clearTimeout(timer);
     }
   }, [state.fvActivated, state.fvaDocked, onDockCofactor]);
+
+  // Auto-form Tenase when FIXa arrived and FVIIIa docked
+  useEffect(() => {
+    if (state.fixaArrived && state.fviiaDocked && !state.tenaseFormed) {
+      const timer = setTimeout(() => onFormComplex('tenase'), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [state.fixaArrived, state.fviiaDocked, state.tenaseFormed, onFormComplex]);
+
+  // Auto-form Prothrombinase when FXa produced and FVa docked
+  useEffect(() => {
+    if (state.fxaProduced && state.fvaDocked && !state.prothrombinaseFormed) {
+      const timer = setTimeout(() => onFormComplex('prothrombinase'), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [state.fxaProduced, state.fvaDocked, state.prothrombinaseFormed, onFormComplex]);
 
   // Auto-bind thrombin to PAR
   useEffect(() => {
@@ -232,26 +244,46 @@ export function ExplosionFrame({
             }}
           />
         )}
-        {/* Phase label inside membrane - centered vertically */}
+        {/* Cell type label with phase info - centered */}
         <div
           style={{
             position: 'absolute',
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
-            color: '#FFFFFF',
-            fontSize: 12,
-            fontWeight: 700,
-            fontFamily: 'system-ui, sans-serif',
-            textShadow: '0 1px 3px rgba(0,0,0,0.6)',
             textAlign: 'center',
           }}
         >
-          {isDormant ? 'TROMBOCIT CIRCULANT' :
-           isBurst ? 'EXPLOZIA DE TROMBINĂ' :
-           isClotting ? 'FAZA 4 · COAGULARE' :
-           isStable ? 'FAZA 4 · CHEAG STABIL' :
-           'FAZA 2-3 · AMPLIFICARE + PROPAGARE'}
+          <div
+            style={{
+              color: '#FFFFFF',
+              fontSize: 11,
+              fontWeight: 700,
+              fontFamily: 'system-ui, sans-serif',
+              textShadow: '0 1px 3px rgba(0,0,0,0.6)',
+            }}
+          >
+            {isDormant ? 'TROMBOCIT CIRCULANT' :
+             isBurst ? 'EXPLOZIA DE TROMBINĂ' :
+             isClotting ? 'FAZA COAGULARE' :
+             isStable ? 'CHEAG STABIL' :
+             'TROMBOCIT ACTIVAT'}
+          </div>
+          <div
+            style={{
+              color: 'rgba(255,255,255,0.75)',
+              fontSize: 8,
+              fontFamily: 'system-ui, sans-serif',
+              textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+              marginTop: 2,
+            }}
+          >
+            {isDormant ? 'În așteptare pentru activare' :
+             isBurst ? '~350 nM trombină · ×300,000 amplificare' :
+             isClotting ? 'Formarea rețelei de fibrină' :
+             isStable ? 'Fibrină cross-linkată (FXIIIa)' :
+             'Suprafață fosfatidilserină expusă'}
+          </div>
         </div>
       </div>
 
@@ -360,21 +392,50 @@ export function ExplosionFrame({
           state={state}
           onActivateFactor={onActivateFactor}
           onPARClick={handlePARClick}
-          onFormTenase={() => onFormComplex('tenase')}
-          onProduceFXa={() => onProduceFXa?.()}
-          onFormProthrombinase={() => onFormComplex('prothrombinase')}
-          onTriggerBurst={() => onFormComplex('burst')}
-          canFormTenase={canFormTenase}
-          canProduceFXa={canProduceFXaButton}
-          canFormProthrombinase={canFormProthrombinase}
-          canBurst={canBurst}
+          onFXClick={() => onFXClick?.()}
+          onFIIClick={() => onFIIClick?.()}
+          canActivateFX={canActivateFX}
+          canActivateFII={canActivateFII}
           isAutoMode={isAutoMode}
           fixaMigrating={fixaMigrating}
           fixaWaiting={fixaWaiting}
+          burstPhase={state.burstPhase}
+          fxiaActivatingFix={state.fxiaActivatingFix}
+          fxiaFixaProduced={state.fxiaFixaProduced}
         />
       )}
 
-      {/* FIXa migration animation is now handled inside UnifiedPlateletView */}
+      {/* ============ MANUAL MODE: Single "Formează Cheag" button (during burst phase) ============ */}
+      {!isAutoMode && state.thrombinBurst && !state.fibrinCrosslinked && !isClotting && !isStable && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: layout.membraneY + 40,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 25,
+          }}
+        >
+          <button
+            type="button"
+            onClick={handleEnterClottingPhase}
+            style={{
+              padding: '12px 24px',
+              background: 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)',
+              border: 'none',
+              borderRadius: 8,
+              color: '#FFF',
+              fontSize: 14,
+              fontWeight: 700,
+              fontFamily: 'system-ui, sans-serif',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(220, 38, 38, 0.4)',
+            }}
+          >
+            Formarea cheagului
+          </button>
+        </div>
+      )}
 
       {/* ============ CLOTTING PHASE ============ */}
       {(isClotting || isStable) && (
@@ -388,94 +449,23 @@ export function ExplosionFrame({
             zIndex: 15,
           }}
         >
+          {/* FibrinMesh diagram - interactive clot formation */}
           <FibrinMesh
             width={width}
             height={layout.bloodstreamHeight - 80}
-            fibrinogenCleaved={state.fibrinogenCleaved}
-            fibrinPolymerized={state.fibrinPolymerized}
-            fxiiiActivated={state.fxiiiActivated}
-            fibrinCrosslinked={state.fibrinCrosslinked}
+            isStable={state.fibrinCrosslinked}
+            onClotStabilized={() => {
+              // When user completes both interactions, trigger state updates
+              if (!state.fibrinCrosslinked) {
+                onCleaveFibrinogen?.();
+                onPolymerizeFibrin?.();
+                onActivateFXIII?.();
+                onCrosslinkFibrin?.();
+              }
+            }}
           />
-
-          {/* FXIII activation button (manual mode only) - clean style */}
-          {state.fxiiiActivated && !state.fibrinCrosslinked && !isAutoMode && (
-            <div
-              style={{
-                position: 'absolute',
-                bottom: 40,
-                left: '50%',
-                transform: 'translateX(-50%)',
-                zIndex: 25,
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => onCrosslinkFibrin?.()}
-                style={{
-                  padding: '10px 20px',
-                  background: '#059669',
-                  border: 'none',
-                  borderRadius: 4,
-                  color: '#FFF',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  fontFamily: 'system-ui, sans-serif',
-                  cursor: 'pointer',
-                }}
-              >
-                Stabilizează cheagul (FXIII)
-              </button>
-            </div>
-          )}
-
-          {/* Auto-crosslink indicator */}
-          {state.fxiiiActivated && !state.fibrinCrosslinked && isAutoMode && (
-            <div
-              style={{
-                position: 'absolute',
-                bottom: 40,
-                left: '50%',
-                transform: 'translateX(-50%)',
-                padding: '6px 12px',
-                background: '#ECFDF5',
-                border: '1px solid #A7F3D0',
-                borderRadius: 4,
-                zIndex: 25,
-              }}
-            >
-              <div style={{ color: '#059669', fontSize: 11, fontWeight: 500, fontFamily: 'system-ui, sans-serif' }}>
-                Cross-linking în curs...
-              </div>
-            </div>
-          )}
-
-          {/* Stable clot indicator */}
-          {state.fibrinCrosslinked && (
-            <div
-              style={{
-                position: 'absolute',
-                top: 20,
-                left: '50%',
-                transform: 'translateX(-50%)',
-                padding: '8px 16px',
-                background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-                border: '2px solid #10B981',
-                borderRadius: 8,
-                boxShadow: '0 4px 16px rgba(5, 150, 105, 0.3)',
-                zIndex: 30,
-                textAlign: 'center',
-              }}
-            >
-              <div style={{ color: '#FFFFFF', fontSize: 12, fontWeight: 700, fontFamily: 'system-ui, sans-serif', letterSpacing: 0.5 }}>
-                CHEAG STABIL
-              </div>
-            </div>
-          )}
         </div>
       )}
-
-      {/* Completion handled by parent component - no duplicate overlay here */}
-
 
       {/* CSS Animations - Simple, GPU-optimized */}
       <style>{`
@@ -560,6 +550,19 @@ export function ExplosionFrame({
         @keyframes trailFade {
           0%, 100% { opacity: 0.2; height: 25px; }
           50% { opacity: 0.8; height: 45px; }
+        }
+        @keyframes stableClotAppear {
+          0% {
+            opacity: 0;
+            transform: translateX(-50%) scale(0.8);
+          }
+          50% {
+            transform: translateX(-50%) scale(1.1);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+          }
         }
       `}</style>
     </div>

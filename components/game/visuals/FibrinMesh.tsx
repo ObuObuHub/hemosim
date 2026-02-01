@@ -1,87 +1,82 @@
 // components/game/visuals/FibrinMesh.tsx
-// Professional medical visualization of fibrin clot formation
+// Interactive diagram showing thrombin's dual role - simplified tokens
 'use client';
 
-import { useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { EnzymeToken } from '../tokens/EnzymeToken';
+import { ZymogenToken } from '../tokens/ZymogenToken';
 
 interface FibrinMeshProps {
   width: number;
   height: number;
-  fibrinogenCleaved: boolean;
-  fibrinPolymerized: boolean;
-  fxiiiActivated: boolean;
-  fibrinCrosslinked: boolean;
+  isStable: boolean;
+  onClotStabilized?: () => void;
 }
 
 /**
- * FibrinMesh - Clean, schematic visualization of fibrin formation
- * Designed for medical professionals - minimal, clear, informative
+ * FibrinMesh - Interactive diagram with simplified tokens:
+ * 1. Click Fibrinogen (FI): FIIa cleaves it → Fibrină
+ * 2. Click FXIII: FIIa activates it → FXIIIa → Cross-links fibrin
  */
 export function FibrinMesh({
   width,
   height,
-  fibrinogenCleaved,
-  fibrinPolymerized,
-  fxiiiActivated,
-  fibrinCrosslinked,
+  isStable,
+  onClotStabilized,
 }: FibrinMeshProps): React.ReactElement {
-  // Simple progress calculation
-  const stage = fibrinCrosslinked ? 4 : fxiiiActivated ? 3 : fibrinPolymerized ? 2 : fibrinogenCleaved ? 1 : 0;
+  const [fibrinogenCleaved, setFibrinogenCleaved] = useState(isStable);
+  const [fxiiiActivated, setFxiiiActivated] = useState(isStable);
+  const [cleavageAnimating, setCleavageAnimating] = useState(false);
+  const [activationAnimating, setActivationAnimating] = useState(false);
+  const hasNotified = useRef(false);
 
-  // Generate clean mesh lines
-  const meshLines = useMemo(() => {
-    const lines: Array<{ id: string; x1: number; y1: number; x2: number; y2: number; type: 'h' | 'v' }> = [];
-    const meshWidth = width * 0.5;
-    const meshHeight = height * 0.4;
-    const startX = (width - meshWidth) / 2;
-    const startY = (height - meshHeight) / 2;
-    const cols = 6;
-    const rows = 4;
-    const cellWidth = meshWidth / (cols - 1);
-    const cellHeight = meshHeight / (rows - 1);
-
-    // Horizontal lines
-    for (let row = 0; row < rows; row++) {
-      const y = startY + row * cellHeight;
-      lines.push({
-        id: `h-${row}`,
-        x1: startX,
-        y1: y,
-        x2: startX + meshWidth,
-        y2: y,
-        type: 'h',
-      });
+  useEffect(() => {
+    if (isStable && !fibrinogenCleaved && !fxiiiActivated) {
+      setFibrinogenCleaved(true);
+      setFxiiiActivated(true);
     }
+  }, [isStable, fibrinogenCleaved, fxiiiActivated]);
 
-    // Vertical lines
-    for (let col = 0; col < cols; col++) {
-      const x = startX + col * cellWidth;
-      lines.push({
-        id: `v-${col}`,
-        x1: x,
-        y1: startY,
-        x2: x,
-        y2: startY + meshHeight,
-        type: 'v',
-      });
+  useEffect(() => {
+    if (fibrinogenCleaved && fxiiiActivated && !hasNotified.current) {
+      hasNotified.current = true;
+      onClotStabilized?.();
     }
+  }, [fibrinogenCleaved, fxiiiActivated, onClotStabilized]);
 
-    return lines;
-  }, [width, height]);
+  const handleFibrinogenClick = (): void => {
+    if (fibrinogenCleaved || cleavageAnimating) return;
+    setCleavageAnimating(true);
+    setTimeout(() => {
+      setFibrinogenCleaved(true);
+      setCleavageAnimating(false);
+    }, 600);
+  };
 
-  // Stage descriptions for medical professionals
-  const stageInfo = [
-    { label: 'Fibrinogen circulant', detail: 'Substrat disponibil pentru trombină' },
-    { label: 'Fibrinogen → Fibrină', detail: 'Trombina clivează fibrinopeptidele A și B' },
-    { label: 'Polimerizare', detail: 'Monomerii se autoasamblează în protofibrile' },
-    { label: 'FXIII activat', detail: 'Transglutaminaza pregătită pentru cross-linking' },
-    { label: 'Cheag stabil', detail: 'Legături covalente γ-γ formate' },
-  ];
+  const handleFXIIIClick = (): void => {
+    if (fxiiiActivated || activationAnimating) return;
+    setActivationAnimating(true);
+    setTimeout(() => {
+      setFxiiiActivated(true);
+      setActivationAnimating(false);
+    }, 600);
+  };
+
+  const bothComplete = fibrinogenCleaved && fxiiiActivated;
+
+  // Colors
+  const thrombinColor = '#DC2626';
+  const fibrinogenColor = '#EAB308'; // Yellow/amber
+  const fibrinColor = '#22C55E'; // Green
+  const fxiiiColor = '#22C55E';
+  const fxiiiaColor = '#059669';
+
+  const svgWidth = Math.min(width * 0.92, 360);
+  const svgHeight = Math.min(height * 0.88, 280);
 
   return (
     <div
       style={{
-        position: 'relative',
         width,
         height,
         display: 'flex',
@@ -90,99 +85,200 @@ export function FibrinMesh({
         justifyContent: 'center',
       }}
     >
-      {/* Clean SVG mesh diagram */}
       <svg
-        width={width * 0.6}
-        height={height * 0.5}
+        width={svgWidth}
+        height={svgHeight}
+        viewBox="0 0 360 330"
         style={{ overflow: 'visible' }}
       >
-        {/* Mesh lines - appear progressively */}
-        {stage >= 2 && meshLines.map((line, index) => (
-          <line
-            key={line.id}
-            x1={line.x1 - (width - width * 0.6) / 2}
-            y1={line.y1 - (height - height * 0.5) / 2}
-            x2={line.x2 - (width - width * 0.6) / 2}
-            y2={line.y2 - (height - height * 0.5) / 2}
-            stroke={fibrinCrosslinked ? '#059669' : '#F59E0B'}
-            strokeWidth={fibrinCrosslinked ? 2 : 1.5}
-            strokeLinecap="round"
-            opacity={0.8}
-            style={{
-              transition: 'all 0.5s ease',
-              transitionDelay: `${index * 30}ms`,
-            }}
-          />
-        ))}
+        <defs>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+          <marker id="arr-light" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <path d="M0,0 L8,3 L0,6 L1.5,3 Z" fill="#D1D5DB" />
+          </marker>
+          <marker id="arr-green" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+            <path d="M0,0 L10,4 L0,8 L2,4 Z" fill="#059669" />
+          </marker>
+        </defs>
 
-        {/* Cross-link indicators at intersections */}
-        {stage >= 4 && meshLines.filter(l => l.type === 'h').slice(0, 4).map((hLine, hIndex) => (
-          meshLines.filter(l => l.type === 'v').slice(0, 6).map((vLine, vIndex) => (
-            <circle
-              key={`cross-${hIndex}-${vIndex}`}
-              cx={vLine.x1 - (width - width * 0.6) / 2}
-              cy={hLine.y1 - (height - height * 0.5) / 2}
-              r={3}
-              fill="#059669"
-              style={{
-                transition: 'all 0.3s ease',
-                transitionDelay: `${(hIndex * 6 + vIndex) * 20}ms`,
-              }}
-            />
-          ))
-        ))}
-      </svg>
+        {/* ═══════════════ FIIa (THROMBIN) - TOP CENTER ═══════════════ */}
+        <g transform="translate(180, 40)">
+          <g style={{ filter: 'url(#glow)' }}>
+            <foreignObject x="-30" y="-30" width="60" height="60">
+              <EnzymeToken color={thrombinColor} label="FIIa" width={60} height={60} />
+            </foreignObject>
+          </g>
+          <text x="0" y="42" textAnchor="middle" fill="#4B5563" fontSize="11" fontWeight="600" fontFamily="system-ui">
+            Trombină
+          </text>
+        </g>
 
-      {/* Stage indicator - clean, professional */}
-      <div
-        style={{
-          marginTop: 16,
-          padding: '8px 16px',
-          background: fibrinCrosslinked ? '#ECFDF5' : '#FFFBEB',
-          border: `1px solid ${fibrinCrosslinked ? '#A7F3D0' : '#FDE68A'}`,
-          borderRadius: 6,
-          textAlign: 'center',
-        }}
-      >
-        <div
+        {/* ═══════════════ LEFT BRANCH: Fibrinogen → Fibrină ═══════════════ */}
+
+        {/* Arrow: FIIa → Fibrinogen */}
+        <path
+          d="M145 55 L90 90"
+          stroke="#D1D5DB"
+          strokeWidth="1.5"
+          fill="none"
+          markerEnd="url(#arr-light)"
+          strokeDasharray={cleavageAnimating ? '6 4' : 'none'}
+          style={{ animation: cleavageAnimating ? 'dashFlow 0.3s linear infinite' : undefined }}
+        />
+
+        {/* Fibrinogen (FI) - CLICKABLE - Simple oval */}
+        <g
+          transform="translate(80, 130)"
+          onClick={handleFibrinogenClick}
           style={{
-            fontSize: 12,
-            fontWeight: 600,
-            color: fibrinCrosslinked ? '#059669' : '#D97706',
-            marginBottom: 2,
+            cursor: fibrinogenCleaved ? 'default' : 'pointer',
+            opacity: fibrinogenCleaved ? 0.35 : 1,
+            transition: 'opacity 0.4s ease',
           }}
         >
-          {stageInfo[stage].label}
-        </div>
-        {stageInfo[stage].detail && (
-          <div style={{ fontSize: 10, color: '#6B7280' }}>
-            {stageInfo[stage].detail}
-          </div>
-        )}
-      </div>
+          <foreignObject x="-40" y="-22" width="80" height="44">
+            <ZymogenToken color={fibrinogenColor} label="FI" width={80} height={44} />
+          </foreignObject>
+        </g>
 
-      {/* Progress indicator */}
-      <div
-        style={{
-          marginTop: 12,
-          display: 'flex',
-          gap: 6,
-          alignItems: 'center',
-        }}
-      >
-        {[1, 2, 3, 4].map((s) => (
-          <div
-            key={s}
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              background: stage >= s ? (fibrinCrosslinked ? '#059669' : '#F59E0B') : '#E5E7EB',
-              transition: 'background 0.3s ease',
-            }}
-          />
-        ))}
-      </div>
+        {/* Arrow: Fibrinogen → Fibrin */}
+        <path
+          d="M80 165 L80 190"
+          stroke={fibrinogenCleaved ? '#059669' : '#D1D5DB'}
+          strokeWidth="2.5"
+          fill="none"
+          markerEnd={fibrinogenCleaved ? 'url(#arr-green)' : 'url(#arr-gray)'}
+          style={{ transition: 'stroke 0.4s ease' }}
+        />
+
+        {/* Fibrină - Simple green oval */}
+        <g
+          transform="translate(80, 220)"
+          style={{
+            opacity: fibrinogenCleaved ? 1 : 0.25,
+            transition: 'opacity 0.4s ease',
+          }}
+        >
+          <foreignObject x="-40" y="-22" width="80" height="44">
+            <ZymogenToken color={fibrinColor} label="Fibrină" width={80} height={44} />
+          </foreignObject>
+        </g>
+
+        {/* ═══════════════ RIGHT BRANCH: FXIII → FXIIIa ═══════════════ */}
+
+        {/* Arrow: FIIa → FXIII */}
+        <path
+          d="M215 55 L270 90"
+          stroke="#D1D5DB"
+          strokeWidth="1.5"
+          fill="none"
+          markerEnd="url(#arr-light)"
+          strokeDasharray={activationAnimating ? '6 4' : 'none'}
+          style={{ animation: activationAnimating ? 'dashFlow 0.3s linear infinite' : undefined }}
+        />
+
+        {/* FXIII - CLICKABLE - Simple oval */}
+        <g
+          transform="translate(280, 130)"
+          onClick={handleFXIIIClick}
+          style={{
+            cursor: fxiiiActivated ? 'default' : 'pointer',
+            opacity: fxiiiActivated ? 0.35 : 1,
+            transition: 'opacity 0.4s ease',
+          }}
+        >
+          <foreignObject x="-35" y="-20" width="70" height="40">
+            <ZymogenToken color={fxiiiColor} label="FXIII" width={70} height={40} />
+          </foreignObject>
+        </g>
+
+        {/* Arrow: FXIII → FXIIIa */}
+        <path
+          d="M280 160 L280 185"
+          stroke={fxiiiActivated ? '#059669' : '#D1D5DB'}
+          strokeWidth="2.5"
+          fill="none"
+          markerEnd={fxiiiActivated ? 'url(#arr-green)' : 'url(#arr-gray)'}
+          style={{ transition: 'stroke 0.4s ease' }}
+        />
+
+        {/* FXIIIa - Active enzyme with slot */}
+        <g
+          transform="translate(280, 220)"
+          style={{
+            opacity: fxiiiActivated ? 1 : 0.25,
+            transition: 'opacity 0.4s ease',
+          }}
+        >
+          <g style={{ filter: fxiiiActivated ? 'url(#glow)' : undefined }}>
+            <foreignObject x="-28" y="-28" width="56" height="56">
+              <EnzymeToken color={fxiiiActivated ? fxiiiaColor : '#A0A0A0'} label="FXIIIa" width={56} height={56} />
+            </foreignObject>
+          </g>
+        </g>
+
+        {/* ═══════════════ CROSS-LINK ARROW ═══════════════ */}
+        {bothComplete && (
+          <g style={{ animation: 'fadeIn 0.5s ease-out' }}>
+            <path
+              d="M248 215 Q 180 240, 125 215"
+              stroke="#059669"
+              strokeWidth="2.5"
+              fill="none"
+              strokeDasharray="6 3"
+              markerEnd="url(#arr-green)"
+            />
+            <rect x="155" y="238" width="55" height="16" rx="4" fill="#DCFCE7" stroke="#86EFAC" strokeWidth="1.5" />
+            <text x="182" y="250" textAnchor="middle" fill="#059669" fontSize="9" fontWeight="700" fontFamily="system-ui">
+              cross-link
+            </text>
+          </g>
+        )}
+
+        {/* ═══════════════ LABEL: CHEAG STABILIZAT ═══════════════ */}
+        {bothComplete && (
+          <g style={{ animation: 'fadeIn 0.5s ease-out' }}>
+            <rect
+              x="100"
+              y="290"
+              width="160"
+              height="28"
+              rx="4"
+              fill="#FFFFFF"
+              stroke="#000000"
+              strokeWidth="2"
+            />
+            <text
+              x="180"
+              y="310"
+              textAnchor="middle"
+              fill="#000000"
+              fontSize="16"
+              fontWeight="800"
+              fontFamily="system-ui"
+            >
+              Cheag stabilizat
+            </text>
+          </g>
+        )}
+      </svg>
+
+      <style>{`
+        @keyframes dashFlow {
+          from { stroke-dashoffset: 10; }
+          to { stroke-dashoffset: 0; }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }
