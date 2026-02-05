@@ -78,7 +78,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Cantități infime de trombină (FIIa) ajung la trombocit și declanșează faza de amplificare, activând receptorii PAR (receptori activați de protează) prin clivaj proteolitic.',
     actionKey: 'THROMBIN_ARRIVES',
     isAutomatic: true,
-    delayMs: 2500,
+    delayMs: 5000,
     phase: 'amplification',
   },
   {
@@ -86,7 +86,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Cantități infime de trombină (FIIa) ajung la trombocit și declanșează faza de amplificare, activând receptorii PAR (receptori activați de protează) prin clivaj proteolitic.',
     actionKey: 'PAR_BIND',
     isAutomatic: true,
-    delayMs: 1500,
+    delayMs: 4000,
     phase: 'amplification',
   },
   {
@@ -94,7 +94,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Trombina se leagă de receptorul PAR1 și îl clivează proteolitic, expunând domeniul de activare.',
     actionKey: 'PAR_CLEAVE',
     isAutomatic: false,
-    delayMs: 2000,
+    delayMs: 3000,
     phase: 'amplification',
   },
   {
@@ -102,7 +102,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Activarea PAR declanșează semnalizare trombocitară (↑Ca²⁺ intracelular), cu modificare de formă, degranulare și pregătirea suprafeței procoagulante.',
     actionKey: 'PAR_ACTIVATE',
     isAutomatic: true,
-    delayMs: 2500,
+    delayMs: 5000,
     phase: 'amplification',
   },
   {
@@ -110,7 +110,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'La locul hemostazei, trombina eliberează FVIII din complexul cu vWF și îl face disponibil pentru activare și funcție de cofactor. vWF are rol protectiv pentru FVIII: îl transportă și îl protejează în plasmă.',
     actionKey: 'vWF-VIII',
     isAutomatic: false,
-    delayMs: 2500,
+    delayMs: 4000,
     phase: 'amplification',
   },
   {
@@ -118,7 +118,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Trombina activează factorul V: FV → FVa, cofactor esențial pentru formarea protrombinazei.',
     actionKey: 'FV_AMP',
     isAutomatic: false,
-    delayMs: 2500,
+    delayMs: 3500,
     phase: 'amplification',
   },
   {
@@ -126,7 +126,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Trombocitul activat devine procoagulant: expune fosfatidilserină (PS) pe fața externă a membranei, furnizând platforma pentru asamblarea complexelor de coagulare.',
     actionKey: 'PLATELET_ACTIVATE',
     isAutomatic: true,
-    delayMs: 2000,
+    delayMs: 5000,
     phase: 'amplification',
   },
   {
@@ -134,7 +134,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'FVa se fixează pe membrana trombocitară activată, pregătind formarea protrombinazei (Xa–Va) în faza de propagare.',
     actionKey: 'DOCK_FVA',
     isAutomatic: true,
-    delayMs: 2000,
+    delayMs: 4000,
     phase: 'amplification',
   },
   {
@@ -142,7 +142,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Pe suprafața trombocitului activat, trombina activează factorul XI: FXI → FXIa, amplificând ulterior generarea de FIXa.',
     actionKey: 'FXI',
     isAutomatic: false,
-    delayMs: 2500,
+    delayMs: 3500,
     phase: 'amplification',
   },
   {
@@ -150,7 +150,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'FVIIIa se fixează pe membrana trombocitară activată, pregătind asamblarea tenazei intrinseci (IXa–VIIIa) în faza de propagare.',
     actionKey: 'DOCK_FVIIIA',
     isAutomatic: true,
-    delayMs: 2000,
+    delayMs: 4000,
     phase: 'amplification',
   },
 
@@ -160,7 +160,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'FIXa (generat în inițiere și amplificat ulterior prin FXIa) ajunge pe suprafața trombocitului activat, unde devine disponibil pentru asamblarea tenazei.',
     actionKey: 'FIXA_ARRIVES',
     isAutomatic: true,
-    delayMs: 1500,
+    delayMs: 5000,
     phase: 'propagation',
   },
   {
@@ -168,7 +168,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Pe membrana trombocitară bogată în fosfatidilserină (PS), în prezența Ca²⁺, FIXa se asociază cu FVIIIa, formând complexul tenazei intrinseci (IXa–VIIIa).',
     actionKey: 'TENASE',
     isAutomatic: false,
-    delayMs: 3000,
+    delayMs: 5000,
     phase: 'propagation',
   },
   {
@@ -176,7 +176,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'Tenaza intrinsecă activează eficient FX → FXa, generând cantități mari de FXa pe suprafața trombocitară.',
     actionKey: 'PRODUCE_FXA',
     isAutomatic: false,
-    delayMs: 2500,
+    delayMs: 4000,
     phase: 'propagation',
   },
   {
@@ -184,7 +184,7 @@ export const cascadeSteps: CascadeStep[] = [
     instruction: 'FXa se asociază cu FVa pe membrana trombocitară, formând complexul protrombinazei (Xa–Va).',
     actionKey: 'PROTHROMBINASE',
     isAutomatic: false,
-    delayMs: 3000,
+    delayMs: 5000,
     phase: 'propagation',
   },
   {
