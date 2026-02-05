@@ -159,7 +159,7 @@ export function UnifiedPlateletView({
       )}
 
       {/* Central FIIa (Thrombin) - fades away once cofactors dock to complexes */}
-      {state.thrombinArrived && !state.thrombinBurst && !(state.fvaDocked && state.fviiaDocked) && (
+      {state.thrombinArrived && !state.thrombinBurst && !(state.fvaDocked && state.fviiiaDocked) && (
         <div
           style={{
             position: 'absolute',
@@ -253,7 +253,7 @@ export function UnifiedPlateletView({
       )}
 
       {/* vWF floating away */}
-      {state.vwfSplit && !state.fviiaDocked && (
+      {state.vwfSplit && !state.fviiiaDocked && (
         <div
           style={{
             position: 'absolute',
@@ -285,7 +285,7 @@ export function UnifiedPlateletView({
       )}
 
       {/* FVIIIa descending to Tenase complex after vWF split */}
-      {state.vwfSplit && !state.fviiaDocked && (
+      {state.vwfSplit && !state.fviiiaDocked && (
         <div
           style={{
             position: 'absolute',
@@ -373,7 +373,7 @@ export function UnifiedPlateletView({
       )}
 
       {/* FXIa amplification arrow - starts at FXIa, curves down, points LEFT to Tenase */}
-      {fxiaFixaProduced && !state.thrombinBurst && state.fvaDocked && state.fviiaDocked && (
+      {fxiaFixaProduced && !state.thrombinBurst && state.fvaDocked && state.fviiiaDocked && (
         <svg
           style={{
             position: 'absolute',
@@ -406,7 +406,7 @@ export function UnifiedPlateletView({
       )}
 
       {/* "Amplificare FIXa" label above FXIa */}
-      {fxiaFixaProduced && !state.thrombinBurst && state.fvaDocked && state.fviiaDocked && (
+      {fxiaFixaProduced && !state.thrombinBurst && state.fvaDocked && state.fviiiaDocked && (
         <div
           style={{
             position: 'absolute',
@@ -588,7 +588,7 @@ export function UnifiedPlateletView({
           <ComplexAssemblySlot
             name="TENAZĂ"
             enzyme={{ id: 'FIXa', ready: state.fixaArrived }}
-            cofactor={{ id: 'FVIIIa', ready: state.fviiaDocked }}
+            cofactor={{ id: 'FVIIIa', ready: state.fviiiaDocked }}
             color="#06B6D4"
           />
         )}
@@ -599,7 +599,7 @@ export function UnifiedPlateletView({
       {/* ================================================================= */}
 
       {/* FX SUBSTRATE - clickable inactive factor (before activation starts) */}
-      {state.tenaseFormed && state.plateletFxActivationPhase === 'inactive' && !state.fxaProduced && state.fvaDocked && state.fviiaDocked && (
+      {state.tenaseFormed && state.plateletFxActivationPhase === 'inactive' && !state.fxaProduced && state.fvaDocked && state.fviiiaDocked && (
         <div
           style={{
             position: 'absolute',
@@ -688,7 +688,7 @@ export function UnifiedPlateletView({
       )}
 
       {/* FXa flow arrow (Tenase → Prothrombinase) - remains visible after complex forms */}
-      {(state.fxaProduced || fxiaFixaProduced) && !state.thrombinBurst && state.fvaDocked && state.fviiaDocked && (
+      {(state.fxaProduced || fxiaFixaProduced) && !state.thrombinBurst && state.fvaDocked && state.fviiiaDocked && (
         <svg
           style={{
             position: 'absolute',

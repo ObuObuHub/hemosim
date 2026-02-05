@@ -112,13 +112,19 @@ export function SparkFrame({
   // IIa migration state is now controlled from parent via prop
   const fiiaIsHeld = iiaMigrationState === 'held_for_migration';
 
-  // Materialize FIX and FX after TF-VIIa forms
+  // Materialize FIX after TF-VIIa forms (Step 1 → Step 2)
   useEffect(() => {
     if (state.tfVIIaDocked && !fixMaterialized) {
       setTimeout(() => setFixMaterialized(true), 300);
-      setTimeout(() => setFxMaterialized(true), 500);
     }
   }, [state.tfVIIaDocked, fixMaterialized]);
+
+  // Materialize FX after FIX is activated (Step 2 → Step 3)
+  useEffect(() => {
+    if (state.fixDocked && !fxMaterialized) {
+      setTimeout(() => setFxMaterialized(true), 300);
+    }
+  }, [state.fixDocked, fxMaterialized]);
 
   // Materialize FV after FX docks
   useEffect(() => {

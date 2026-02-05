@@ -80,11 +80,11 @@ export function AmplificationPanel({
 
   // Auto-dock cofactors after activation (with delay for animation)
   useEffect(() => {
-    if (state.vwfSplit && !state.fviiaDocked && onDockCofactor) {
+    if (state.vwfSplit && !state.fviiiaDocked && onDockCofactor) {
       const timer = setTimeout(() => onDockCofactor('FVIIIa'), 600);
       return () => clearTimeout(timer);
     }
-  }, [state.vwfSplit, state.fviiaDocked, onDockCofactor]);
+  }, [state.vwfSplit, state.fviiiaDocked, onDockCofactor]);
 
   useEffect(() => {
     if (state.fvActivated && !state.fvaDocked && onDockCofactor) {
@@ -117,7 +117,7 @@ export function AmplificationPanel({
   };
 
   // Check if all cofactors are docked
-  const allCofactorsDocked = state.fvaDocked && state.fviiaDocked;
+  const allCofactorsDocked = state.fvaDocked && state.fviiiaDocked;
 
   return (
     <div
@@ -397,7 +397,7 @@ export function AmplificationPanel({
       />
 
       {/* vWF-FVIII Complex / FVIIIa - in bloodstream */}
-      {!state.fviiaDocked && (
+      {!state.fviiiaDocked && (
         <ActivationFactorSlot
           x={layout.positions.vwfFviii.x}
           y={state.vwfSplit ? layout.positions.vwfFviii.y + 30 : layout.positions.vwfFviii.y}
@@ -408,7 +408,7 @@ export function AmplificationPanel({
           sublabel={state.vwfSplit ? '↓ Se leagă de membrană' : 'Complex circulant'}
           onClick={() => !state.vwfSplit && thrombinAvailable && onActivateFactor('vWF-VIII')}
           disabled={!thrombinAvailable || state.vwfSplit}
-          isDocking={state.vwfSplit && !state.fviiaDocked}
+          isDocking={state.vwfSplit && !state.fviiiaDocked}
         />
       )}
 
@@ -442,7 +442,7 @@ export function AmplificationPanel({
       />
 
       {/* DOCKED COFACTORS on membrane surface */}
-      {state.fviiaDocked && (
+      {state.fviiiaDocked && (
         <DockedCofactor
           x={layout.dockedPositions.fviiia.x}
           y={layout.dockedPositions.fviiia.y}
@@ -602,7 +602,7 @@ export function AmplificationPanel({
           zIndex: 20,
         }}
       >
-        <ProgressDot label="VIII" active={state.vwfSplit} docked={state.fviiaDocked} color="#22C55E" />
+        <ProgressDot label="VIII" active={state.vwfSplit} docked={state.fviiiaDocked} color="#22C55E" />
         <ProgressDot label="V" active={state.fvActivated} docked={state.fvaDocked} color="#3B82F6" />
         <ProgressDot label="XI" active={state.fxiActivated} color="#EC4899" />
         <ProgressDot label="PLT" active={state.plateletActivated} color="#F59E0B" />

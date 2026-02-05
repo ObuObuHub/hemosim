@@ -9,7 +9,7 @@ interface PropagationViewProps {
   membraneY: number;
   state: {
     // Cofactors docked from amplification
-    fviiaDocked: boolean;
+    fviiiaDocked: boolean;
     fvaDocked: boolean;
     // Enzyme arrival
     fixaArrived: boolean;
@@ -187,8 +187,8 @@ export function PropagationView({
             name="TENASE"
             subtitle="(Intrinsic Xase)"
             enzyme={{ id: 'FIXa', docked: state.fixaArrived, awaiting: state.fixaMigrating }}
-            cofactor={{ id: 'FVIIIa', docked: state.fviiaDocked }}
-            canForm={state.fixaArrived && state.fviiaDocked}
+            cofactor={{ id: 'FVIIIa', docked: state.fviiiaDocked }}
+            canForm={state.fixaArrived && state.fviiiaDocked}
             onForm={onFormTenase}
             color="#06B6D4"
             isAutoMode={isAutoMode}

@@ -67,7 +67,7 @@ export function PropagationPanel({
   }, [width, height]);
 
   // Check if complexes can be formed
-  const cofactorsDocked = Boolean(amplificationState?.fvaDocked && amplificationState?.fviiaDocked);
+  const cofactorsDocked = Boolean(amplificationState?.fvaDocked && amplificationState?.fviiiaDocked);
   const canFormTenase = amplificationComplete && state.fixaArrived && !state.tenaseFormed && cofactorsDocked;
   const canFormProthrombinase = state.tenaseFormed && !state.prothrombinaseFormed;
   const canBurst = state.prothrombinaseFormed && !state.thrombinBurst;

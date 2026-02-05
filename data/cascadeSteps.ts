@@ -33,7 +33,7 @@ export const cascadeSteps: CascadeStep[] = [
   // ============ INITIATION PHASE - SparkFrame (5 steps) ============
   {
     id: 'dock-tf-vii',
-    instruction: 'Factorul VII din plasmă se leagă de Factorul tisular (FT) expus pe suprafața celulei',
+    instruction: 'În urma lezării vasculare, factorul tisular (FT) devine expus pe suprafața celulei exprimante de FT. FVII se leagă de FT și se formează complexul enzimatic FT–FVIIa, ancorat pe membrană.',
     actionKey: 'TF+FVII',
     isAutomatic: false,
     delayMs: 2500,
@@ -41,7 +41,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'dock-fix',
-    instruction: 'Complexul TF-VIIa activează FIX prin clivaj proteolitic',
+    instruction: 'Complexul FT–FVIIa activează proteolitic factorul IX: FIX → FIXa (IXa). FIXa este generat în zona FT și poate contribui ulterior la formarea complexului tenazei intrinseci pe suprafața plachetară.',
     actionKey: 'FIX',
     isAutomatic: false,
     delayMs: 3000,
@@ -49,7 +49,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'dock-fx',
-    instruction: 'TF-VIIa activează FX - formarea enzimei active FXa',
+    instruction: 'În paralel, FT–FVIIa activează proteolitic factorul X: FX → FXa (Xa), predominant local, la nivelul aceleiași suprafețe celulare.',
     actionKey: 'FX',
     isAutomatic: false,
     delayMs: 2500,
@@ -57,7 +57,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'dock-fv',
-    instruction: 'FVa se leagă de FXa formând complexul Protrombinază',
+    instruction: 'FXa se asociază cu FVa (cofactor disponibil în cantități mici sau activat local), formând un complex protrombinazic (Xa–Va).',
     actionKey: 'FV',
     isAutomatic: false,
     delayMs: 2500,
@@ -65,7 +65,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'dock-fii',
-    instruction: 'Protrombinaza convertește protrombina (FII) în trombină (FIIa)',
+    instruction: 'Complexul protrombinazic incipient (Xa–Va) catalizează conversia protrombinei (FII) în trombină (FIIa), generând o cantitate mică de trombină de inițiere („scânteia" de trombină) care declanșează faza următoare.',
     actionKey: 'FII',
     isAutomatic: false,
     delayMs: 2500,
@@ -75,7 +75,7 @@ export const cascadeSteps: CascadeStep[] = [
   // ============ AMPLIFICATION PHASE - ExplosionFrame (10 steps) ============
   {
     id: 'thrombin-arrives',
-    instruction: 'Trombina migrează spre suprafața trombocitului',
+    instruction: 'Cantități infime de trombină (FIIa) ajung la trombocit și declanșează faza de amplificare, activând receptorii PAR (receptori activați de protează) prin clivaj proteolitic.',
     actionKey: 'THROMBIN_ARRIVES',
     isAutomatic: true,
     delayMs: 2500,
@@ -83,7 +83,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'par-bind',
-    instruction: 'Trombina se leagă de receptorul PAR1',
+    instruction: 'Cantități infime de trombină (FIIa) ajung la trombocit și declanșează faza de amplificare, activând receptorii PAR (receptori activați de protează) prin clivaj proteolitic.',
     actionKey: 'PAR_BIND',
     isAutomatic: true,
     delayMs: 1500,
@@ -91,7 +91,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'par-cleave',
-    instruction: 'Trombina clivează receptorul PAR1 al trombocitului',
+    instruction: 'Trombina se leagă de receptorul PAR1 și îl clivează proteolitic, expunând domeniul de activare.',
     actionKey: 'PAR_CLEAVE',
     isAutomatic: false,
     delayMs: 2000,
@@ -99,7 +99,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'par-activate',
-    instruction: 'PAR1 activat transmite semnalul de activare intracelular',
+    instruction: 'Activarea PAR declanșează semnalizare trombocitară (↑Ca²⁺ intracelular), cu modificare de formă, degranulare și pregătirea suprafeței procoagulante.',
     actionKey: 'PAR_ACTIVATE',
     isAutomatic: true,
     delayMs: 2500,
@@ -107,7 +107,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'split-vwf',
-    instruction: 'Trombina eliberează FVIII din complexul vWF-FVIII',
+    instruction: 'La locul hemostazei, trombina eliberează FVIII din complexul cu vWF și îl face disponibil pentru activare și funcție de cofactor. vWF are rol protectiv pentru FVIII: îl transportă și îl protejează în plasmă.',
     actionKey: 'vWF-VIII',
     isAutomatic: false,
     delayMs: 2500,
@@ -115,23 +115,15 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'activate-fv',
-    instruction: 'Trombina activează FV → FVa',
+    instruction: 'Trombina activează factorul V: FV → FVa, cofactor esențial pentru formarea protrombinazei.',
     actionKey: 'FV_AMP',
     isAutomatic: false,
     delayMs: 2500,
     phase: 'amplification',
   },
   {
-    id: 'activate-fxi',
-    instruction: 'Trombina activează FXI → FXIa (buclă feedback pozitiv)',
-    actionKey: 'FXI',
-    isAutomatic: false,
-    delayMs: 2500,
-    phase: 'amplification',
-  },
-  {
     id: 'platelet-activate',
-    instruction: 'Trombocitul se activează și expune fosfatidilserină',
+    instruction: 'Trombocitul activat devine procoagulant: expune fosfatidilserină (PS) pe fața externă a membranei, furnizând platforma pentru asamblarea complexelor de coagulare.',
     actionKey: 'PLATELET_ACTIVATE',
     isAutomatic: true,
     delayMs: 2000,
@@ -139,15 +131,23 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'dock-fva',
-    instruction: 'FVa se ancorează pe membrana trombocitului activat',
+    instruction: 'FVa se fixează pe membrana trombocitară activată, pregătind formarea protrombinazei (Xa–Va) în faza de propagare.',
     actionKey: 'DOCK_FVA',
     isAutomatic: true,
     delayMs: 2000,
     phase: 'amplification',
   },
   {
+    id: 'activate-fxi',
+    instruction: 'Pe suprafața trombocitului activat, trombina activează factorul XI: FXI → FXIa, amplificând ulterior generarea de FIXa.',
+    actionKey: 'FXI',
+    isAutomatic: false,
+    delayMs: 2500,
+    phase: 'amplification',
+  },
+  {
     id: 'dock-fviiia',
-    instruction: 'FVIIIa se ancorează pe membrana trombocitului activat',
+    instruction: 'FVIIIa se fixează pe membrana trombocitară activată, pregătind asamblarea tenazei intrinseci (IXa–VIIIa) în faza de propagare.',
     actionKey: 'DOCK_FVIIIA',
     isAutomatic: true,
     delayMs: 2000,
@@ -157,7 +157,7 @@ export const cascadeSteps: CascadeStep[] = [
   // ============ PROPAGATION PHASE - ExplosionFrame (5 steps) ============
   {
     id: 'fixa-arrives',
-    instruction: 'FIXa sosește de la celula care exprimă FT',
+    instruction: 'FIXa (generat în inițiere și amplificat ulterior prin FXIa) ajunge pe suprafața trombocitului activat, unde devine disponibil pentru asamblarea tenazei.',
     actionKey: 'FIXA_ARRIVES',
     isAutomatic: true,
     delayMs: 1500,
@@ -165,7 +165,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'form-tenase',
-    instruction: 'FIXa + FVIIIa formează complexul Tenază pe suprafața trombocitului',
+    instruction: 'Pe membrana trombocitară bogată în fosfatidilserină (PS), în prezența Ca²⁺, FIXa se asociază cu FVIIIa, formând complexul tenazei intrinseci (IXa–VIIIa).',
     actionKey: 'TENASE',
     isAutomatic: false,
     delayMs: 3000,
@@ -173,7 +173,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'produce-fxa',
-    instruction: 'Tenaza convertește FX → FXa (amplificare ×200.000)',
+    instruction: 'Tenaza intrinsecă activează eficient FX → FXa, generând cantități mari de FXa pe suprafața trombocitară.',
     actionKey: 'PRODUCE_FXA',
     isAutomatic: false,
     delayMs: 2500,
@@ -181,7 +181,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'form-prothrombinase',
-    instruction: 'FXa + FVa formează complexul Protrombinază',
+    instruction: 'FXa se asociază cu FVa pe membrana trombocitară, formând complexul protrombinazei (Xa–Va).',
     actionKey: 'PROTHROMBINASE',
     isAutomatic: false,
     delayMs: 3000,
@@ -189,7 +189,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'thrombin-burst',
-    instruction: 'Explozia de trombină: generarea masivă de trombină',
+    instruction: 'Protrombinaza (Xa–Va) convertește rapid FII → FIIa, rezultând „explozia" de trombină (thrombin burst) care susține formarea cheagului.',
     actionKey: 'BURST',
     isAutomatic: false,
     delayMs: 10000,
@@ -199,7 +199,7 @@ export const cascadeSteps: CascadeStep[] = [
   // ============ CLOTTING PHASE - ExplosionFrame (4 steps) ============
   {
     id: 'cleave-fibrinogen',
-    instruction: 'Trombina clivează fibrinogenul eliberând fibrinopeptidele A și B',
+    instruction: 'Trombina (FIIa) clivează fibrinogenul (FI), eliberând fibrinopeptide și formând monomeri de fibrină.',
     actionKey: 'FIBRINOGEN_CLEAVE',
     isAutomatic: true,
     delayMs: 8000,
@@ -207,7 +207,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'polymerize-fibrin',
-    instruction: 'Monomerii de fibrină se autoasamblează în protofibrile',
+    instruction: 'Monomerii de fibrină se asociază spontan și formează o rețea prin polimerizare (fibrină inițial ne-stabilizată).',
     actionKey: 'FIBRIN_POLYMERIZE',
     isAutomatic: true,
     delayMs: 5000,
@@ -215,7 +215,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'activate-fxiii',
-    instruction: 'Trombina activează FXIII → FXIIIa',
+    instruction: 'Trombina activează factorul XIII: FXIII → FXIIIa (în prezența Ca²⁺), pregătind stabilizarea cheagului.',
     actionKey: 'FXIII_ACTIVATE',
     isAutomatic: true,
     delayMs: 5000,
@@ -223,7 +223,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'crosslink-fibrin',
-    instruction: 'FXIIIa formează legături covalente între fibrele de fibrină',
+    instruction: 'FXIIIa leagă covalent fibrele de fibrină, stabilizând cheagul.',
     actionKey: 'FIBRIN_CROSSLINK',
     isAutomatic: false,
     delayMs: 6000,
@@ -252,7 +252,7 @@ export function getCurrentStepIndex(state: {
     fxiActivated: boolean;
     plateletActivated: boolean;
     fvaDocked: boolean;
-    fviiaDocked: boolean;
+    fviiiaDocked: boolean;
     fixaArrived: boolean;
     tenaseFormed: boolean;
     fxaProduced: boolean;
@@ -278,13 +278,15 @@ export function getCurrentStepIndex(state: {
   if (explosion.prothrombinaseFormed) return 19; // Waiting for burst
   if (explosion.fxaProduced) return 18; // Waiting for prothrombinase
   if (explosion.tenaseFormed) return 17; // Waiting for FXa production
-  if (explosion.fixaArrived && explosion.fviiaDocked && explosion.fvaDocked) return 16; // Waiting for tenase
+  // All Amplification factors must be assembled before Propagation
+  if (explosion.fixaArrived && explosion.fviiiaDocked && explosion.fvaDocked && explosion.fxiActivated) return 16; // Waiting for tenase
 
   // Amplification phase (steps 6-15)
-  if (explosion.fviiaDocked) return 15;
-  if (explosion.fvaDocked) return 14;
-  if (explosion.plateletActivated) return 13;
-  if (explosion.fxiActivated) return 12;
+  // New order: platelet-activate(11) → dock-fva(12) → activate-fxi(13) → dock-fviiia(14)
+  if (explosion.fviiiaDocked) return 15;
+  if (explosion.fxiActivated) return 14;
+  if (explosion.fvaDocked) return 13;
+  if (explosion.plateletActivated) return 12;
   if (explosion.fvActivated) return 11;
   if (explosion.vwfSplit) return 10;
   if (explosion.parCleavageState === 'activated') return 9;

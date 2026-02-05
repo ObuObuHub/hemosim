@@ -186,7 +186,7 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
     if (
       initiation.fixaMigrationState === 'held_for_migration' &&
       platelet.plateletActivated &&
-      platelet.fviiaDocked &&
+      platelet.fviiiaDocked &&
       !platelet.fixaArrived
     ) {
       startFixaGlide();
@@ -194,7 +194,7 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
   }, [
     initiation.fixaMigrationState,
     platelet.plateletActivated,
-    platelet.fviiaDocked,
+    platelet.fviiiaDocked,
     platelet.fixaArrived,
     startFixaGlide,
   ]);

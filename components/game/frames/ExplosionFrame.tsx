@@ -143,11 +143,11 @@ export function ExplosionFrame({
 
   // Auto-dock cofactors after activation
   useEffect(() => {
-    if (state.vwfSplit && !state.fviiaDocked && onDockCofactor) {
+    if (state.vwfSplit && !state.fviiiaDocked && onDockCofactor) {
       const timer = setTimeout(() => onDockCofactor('FVIIIa'), 800);
       return () => clearTimeout(timer);
     }
-  }, [state.vwfSplit, state.fviiaDocked, onDockCofactor]);
+  }, [state.vwfSplit, state.fviiiaDocked, onDockCofactor]);
 
   useEffect(() => {
     if (state.fvActivated && !state.fvaDocked && onDockCofactor) {
@@ -158,11 +158,11 @@ export function ExplosionFrame({
 
   // Auto-form Tenase when FIXa arrived and FVIIIa docked
   useEffect(() => {
-    if (state.fixaArrived && state.fviiaDocked && !state.tenaseFormed) {
+    if (state.fixaArrived && state.fviiiaDocked && !state.tenaseFormed) {
       const timer = setTimeout(() => onFormComplex('tenase'), 600);
       return () => clearTimeout(timer);
     }
-  }, [state.fixaArrived, state.fviiaDocked, state.tenaseFormed, onFormComplex]);
+  }, [state.fixaArrived, state.fviiiaDocked, state.tenaseFormed, onFormComplex]);
 
   // Auto-form Prothrombinase when FXa produced and FVa docked
   useEffect(() => {
@@ -747,7 +747,7 @@ export function ExplosionFrame({
             )}
 
             {/* aPC inhibition arrows - to FVa and FVIIIa positions */}
-            {(state.fvaDocked || state.fviiaDocked) && (
+            {(state.fvaDocked || state.fviiiaDocked) && (
               <g opacity={0.7}>
                 {state.fvaDocked && (
                   <>
@@ -772,7 +772,7 @@ export function ExplosionFrame({
                     </text>
                   </>
                 )}
-                {state.fviiaDocked && (
+                {state.fviiiaDocked && (
                   <>
                     <line
                       x1={width - 80}

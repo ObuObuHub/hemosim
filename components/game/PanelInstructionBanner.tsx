@@ -128,35 +128,8 @@ export function PanelInstructionBanner({
     );
   }
 
-  // Not yet started (platelet panel waiting for thrombin)
+  // Not yet started - show nothing
   if (currentStepIndex < 0 || !currentStep) {
-    if (panelId === 'platelet') {
-      return (
-        <div
-          style={{
-            position: 'relative',
-            margin: '8px 8px 0',
-            padding: '8px 12px',
-            background: 'rgba(241, 245, 249, 0.5)',
-            borderRadius: 6,
-            border: '1px solid rgba(226, 232, 240, 0.5)',
-            opacity: 0.6,
-          }}
-        >
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 500,
-              fontFamily: 'system-ui, sans-serif',
-              color: '#64748B',
-              textAlign: 'center',
-            }}
-          >
-            În așteptare pentru trombină...
-          </div>
-        </div>
-      );
-    }
     return null;
   }
 
@@ -169,10 +142,10 @@ export function PanelInstructionBanner({
       style={{
         position: 'relative',
         margin: '8px 8px 0',
-        background: 'rgba(255, 255, 255, 0.95)',
-        borderRadius: 6,
-        border: '1px solid #E2E8F0',
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+        background: 'rgba(255, 255, 255, 0.98)',
+        borderRadius: 8,
+        border: '1px solid #CBD5E1',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
         overflow: 'hidden',
         opacity: isVisible ? dimmedOpacity : 0,
         transform: isVisible ? 'translateY(0)' : 'translateY(-4px)',
@@ -188,12 +161,12 @@ export function PanelInstructionBanner({
           left: 0,
           top: 0,
           bottom: 0,
-          width: 3,
+          width: 4,
           background: phaseColor,
         }}
       />
 
-      <div style={{ padding: '6px 10px 8px 14px' }}>
+      <div style={{ padding: '10px 12px 12px 16px' }}>
         {/* Header row: step counter and phase */}
         <div
           style={{
@@ -269,11 +242,11 @@ export function PanelInstructionBanner({
         {/* Instruction text */}
         <div
           style={{
-            fontSize: 11,
-            fontWeight: 500,
+            fontSize: 14,
+            fontWeight: 600,
             fontFamily: 'system-ui, sans-serif',
-            color: '#1E293B',
-            lineHeight: 1.4,
+            color: '#0F172A',
+            lineHeight: 1.5,
           }}
         >
           {currentStep.instruction}

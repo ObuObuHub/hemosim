@@ -26,7 +26,7 @@ export interface AmplificationState {
   plateletActivated: boolean;
   // Cofactor membrane binding (for propagation readiness)
   fvaDocked: boolean;    // FVa bound to platelet membrane
-  fviiaDocked: boolean;  // FVIIIa bound to platelet membrane
+  fviiiaDocked: boolean;  // FVIIIa bound to platelet membrane
   // PAR1 receptor cleavage state
   parCleavageState: PARCleavageState;
   // FIXa arrival at amplification (before going to propagation)
@@ -82,7 +82,7 @@ const initialState: ThreePanelState = {
     fxiActivated: false,
     plateletActivated: false,
     fvaDocked: false,
-    fviiaDocked: false,
+    fviiiaDocked: false,
     parCleavageState: 'intact',
     fixaAtAmplification: false,
   },
@@ -169,7 +169,7 @@ function threePanelReducer(state: ThreePanelState, action: ThreePanelAction): Th
     case 'DOCK_FVA':
       return { ...state, amplification: { ...state.amplification, fvaDocked: true } };
     case 'DOCK_FVIIIA':
-      return { ...state, amplification: { ...state.amplification, fviiaDocked: true } };
+      return { ...state, amplification: { ...state.amplification, fviiiaDocked: true } };
     case 'FIXA_AT_AMPLIFICATION':
       return { ...state, amplification: { ...state.amplification, fixaAtAmplification: true } };
 
@@ -329,7 +329,7 @@ export function useThreePanelState(): ThreePanelStateHook {
   const canFormTenase = useCallback((): boolean => {
     const { amplification, propagation } = state;
     // Requires FVIIIa docked on membrane + FIXa arrival
-    return amplification.fviiaDocked && propagation.fixaArrived;
+    return amplification.fviiiaDocked && propagation.fixaArrived;
   }, [state]);
 
   const canFormProthrombinase = useCallback((): boolean => {

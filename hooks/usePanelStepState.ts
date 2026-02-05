@@ -67,10 +67,10 @@ function getPlateletStepIndex(state: CascadeState): number {
   if (platelet.prothrombinaseFormed) return 14;  // Step 20: Thrombin burst
   if (platelet.fxaProduced) return 13;           // Step 19: Prothrombinase formation
   if (platelet.tenaseFormed) return 12;          // Step 18: FXa production
-  if (platelet.fixaArrived && platelet.fviiaDocked && platelet.fvaDocked) return 11; // Step 17: Tenase formation
+  if (platelet.fixaArrived && platelet.fviiiaDocked && platelet.fvaDocked) return 11; // Step 17: Tenase formation
 
   // Amplification phase (0-9 in panel terms, steps 5-14 globally)
-  if (platelet.fviiaDocked) return 10;           // Step 16: FIXa arrives
+  if (platelet.fviiiaDocked) return 10;           // Step 16: FIXa arrives
   if (platelet.fvaDocked) return 9;              // Step 15: FVIIIa docks
   if (platelet.plateletActivated) return 8;      // Step 14: FVa docks
   if (platelet.fxiActivated) return 7;           // Step 13: Platelet activation

@@ -118,7 +118,7 @@ export interface PlateletSurfaceState {
   fviiiActivated: boolean;        // FVIII → FVIIIa by thrombin
   fxiActivated: boolean;          // FXI → FXIa (positive feedback loop)
   fvaDocked: boolean;             // FVa anchored on PS membrane
-  fviiaDocked: boolean;           // FVIIIa anchored on PS membrane
+  fviiiaDocked: boolean;           // FVIIIa anchored on PS membrane
 
   // Propagation Phase - Enzyme complex formation
   fixaArrived: boolean;           // FIXa from initiation phase
@@ -207,7 +207,7 @@ const initialState: CascadeState = {
     fviiiActivated: false,
     fxiActivated: false,
     fvaDocked: false,
-    fviiaDocked: false,
+    fviiiaDocked: false,
     // Propagation
     fixaArrived: false,
     tenaseFormed: false,
@@ -452,7 +452,7 @@ function cascadeReducer(state: CascadeState, action: CascadeAction): CascadeStat
     case 'DOCK_FVA':
       return { ...state, platelet: { ...state.platelet, fvaDocked: true } };
     case 'DOCK_FVIIIA':
-      return { ...state, platelet: { ...state.platelet, fviiaDocked: true } };
+      return { ...state, platelet: { ...state.platelet, fviiiaDocked: true } };
 
     // PAR1 cleavage sequence
     case 'PAR_THROMBIN_BIND':
@@ -801,14 +801,14 @@ export function useCascadeState(): CascadeStateHook {
     return (
       platelet.plateletActivated &&
       platelet.fvaDocked &&
-      platelet.fviiaDocked &&
+      platelet.fviiiaDocked &&
       platelet.fixaArrived
     );
   }, [state]);
 
   const canFormTenase = useCallback((): boolean => {
     const { platelet } = state;
-    return platelet.fviiaDocked && platelet.fixaArrived;
+    return platelet.fviiiaDocked && platelet.fixaArrived;
   }, [state]);
 
   const canFormProthrombinase = useCallback((): boolean => {
