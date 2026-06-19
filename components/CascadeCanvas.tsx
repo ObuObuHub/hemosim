@@ -346,29 +346,32 @@ export function CascadeCanvas({
         ctx.fillText('Calea comună', 245 * scaleX, 390 * scaleY);
       }
 
-      // Draw pathway labels with colors (only in clinical/extended mode, NOT in isolation mode)
+      // Draw pathway labels as quiet zone headers (clinical mode, NOT isolation mode).
+      // Muted + size-capped so they read as background section markers instead of
+      // competing with the nodes (was a major source of visual clutter).
       if (state.mode === 'clinical' && !state.isolationFactors) {
-        ctx.font = `600 ${Math.round(10 * fontScale)}px Inter, system-ui, sans-serif`;
+        const labelScale = Math.min(fontScale, 1.2);
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        ctx.font = `700 ${Math.round(9 * labelScale)}px Inter, system-ui, sans-serif`;
         ctx.textAlign = 'left';
         ctx.fillStyle = PATHWAY_COLORS.intrinsic;
-        ctx.fillText('CALEA INTRINSECĂ', 50 * scaleX, 30 * scaleY);
+        ctx.fillText('CALEA INTRINSECĂ', 40 * scaleX, 26 * scaleY);
         ctx.textAlign = 'right';
         ctx.fillStyle = PATHWAY_COLORS.extrinsic;
-        ctx.fillText('CALEA EXTRINSECĂ', 850 * scaleX, 30 * scaleY);
-        ctx.textAlign = 'center';
-        ctx.fillStyle = PATHWAY_COLORS.common;
-        ctx.fillText('CALEA COMUNĂ', 420 * scaleX, 380 * scaleY);
-
-        // Fibrinolysis and Anticoagulant labels
-        ctx.fillStyle = PATHWAY_COLORS.fibrinolysis;
+        ctx.fillText('CALEA EXTRINSECĂ', 1110 * scaleX, 26 * scaleY);
+        // Common pathway: moved to the left margin (was centered over the node cluster)
         ctx.textAlign = 'left';
-        ctx.fillText('FIBRINOLIZĂ', 80 * scaleX, 695 * scaleY);
-        // Anticoagulant label (above APC)
+        ctx.fillStyle = PATHWAY_COLORS.common;
+        ctx.fillText('CALEA COMUNĂ', 40 * scaleX, 470 * scaleY);
+        ctx.fillStyle = PATHWAY_COLORS.fibrinolysis;
+        ctx.fillText('FIBRINOLIZĂ', 40 * scaleX, 700 * scaleY);
+        ctx.textAlign = 'right';
         ctx.fillStyle = PATHWAY_COLORS.anticoagulant;
-        ctx.textAlign = 'center';
-        ctx.fillText('ANTICOAGULANȚI', 870 * scaleX, 520 * scaleY);
+        ctx.fillText('ANTICOAGULANȚI', 1110 * scaleX, 470 * scaleY);
+        ctx.restore();
 
-        // Phase labels are now drawn inside the complex rendering loop (under Ca²⁺ + PL)
+        // Phase labels are drawn inside the complex rendering loop (under Ca²⁺ + PL)
       }
 
       // Draw connections first (behind nodes)
@@ -422,14 +425,15 @@ export function CascadeCanvas({
             ctx.lineWidth = 1;
           } else if (activity < 0.50) {
             // MILDLY SLOWED
-            ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.32)';
+            ctx.setLineDash([]);
+            ctx.lineWidth = 1;
+          } else {
+            // NORMAL — kept light so the many connections read as a calm scaffold,
+            // not a competing web.
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.38)';
             ctx.setLineDash([]);
             ctx.lineWidth = 1.25;
-          } else {
-            // NORMAL
-            ctx.strokeStyle = 'rgba(148, 163, 184, 0.55)';
-            ctx.setLineDash([]);
-            ctx.lineWidth = 1.5;
           }
 
           ctx.stroke();
@@ -680,23 +684,28 @@ export function CascadeCanvas({
             factor.complexName
           );
 
-          // Draw Ca²⁺ + PL indicator below bracket
-          ctx.font = `500 ${Math.round(8 * fontScale)}px Inter, system-ui, sans-serif`;
-          ctx.fillStyle = membraneColor;
+          // Ca²⁺ + PL cofactor hint — subtle (it repeats under every complex)
+          const cplScale = Math.min(fontScale, 1.2);
+          ctx.save();
+          ctx.globalAlpha = 0.55;
+          ctx.font = `500 ${Math.round(7.5 * cplScale)}px Inter, system-ui, sans-serif`;
+          ctx.fillStyle = '#94a3b8';
           ctx.textAlign = 'center';
           ctx.fillText('Ca²⁺ + PL', centerX, maxY + 12);
+          ctx.restore();
 
-          // Draw phase label below Ca²⁺ + PL
-          ctx.font = `600 ${Math.round(9 * fontScale)}px Inter, system-ui, sans-serif`;
+          // Phase label (the cell-based-model teaching point) below the cofactor hint
+          ctx.font = `700 ${Math.round(9 * cplScale)}px Inter, system-ui, sans-serif`;
+          ctx.textAlign = 'center';
           if (factor.complexName === 'TF-VIIa') {
             ctx.fillStyle = MEMBRANE_COLORS.tfCell;
-            ctx.fillText('INIȚIERE', centerX, maxY + 26);
+            ctx.fillText('INIȚIERE', centerX, maxY + 25);
           } else if (factor.complexName === 'TENAZĂ') {
             ctx.fillStyle = MEMBRANE_COLORS.platelet;
-            ctx.fillText('AMPLIFICARE', centerX, maxY + 26);
+            ctx.fillText('AMPLIFICARE', centerX, maxY + 25);
           } else if (factor.complexName === 'PROTROMBINAZĂ') {
             ctx.fillStyle = MEMBRANE_COLORS.platelet;
-            ctx.fillText('PROPAGARE', centerX, maxY + 26);
+            ctx.fillText('PROPAGARE', centerX, maxY + 25);
           }
 
           // Draw "+" between enzyme and cofactor
