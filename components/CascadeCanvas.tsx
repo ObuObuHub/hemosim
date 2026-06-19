@@ -681,7 +681,7 @@ export function CascadeCanvas({
             maxX - minX,
             maxY - minY,
             membraneColor,
-            factor.complexName
+            '' // complex name omitted in the cascade (belongs to the cell-based model)
           );
 
           // Ca²⁺ + PL cofactor hint — subtle (it repeats under every complex)
@@ -694,19 +694,9 @@ export function CascadeCanvas({
           ctx.fillText('Ca²⁺ + PL', centerX, maxY + 12);
           ctx.restore();
 
-          // Phase label (the cell-based-model teaching point) below the cofactor hint
-          ctx.font = `700 ${Math.round(9 * cplScale)}px Inter, system-ui, sans-serif`;
-          ctx.textAlign = 'center';
-          if (factor.complexName === 'TF-VIIa') {
-            ctx.fillStyle = MEMBRANE_COLORS.tfCell;
-            ctx.fillText('INIȚIERE', centerX, maxY + 25);
-          } else if (factor.complexName === 'TENAZĂ') {
-            ctx.fillStyle = MEMBRANE_COLORS.platelet;
-            ctx.fillText('AMPLIFICARE', centerX, maxY + 25);
-          } else if (factor.complexName === 'PROTROMBINAZĂ') {
-            ctx.fillStyle = MEMBRANE_COLORS.platelet;
-            ctx.fillText('PROPAGARE', centerX, maxY + 25);
-          }
+          // Complex-name and phase labels (INIȚIERE/AMPLIFICARE/PROPAGARE) intentionally
+          // NOT drawn here — those belong to the cell-based model ("Model Celular" tab),
+          // not the coagulogram cascade. The complex is identified by its paired factors.
 
           // Draw "+" between enzyme and cofactor
           const plusX = (enzymeX + cofactorX) / 2;
