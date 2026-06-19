@@ -64,7 +64,7 @@ export function SparkFrame({
 
   // Layout calculations
   const layout = useMemo(() => {
-    const membraneHeight = height * 0.28;
+    const membraneHeight = height * 0.40; // taller cell surface → reaction row sits higher, less empty plasma
     const bloodstreamHeight = height - membraneHeight;
     const membraneY = bloodstreamHeight;
 

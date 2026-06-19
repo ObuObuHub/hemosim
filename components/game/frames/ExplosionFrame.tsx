@@ -87,7 +87,7 @@ export function ExplosionFrame({
 
   // Unified layout for both zones
   const layout = useMemo(() => {
-    const membraneHeight = height * 0.28; // Aligned with SparkFrame
+    const membraneHeight = height * 0.40; // Aligned with SparkFrame
     const bloodstreamHeight = height - membraneHeight;
     const membraneY = bloodstreamHeight;
 

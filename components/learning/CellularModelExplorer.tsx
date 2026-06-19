@@ -846,13 +846,13 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
                 // Start position: SparkFrame fiiaHold (right side of SparkFrame, middle height)
                 // fiiaHold = { x: width * 0.90, y: bloodstreamHeight * 0.45 }
                 left: frameDimensions.initiation.x + frameDimensions.initiation.width * 0.90 - 22,
-                top: frameDimensions.initiation.y + (frameDimensions.initiation.height * 0.72) * 0.45 - 18,
+                top: frameDimensions.initiation.y + (frameDimensions.initiation.height * 0.60) * 0.45 - 18,
                 animation: 'fiiaCrossFrameMigrate 1.5s ease-in-out forwards',
                 // CSS variables for end position (used in keyframes)
                 ['--end-x' as string]: `${frameDimensions.platelet.x + frameDimensions.platelet.width * 0.45 - 22}px`,
-                ['--end-y' as string]: `${frameDimensions.platelet.y + (frameDimensions.platelet.height * 0.78) * 0.32 - 18}px`,
+                ['--end-y' as string]: `${frameDimensions.platelet.y + (frameDimensions.platelet.height * 0.60) * 0.42 - 18}px`,
                 ['--start-x' as string]: `${frameDimensions.initiation.x + frameDimensions.initiation.width * 0.90 - 22}px`,
-                ['--start-y' as string]: `${frameDimensions.initiation.y + (frameDimensions.initiation.height * 0.72) * 0.45 - 18}px`,
+                ['--start-y' as string]: `${frameDimensions.initiation.y + (frameDimensions.initiation.height * 0.60) * 0.45 - 18}px`,
               }}
             >
               {/* FIIa - uses FactorTokenNew for consistent design */}
