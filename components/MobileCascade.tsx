@@ -28,13 +28,13 @@ type Node = {
 };
 
 const PATHWAY_COLOR: Record<Factor['pathway'], string> = {
-  intrinsic: '#2563eb',
-  extrinsic: '#16a34a',
-  common: '#0d9488',
-  clot: '#1e293b',
-  anticoagulant: '#a16207',
-  fibrinolysis: '#b45309',
-  platelet: '#dc2626',
+  intrinsic: '#2563eb',   // blue
+  extrinsic: '#16a34a',   // green
+  common: '#0d9488',      // teal
+  clot: '#1e293b',        // dark slate
+  anticoagulant: '#d97706', // amber (natural anticoagulants)
+  fibrinolysis: '#0891b2',  // cyan (fibrinolysis) — distinct from anticoagulants
+  platelet: '#7c3aed',    // violet (vWF) — not an alarming red
 };
 
 // viewBox is 340 x 600 (portrait). Positions are hand-placed to follow the cascade.
@@ -76,7 +76,8 @@ const EDGES: [string, string][] = [
   ['TF', 'F7'], ['F7', 'F10'],      // extrinsic → X
   ['F10', 'F2'], ['F5', 'F2'],      // prothrombinase → thrombin
   ['F2', 'FBG'], ['FBG', 'FBN'],    // thrombin → fibrinogen → fibrin
-  ['FBN', 'F13'], ['F13', 'FIBRIN_NET'], ['FBN', 'FIBRIN_NET'],
+  ['F2', 'F13'],                    // thrombin activates FXIII
+  ['F13', 'FIBRIN_NET'], ['FBN', 'FIBRIN_NET'], // XIIIa crosslinks fibrin → stable clot
 ];
 
 const POS = new Map([...NODES, ...REGULATORS].map((n) => [n.id, n]));
@@ -151,9 +152,10 @@ export function MobileCascade({ factors, className = '' }: MobileCascadeProps): 
 
         {NODES.map(renderNode)}
 
-        {/* regulators divider + label */}
+        {/* regulators: split by category with distinct colours */}
         <line x1={16} y1={552} x2={324} y2={552} stroke="#e2e8f0" strokeWidth={1} />
-        <text x={16} y={546} fontSize={8} fontWeight={700} fill="#94a3b8">REGLATORI</text>
+        <text x={16} y={546} fontSize={8} fontWeight={700} fill={PATHWAY_COLOR.anticoagulant} opacity={0.85}>ANTICOAGULANȚI</text>
+        <text x={324} y={546} fontSize={8} fontWeight={700} fill={PATHWAY_COLOR.fibrinolysis} opacity={0.85} textAnchor="end">FIBRINOLIZĂ</text>
         {REGULATORS.map(renderNode)}
       </svg>
     </div>
