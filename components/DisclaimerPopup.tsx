@@ -62,6 +62,14 @@ export function DisclaimerPopup(): React.ReactElement | null {
             <br />
             <span className="text-[10px]">Medic specialist medicină de laborator</span>
           </p>
+
+          <button
+            type="button"
+            onClick={dismiss}
+            className="mt-5 w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          >
+            Am înțeles
+          </button>
         </div>
       </div>
 
@@ -94,6 +102,14 @@ export function DisclaimerPopup(): React.ReactElement | null {
             <br />
             <span className="text-[6px]">Medic specialist medicină de laborator</span>
           </p>
+
+          <button
+            type="button"
+            onClick={dismiss}
+            className="mt-3 w-full rounded-lg bg-blue-600 px-4 py-2.5 text-xs font-semibold text-white active:bg-blue-700"
+          >
+            Am înțeles
+          </button>
         </div>
       </div>
     </div>

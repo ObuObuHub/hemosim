@@ -77,16 +77,9 @@ export function CascadeCanvas({
   // Detect mobile for responsive adjustments
   const isMobile = canvasSize.width < 768;
 
-  // Pinch-to-zoom state for mobile - start with better initial scale on mobile
-  const getInitialScale = useCallback((): number => {
-    if (canvasSize.width < 768) {
-      // Mobile: scale to fit comfortably with some padding
-      const scaleX = canvasSize.width / CANVAS_WIDTH;
-      const scaleY = canvasSize.height / CANVAS_HEIGHT;
-      return Math.min(scaleX, scaleY) * 1.1; // 10% larger for better initial view
-    }
-    return 1;
-  }, [canvasSize.width, canvasSize.height]);
+  // Initial zoom is always 1x. The draw loop already fits the full cascade to the
+  // container (scaleX/scaleY); pinch-to-zoom then magnifies from 1x on top of that.
+  const getInitialScale = useCallback((): number => 1, []);
 
   const [scale, setScale] = useState(() => getInitialScale());
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
@@ -191,15 +184,9 @@ export function CascadeCanvas({
         const rect = containerRef.current.getBoundingClientRect();
         const newSize = { width: rect.width, height: rect.height };
         setCanvasSize(newSize);
-
-        // Reset scale on mobile when size changes significantly
-        if (rect.width < 768) {
-          const scaleX = rect.width / CANVAS_WIDTH;
-          const scaleY = rect.height / CANVAS_HEIGHT;
-          const newScale = Math.min(scaleX, scaleY) * 1.1;
-          setScale(newScale);
-          setPanOffset({ x: 0, y: 0 });
-        }
+        // The draw loop fits content to the container, so no scale recompute is
+        // needed here; just keep the pan reset on (re)size for a clean starting view.
+        setPanOffset({ x: 0, y: 0 });
       }
     };
 
@@ -268,7 +255,10 @@ export function CascadeCanvas({
 
       const state = stateRef.current;
       const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
+      // Size from the (untransformed) container, not the canvas — the canvas is
+      // CSS-scaled by pinch-zoom, and reading its own transformed rect fed back into
+      // the backing-store size, which blew up the node/font compensation on mobile.
+      const rect = (containerRef.current ?? canvas).getBoundingClientRect();
 
       if (canvas.width !== rect.width * dpr || canvas.height !== rect.height * dpr) {
         canvas.width = rect.width * dpr;
@@ -280,12 +270,12 @@ export function CascadeCanvas({
       const scaleY = rect.height / CANVAS_HEIGHT;
       const minScale = Math.min(scaleX, scaleY);
 
-      // Responsive scaling factors for mobile
+      // Responsive scaling factors for mobile.
+      // Capped so nodes/labels stay legible without overlapping the dense layout;
+      // pinch-to-zoom handles fine inspection.
       const isMobileView = rect.width < 768;
-      // Increased mobile font scale for better readability
-      const fontScale = isMobileView ? Math.max(1.5, 1 / minScale * 0.9) : 1;
-      // Increased mobile node scale for better touch targets
-      const nodeScale = isMobileView ? Math.max(1.4, 1 / minScale * 0.85) : 1;
+      const fontScale = isMobileView ? Math.min(2.0, Math.max(1.4, 1 / minScale * 0.62)) : 1;
+      const nodeScale = isMobileView ? Math.min(1.7, Math.max(1.3, 1 / minScale * 0.55)) : 1;
 
       // Helper pentru a obține poziția bazată pe mod
       const getPos = (factor: Factor): { x: number; y: number } => {
@@ -984,7 +974,9 @@ export function CascadeCanvas({
     const canvas = canvasRef.current;
     if (!canvas) return null;
 
-    const rect = canvas.getBoundingClientRect();
+    // Use the same (untransformed) container basis as the draw loop so hit-testing
+    // stays consistent with what is rendered.
+    const rect = (containerRef.current ?? canvas).getBoundingClientRect();
 
     // Account for pan and zoom transformations
     const x = (clientX - rect.left - panOffset.x) / scale;
@@ -994,9 +986,9 @@ export function CascadeCanvas({
     const scaleY = rect.height / CANVAS_HEIGHT;
     const minScale = Math.min(scaleX, scaleY);
 
-    // Responsive touch target - larger on mobile and scales with canvas
+    // Responsive touch target - matches the draw loop's node scale so taps align.
     const isMobileView = rect.width < 768;
-    const nodeScale = isMobileView ? Math.max(1.4, 1 / minScale * 0.85) : 1;
+    const nodeScale = isMobileView ? Math.min(1.7, Math.max(1.3, 1 / minScale * 0.55)) : 1;
     const baseRadius = 17 * nodeScale;
     // Significantly larger touch area on mobile (44x44 minimum touch target)
     const touchRadius = baseRadius + (isMobileView ? 22 : 8);
