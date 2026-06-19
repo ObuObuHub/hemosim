@@ -73,27 +73,19 @@ export function CascadeCanvas({
   const [selectedFactor, setSelectedFactor] = useState<string | null>(null);
   const [showPrimaryHemostasis, setShowPrimaryHemostasis] = useState(false);
 
-  // Detect mobile for responsive adjustments
-  const isMobile = canvasSize.width < 768;
+  // Detect mobile by the actual viewport (the canvas itself is wider than the phone
+  // on mobile, so its own width can't be used here). Starts false to match SSR, then
+  // updates after mount (see the resize effect) to avoid a hydration mismatch.
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Initial zoom is always 1x. The draw loop already fits the full cascade to the
-  // container (scaleX/scaleY); pinch-to-zoom then magnifies from 1x on top of that.
-  const getInitialScale = useCallback((): number => 1, []);
+  // Mobile renders the (landscape) cascade fit-to-HEIGHT at a comfortable, readable
+  // size that is wider than the phone viewport; the container scrolls horizontally
+  // (native scroll) instead of cramming all factors into the width. Desktop fits as-is.
+  const mobileContentWidth = isMobile
+    ? Math.round((CANVAS_WIDTH / CANVAS_HEIGHT) * canvasSize.height)
+    : 0;
 
-  const [scale, setScale] = useState(() => getInitialScale());
-  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
-  const lastTouchRef = useRef<{ x: number; y: number } | null>(null);
-  const lastPinchDistRef = useRef<number | null>(null);
   const [isVisible, setIsVisible] = useState(false);
-  const [touchFeedback, setTouchFeedback] = useState<{ x: number; y: number } | null>(null);
-  const touchFeedbackRef = useRef<{ x: number; y: number } | null>(null);
-  const touchStartTimeRef = useRef<number>(0);
-  const touchMoveDistRef = useRef<number>(0);
-
-  // Keep touchFeedback ref in sync (for animation loop)
-  useEffect(() => {
-    touchFeedbackRef.current = touchFeedback;
-  }, [touchFeedback]);
 
   // Factor activ = selectat (click) sau hover
   const activeFactor = selectedFactor || hoveredFactor;
@@ -183,10 +175,8 @@ export function CascadeCanvas({
         const rect = containerRef.current.getBoundingClientRect();
         const newSize = { width: rect.width, height: rect.height };
         setCanvasSize(newSize);
-        // The draw loop fits content to the container, so no scale recompute is
-        // needed here; just keep the pan reset on (re)size for a clean starting view.
-        setPanOffset({ x: 0, y: 0 });
       }
+      setIsMobile(window.innerWidth < 768);
     };
 
     updateSize();
@@ -254,10 +244,10 @@ export function CascadeCanvas({
 
       const state = stateRef.current;
       const dpr = window.devicePixelRatio || 1;
-      // Size from the (untransformed) container, not the canvas — the canvas is
-      // CSS-scaled by pinch-zoom, and reading its own transformed rect fed back into
-      // the backing-store size, which blew up the node/font compensation on mobile.
-      const rect = (containerRef.current ?? canvas).getBoundingClientRect();
+      // The canvas is no longer CSS-transformed, so its own rect is the true drawing
+      // surface. On mobile this is wider than the viewport (fit-to-height) and the
+      // container scrolls; on desktop it fills the panel.
+      const rect = canvas.getBoundingClientRect();
 
       if (canvas.width !== rect.width * dpr || canvas.height !== rect.height * dpr) {
         canvas.width = rect.width * dpr;
@@ -272,7 +262,7 @@ export function CascadeCanvas({
       // Responsive scaling factors for mobile.
       // Capped so nodes/labels stay legible without overlapping the dense layout;
       // pinch-to-zoom handles fine inspection.
-      const isMobileView = rect.width < 768;
+      const isMobileView = typeof window !== 'undefined' && window.innerWidth < 768;
       const fontScale = isMobileView ? Math.min(2.0, Math.max(1.4, 1 / minScale * 0.62)) : 1;
       const nodeScale = isMobileView ? Math.min(1.7, Math.max(1.3, 1 / minScale * 0.55)) : 1;
 
@@ -670,19 +660,6 @@ export function CascadeCanvas({
         }
       }
 
-      // Draw touch feedback indicator if active
-      const currentTouchFeedback = touchFeedbackRef.current;
-      if (currentTouchFeedback) {
-        const feedbackRadius = 20;
-        ctx.save();
-        ctx.globalAlpha = 0.3;
-        ctx.beginPath();
-        ctx.arc(currentTouchFeedback.x, currentTouchFeedback.y, feedbackRadius, 0, Math.PI * 2);
-        ctx.fillStyle = '#3b82f6';
-        ctx.fill();
-        ctx.restore();
-      }
-
       // Draw nodes (on top of brackets)
       // NOUA LOGICĂ: Dimensiune variabilă bazată pe activitate
       // Scale up node sizes on mobile for better touch targets
@@ -936,20 +913,18 @@ export function CascadeCanvas({
     const canvas = canvasRef.current;
     if (!canvas) return null;
 
-    // Use the same (untransformed) container basis as the draw loop so hit-testing
-    // stays consistent with what is rendered.
-    const rect = (containerRef.current ?? canvas).getBoundingClientRect();
-
-    // Account for pan and zoom transformations
-    const x = (clientX - rect.left - panOffset.x) / scale;
-    const y = (clientY - rect.top - panOffset.y) / scale;
+    // The canvas rect reflects the current scroll position (rect.left shifts as the
+    // mobile container scrolls), so screen→canvas mapping is a simple offset.
+    const rect = canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
 
     const scaleX = rect.width / CANVAS_WIDTH;
     const scaleY = rect.height / CANVAS_HEIGHT;
     const minScale = Math.min(scaleX, scaleY);
 
     // Responsive touch target - matches the draw loop's node scale so taps align.
-    const isMobileView = rect.width < 768;
+    const isMobileView = typeof window !== 'undefined' && window.innerWidth < 768;
     const nodeScale = isMobileView ? Math.min(1.7, Math.max(1.3, 1 / minScale * 0.55)) : 1;
     const baseRadius = 17 * nodeScale;
     // Significantly larger touch area on mobile (44x44 minimum touch target)
@@ -971,7 +946,7 @@ export function CascadeCanvas({
     }
 
     return null;
-  }, [factors, visibleFactors, mode, panOffset, scale]);
+  }, [factors, visibleFactors, mode]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     // Doar hover dacă nu avem factor selectat
@@ -1003,161 +978,6 @@ export function CascadeCanvas({
     }
   }, [onFactorHover, selectedFactor]);
 
-  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
-    // Reset movement tracking
-    touchStartTimeRef.current = Date.now();
-    touchMoveDistRef.current = 0;
-
-    if (e.touches.length === 2) {
-      // Prevent default to avoid zoom conflicts
-      e.preventDefault();
-
-      // Pinch start - calculate initial distance
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      lastPinchDistRef.current = Math.sqrt(dx * dx + dy * dy);
-      // Calculate midpoint for pan
-      lastTouchRef.current = {
-        x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-        y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
-      };
-    } else if (e.touches.length === 1) {
-      const touch = e.touches[0];
-      lastTouchRef.current = { x: touch.clientX, y: touch.clientY };
-
-      // Show touch feedback
-      const canvas = canvasRef.current;
-      if (canvas) {
-        const rect = canvas.getBoundingClientRect();
-        setTouchFeedback({
-          x: touch.clientX - rect.left,
-          y: touch.clientY - rect.top,
-        });
-      }
-    }
-  }, []);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
-    const lastTouch = lastTouchRef.current;
-    if (!lastTouch) return;
-
-    // Track movement distance to distinguish tap from pan
-    if (e.touches.length === 1) {
-      const touch = e.touches[0];
-      const dx = touch.clientX - lastTouch.x;
-      const dy = touch.clientY - lastTouch.y;
-      touchMoveDistRef.current += Math.sqrt(dx * dx + dy * dy);
-    }
-
-    if (e.touches.length === 2 && lastPinchDistRef.current !== null) {
-      // Prevent default for pinch gestures
-      e.preventDefault();
-
-      // Pinch zoom
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      const newDist = Math.sqrt(dx * dx + dy * dy);
-      const scaleChange = newDist / lastPinchDistRef.current;
-
-      // Allow scaling from initial mobile scale up to 3x
-      const minAllowedScale = isMobile ? getInitialScale() * 0.8 : 0.5;
-      setScale(prev => Math.min(Math.max(prev * scaleChange, minAllowedScale), 3));
-      lastPinchDistRef.current = newDist;
-
-      // Pan while zooming
-      const newMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-      const newMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-      setPanOffset(prev => ({
-        x: prev.x + (newMidX - lastTouch.x),
-        y: prev.y + (newMidY - lastTouch.y),
-      }));
-      lastTouchRef.current = { x: newMidX, y: newMidY };
-
-      // Clear touch feedback during pinch
-      setTouchFeedback(null);
-    } else if (e.touches.length === 1) {
-      const touch = e.touches[0];
-
-      // Pan when zoomed in or when movement exceeds threshold
-      if (scale > getInitialScale() * 1.1 || touchMoveDistRef.current > 10) {
-        e.preventDefault(); // Prevent scroll when panning
-        setPanOffset(prev => ({
-          x: prev.x + (touch.clientX - lastTouch.x),
-          y: prev.y + (touch.clientY - lastTouch.y),
-        }));
-        lastTouchRef.current = { x: touch.clientX, y: touch.clientY };
-
-        // Clear touch feedback when panning
-        setTouchFeedback(null);
-      }
-    }
-  }, [scale, isMobile, getInitialScale]);
-
-  const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
-    // Clear touch feedback
-    setTouchFeedback(null);
-
-    // Check if this was a tap (not a pan/pinch)
-    const touchDuration = Date.now() - touchStartTimeRef.current;
-    const wasTap = touchMoveDistRef.current < 10 && touchDuration < 300;
-
-    if (wasTap && e.changedTouches.length === 1) {
-      const touch = e.changedTouches[0];
-      const found = findFactorAtPosition(touch.clientX, touch.clientY);
-
-      if (found) {
-        // Check if clicked on PLT - open primary hemostasis modal
-        if (found === 'PLT') {
-          setShowPrimaryHemostasis(true);
-        } else {
-          // Toggle selection: tap on same factor deselects it
-          setSelectedFactor(prev => prev === found ? null : found);
-        }
-      } else {
-        // Tap outside factors deselects
-        setSelectedFactor(null);
-      }
-    }
-
-    // Reset touch tracking
-    lastPinchDistRef.current = null;
-    lastTouchRef.current = null;
-    touchMoveDistRef.current = 0;
-  }, [findFactorAtPosition]);
-
-  // Double-tap to reset zoom
-  const lastTapTimeRef = useRef<number>(0);
-  const doubleTapCoordsRef = useRef<{ x: number; y: number } | null>(null);
-
-  const handleDoubleTap = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (e.touches.length !== 1) return;
-
-    const now = Date.now();
-    const touch = e.touches[0];
-    const coords = { x: touch.clientX, y: touch.clientY };
-
-    // Check if this is a double tap (within 300ms and same location)
-    if (
-      now - lastTapTimeRef.current < 300 &&
-      doubleTapCoordsRef.current &&
-      Math.abs(coords.x - doubleTapCoordsRef.current.x) < 30 &&
-      Math.abs(coords.y - doubleTapCoordsRef.current.y) < 30
-    ) {
-      // Double tap detected - reset to initial scale or zoom to 2x
-      const initialScale = getInitialScale();
-      if (scale > initialScale * 1.2) {
-        setScale(initialScale);
-        setPanOffset({ x: 0, y: 0 });
-      } else {
-        setScale(initialScale * 2);
-      }
-      e.preventDefault();
-      doubleTapCoordsRef.current = null;
-    } else {
-      doubleTapCoordsRef.current = coords;
-      lastTapTimeRef.current = now;
-    }
-  }, [scale, getInitialScale]);
 
   // Detectează desktop (width >= 768px)
   const isDesktop = canvasSize.width >= 768;
@@ -1235,53 +1055,33 @@ export function CascadeCanvas({
       ref={containerRef}
       className="cascade-container"
       style={{
-        overflow: 'hidden',
-        // Prevent pull-to-refresh and overscroll on mobile
-        overscrollBehavior: 'none',
+        // Mobile scrolls the (wider-than-viewport) cascade horizontally; desktop fits.
+        overflowX: isMobile ? 'auto' : 'hidden',
+        overflowY: 'hidden',
+        overscrollBehavior: 'contain',
+        WebkitOverflowScrolling: 'touch',
       }}
     >
       <div
         style={{
-          transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${scale})`,
-          transformOrigin: 'center center',
-          willChange: 'transform',
-          width: '100%',
+          width: isMobile ? `${mobileContentWidth}px` : '100%',
           height: '100%',
-          // Prevent default touch behaviors (pinch-zoom, double-tap zoom)
-          touchAction: 'none',
         }}
       >
         <canvas
           ref={canvasRef}
           className="cascade-canvas"
           style={{
-            willChange: 'transform',
-            // Prevent text selection on touch
+            display: 'block',
             WebkitUserSelect: 'none',
             userSelect: 'none',
-            // Improve touch responsiveness
             WebkitTapHighlightColor: 'transparent',
           }}
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
           onClick={handleClick}
-          onTouchStart={(e) => { handleTouchStart(e); handleDoubleTap(e); }}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
         />
       </div>
-      {/* Zoom indicator for mobile - show relative to initial scale */}
-      {isMobile && Math.abs(scale - getInitialScale()) > 0.1 && (
-        <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
-          {Math.round((scale / getInitialScale()) * 100)}%
-        </div>
-      )}
-      {/* Desktop zoom indicator */}
-      {!isMobile && scale !== 1 && (
-        <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
-          {Math.round(scale * 100)}%
-        </div>
-      )}
       {/* Info Panel - pe desktop în dreapta, pe mobile floating */}
       {activeFactor && factors[activeFactor] && (
         isDesktop ? (
