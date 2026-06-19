@@ -1568,3 +1568,17 @@ input[type="number"] {
 .platelet-activating {
   animation: platelet-activation-burst 0.8s ease-out forwards;
 }
+
+/* Accessibility: honor the OS "reduce motion" preference for CSS-driven motion
+   (banners, pulses, transitions). Canvas/rAF animations are gameplay-essential
+   and are left intact. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

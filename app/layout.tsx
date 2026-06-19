@@ -11,8 +11,8 @@ const inter = Inter({
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // Pinch-zoom is left enabled for accessibility (WCAG 1.4.4). The cascade canvas
+  // manages its own gesture zoom via touch-action:none, so page zoom does not conflict.
   viewportFit: 'cover',
 };
 
