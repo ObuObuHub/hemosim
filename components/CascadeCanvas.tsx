@@ -16,7 +16,6 @@ import {
 } from './cascade-canvas';
 import {
   drawWavyCircle,
-  drawMembraneSurface,
   drawCircularMembraneSurface,
 } from './cascade-canvas';
 
@@ -658,51 +657,15 @@ export function CascadeCanvas({
           const cofactorX = cofactorPos.x * scaleX;
           const cofactorY = cofactorPos.y * scaleY;
 
-          // Calculate bracket bounds - factors sit ON TOP of the membrane
-          const minX = Math.min(enzymeX, cofactorX) - 26;
-          const maxX = Math.max(enzymeX, cofactorX) + 26;
-          const minY = Math.min(enzymeY, cofactorY) - 22; // Tight above factors
-          const bilayerHeight = 20; // Space for the bilayer below factors
-          const maxY = Math.max(enzymeY, cofactorY) + 18 + bilayerHeight; // Extend down for membrane
-          const centerX = (enzymeX + cofactorX) / 2;
-
-          // Determine membrane color based on cell type
-          const membraneType = factor.complexMembrane || 'platelet';
-          const membraneColor = MEMBRANE_COLORS[membraneType];
-
-          // Set font for complex name label before drawing membrane
-          ctx.font = `600 ${Math.round(9 * fontScale)}px Inter, system-ui, sans-serif`;
-
-          // Draw membrane surface - factors sit on top of the bilayer
-          drawMembraneSurface(
-            ctx,
-            minX,
-            minY,
-            maxX - minX,
-            maxY - minY,
-            membraneColor,
-            '' // complex name omitted in the cascade (belongs to the cell-based model)
-          );
-
-          // Ca²⁺ + PL cofactor hint — subtle (it repeats under every complex)
-          const cplScale = Math.min(fontScale, 1.2);
-          ctx.save();
-          ctx.globalAlpha = 0.55;
-          ctx.font = `500 ${Math.round(7.5 * cplScale)}px Inter, system-ui, sans-serif`;
-          ctx.fillStyle = '#94a3b8';
-          ctx.textAlign = 'center';
-          ctx.fillText('Ca²⁺ + PL', centerX, maxY + 12);
-          ctx.restore();
-
-          // Complex-name and phase labels (INIȚIERE/AMPLIFICARE/PROPAGARE) intentionally
-          // NOT drawn here — those belong to the cell-based model ("Model Celular" tab),
-          // not the coagulogram cascade. The complex is identified by its paired factors.
-
-          // Draw "+" between enzyme and cofactor
+          // The cell membrane / phospholipid surface (drawMembraneSurface), the Ca²⁺ + PL
+          // hint, and the complex/phase names were all removed — they belong to the
+          // cell-based model ("Model Celular" tab), not the coagulogram cascade.
+          // The enzyme:cofactor pair is marked only by a neutral "+".
           const plusX = (enzymeX + cofactorX) / 2;
           const plusY = (enzymeY + cofactorY) / 2;
-          ctx.font = `700 ${Math.round(12 * fontScale)}px Inter, system-ui, sans-serif`;
-          ctx.fillStyle = membraneColor;
+          ctx.font = `700 ${Math.round(11 * Math.min(fontScale, 1.2))}px Inter, system-ui, sans-serif`;
+          ctx.fillStyle = '#94a3b8';
+          ctx.textAlign = 'center';
           ctx.fillText('+', plusX, plusY);
         }
       }
