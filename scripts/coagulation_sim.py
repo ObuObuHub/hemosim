@@ -127,8 +127,9 @@ class CoagulationSimulator:
             'xa_v': 0.01,            # Xa + V → Va (inițiere)
             'xa_viii': 0.005,        # Xa + VIII → VIIIa (inițiere)
 
-            # Conversie bazală II → IIa (Xa singur, fără Va)
-            'xa_ii_basal': 1e-4,     # Xa + II → IIa (lent dar semnificativ)
+            # Conversie bazală II → IIa (Xa singur, fără Va) - fiziologic FOARTE lentă
+            # (prothrombinaza Xa:Va este ~10^5x mai rapidă). Valoarea mare masca dependența de tenază.
+            'xa_ii_basal': 1e-5,     # Xa + II → IIa (bypass minim al tenazei)
 
             # Inhibitori (rate mai mici pentru a permite burst)
             'at_iia': 1e-4,          # AT + IIa → inactiv
@@ -218,8 +219,9 @@ class CoagulationSimulator:
 
         # Modificatori pentru scenarii
         at_factor = params.get('at_factor', 1.0)  # Heparină: 100x
-        xa_inhibition = params.get('xa_inhibition', 1.0)  # DOACs: 0.05-0.1
-        iia_inhibition = params.get('iia_inhibition', 1.0)  # Dabigatran: 0.05
+        xa_inhibition = params.get('xa_inhibition', 1.0)  # DOACs anti-Xa: 0.05-0.1
+        iia_inhibition = params.get('iia_inhibition', 1.0)  # Atenuare acțiuni trombină (opțional)
+        iia_neutralization = params.get('iia_neutralization', 0.0)  # Dabigatran: sechestrează trombina activă (s⁻¹)
 
         # === RATE DE REACȚIE ===
 
@@ -312,8 +314,11 @@ class CoagulationSimulator:
         dydt[self.species_idx['Va']] = r_iia_v + r_xa_v - r_apc_va
 
         # II, IIa (Protrombină, Trombină)
+        # Inhibitorul direct de trombină (dabigatran) sechestrează trombina activă →
+        # scade pool-ul de IIa măsurat (curba de generare a trombinei scade real, nu doar acțiunile din aval).
+        r_iia_neut = iia_neutralization * IIa
         dydt[self.species_idx['II']] = -r_ptase_ii - r_xa_ii_basal
-        dydt[self.species_idx['IIa']] = r_ptase_ii + r_xa_ii_basal - r_at_iia
+        dydt[self.species_idx['IIa']] = r_ptase_ii + r_xa_ii_basal - r_at_iia - r_iia_neut
 
         # Fibrinogen, Fibrin
         dydt[self.species_idx['Fbg']] = -r_iia_fbg
@@ -340,7 +345,10 @@ class CoagulationSimulator:
         scenario: str = 'normal',
         t_end: float = 600.0,
         t_points: int = 1000,
-        tf_concentration: float = 25.0,
+        # TF FIZIOLOGIC SCĂZUT (model celular): la TF mare, calea extrinsecă singură
+        # generează trombină și MASCHEAZĂ hemofilia. Deficitul de FVIII/FIX se manifestă
+        # doar la TF mic, când amplificarea prin tenază (VIIIa:IXa) devine esențială.
+        tf_concentration: float = 1.0,
     ) -> SimulationResult:
         """
         Rulează simularea pentru un scenariu dat.
@@ -407,21 +415,20 @@ class CoagulationSimulator:
         elif scenario == 'dabigatran':
             # DOAC - inhibitor direct și reversibil al IIa (trombinei)
             # Ki ~ 4.5 nM, concentrație terapeutică ~ 100-400 nM
-            params['iia_inhibition'] = 0.05  # 95% inhibiție IIa
+            # Modelat ca sechestrare a trombinei ACTIVE (scade pool-ul de IIa măsurat),
+            # nu doar atenuarea acțiunilor din aval - altfel curba de trombină rămânea ~normală.
+            params['iia_neutralization'] = 2.0  # Inhibitor direct de trombină
 
         elif scenario == 'apixaban':
             # DOAC - inhibitor direct Xa (similar rivaroxaban dar mai selectiv)
             params['xa_inhibition'] = 0.08  # 92% inhibiție Xa
 
         elif scenario == 'fviii_concentrate':
-            # Tratament hemofilie A cu concentrat FVIII
-            # Presupunem pacient cu hemofilie A care primește concentrat
-            modifications['VIII'] = 0.0  # Pacient hemofilie A
+            # Hemofilie A tratată cu concentrat FVIII → nivel restabilit la normal
             modifications['VIII'] = 0.7  # După administrare concentrat (nivel normal)
 
         elif scenario == 'fix_concentrate':
-            # Tratament hemofilie B cu concentrat FIX
-            modifications['IX'] = 0.0  # Pacient hemofilie B
+            # Hemofilie B tratată cu concentrat FIX → nivel restabilit la normal
             modifications['IX'] = 90.0  # După administrare concentrat (nivel normal)
 
         elif scenario == 'pcc':
@@ -727,7 +734,7 @@ def main():
 
     for scenario in sorted(all_scenarios):
         print(f"\n  [{scenario.upper()}]")
-        result = sim.simulate(scenario=scenario, t_end=600, tf_concentration=25.0)
+        result = sim.simulate(scenario=scenario, t_end=600, tf_concentration=1.0)
         all_results[scenario] = result
 
         # Calculează metrici

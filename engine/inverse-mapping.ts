@@ -432,14 +432,18 @@ export function calculateFactorConcentrations(
 
   // Ajustează factorii afectați
   if (!inhibitorSuspected) {
+    // Ponderea maximă din pattern → factorul dominant primește severitatea COMPLETĂ a labului.
+    // (Înainte, ponderea <1 atenua deficitul factorului principal și supraestima activitatea:
+    //  ex. hemofilie A severă la aPTT 90s era estimată ~18% în loc de sever-scăzut.)
+    const maxWeight = Math.max(...Object.values(weights).filter((w) => w > 0), 0);
     for (const factorId of rule.factors) {
       const weight = weights[factorId] || 0;
       const normalConc = PHYSIOLOGICAL_CONCENTRATIONS_NM[factorId];
 
       if (normalConc !== undefined && weight > 0) {
-        // Activitatea depinde de severitate și pondere
-        // Factori cu pondere mai mare sunt mai probabil afectați
-        const effectiveSeverity = 1 + (severity - 1) * weight;
+        // Severitatea efectivă scalează cu ponderea RELATIVĂ (factorul dominant = severitate completă)
+        const relWeight = maxWeight > 0 ? weight / maxWeight : 0;
+        const effectiveSeverity = 1 + (severity - 1) * relWeight;
         const activity = severityToActivity(effectiveSeverity, curveType);
 
         concentrations[factorId] = {

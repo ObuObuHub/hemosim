@@ -251,7 +251,7 @@ export function interpretLabValues(
 
   // Pattern recognition
   // Only classify as normal if ALL standard tests are normal (including bleeding time and D-dimer)
-  if (ptStatus === 'normal' && apttStatus === 'normal' && pltStatus === 'normal' && !btHigh && !dDimerHigh) {
+  if (ptStatus === 'normal' && apttStatus === 'normal' && pltStatus === 'normal' && !btHigh && !dDimerHigh && !fibLow) {
     pattern = 'Profil de coagulare normal';
     affectedPathway = 'none';
   }
@@ -492,6 +492,61 @@ export function interpretLabValues(
     pattern = 'PT și aPTT prelungite';
     affectedPathway = 'common';
 
+    const anticoagActive = meds.warfarin || meds.heparin || meds.lmwh || meds.doacXa || meds.doacIIa;
+
+    // Medicația anticoagulantă explică prelungirea globală PT+aPTT.
+    // Se verifică ÎNAINTEA cauzelor patologice (altfel un pacient pe AVK/heparină
+    // era etichetat greșit drept insuficiență hepatică).
+    if (meds.warfarin) {
+      diagnoses.push({
+        id: 'warfarin_effect',
+        name: 'Efect Warfarină (AVK)',
+        probability: 'high',
+        description: 'AVK prelungește PT și, la INR mare/supradozaj, și aPTT. Cea mai frecventă cauză a acestui tablou la pacient anticoagulant.',
+        affectedFactors: ['F2', 'F7', 'F9', 'F10'],
+        suggestedTests: ['INR/PT', 'Reevaluare doză AVK'],
+      });
+      if (lab.inr >= 4 || lab.pt > 30) {
+        warnings.push('AVK supradozat: PT/INR mare cu aPTT prelungit - risc hemoragic crescut.');
+      }
+    } else if (meds.heparin) {
+      diagnoses.push({
+        id: 'heparin_effect',
+        name: 'Efect Heparină (doză mare)',
+        probability: 'high',
+        description: 'Heparina în doză mare potențează AT și prelungește atât aPTT cât și PT.',
+        affectedFactors: ['IIa', 'F10a'],
+        suggestedTests: ['Anti-Xa pentru monitorizare', 'TT'],
+      });
+    } else if (meds.lmwh) {
+      diagnoses.push({
+        id: 'lmwh_effect',
+        name: 'Efect LMWH',
+        probability: 'high',
+        description: 'LMWH (predominant anti-Xa) poate prelungi testele la doze mari.',
+        affectedFactors: ['F10a'],
+        suggestedTests: ['Nivel anti-Xa'],
+      });
+    } else if (meds.doacXa) {
+      diagnoses.push({
+        id: 'doac_xa_effect',
+        name: 'Efect DOAC (inhibitor Xa)',
+        probability: 'high',
+        description: 'Rivaroxaban/Apixaban/Edoxaban pot prelungi PT și aPTT. PT/aPTT nu sunt indicatori de încredere.',
+        affectedFactors: ['F10a'],
+        suggestedTests: ['Nivel anti-Xa specific', 'Timp de la ultima doză'],
+      });
+    } else if (meds.doacIIa) {
+      diagnoses.push({
+        id: 'doac_iia_effect',
+        name: 'Efect Dabigatran (inhibitor IIa)',
+        probability: 'high',
+        description: 'Dabigatran prelungește aPTT > PT și marcat TT. PT/aPTT nu sunt indicatori de încredere.',
+        affectedFactors: ['IIa'],
+        suggestedTests: ['dTT (diluted TT)', 'Ecarin time'],
+      });
+    }
+
     if (fibLow && pltLow && dDimerHigh) {
       isthScore = calculateISTHScore(lab);
       diagnoses.push({
@@ -503,7 +558,7 @@ export function interpretLabValues(
         suggestedTests: ['Frotiu periferic (schizocite)', 'Repetă scor la 24-48h'],
       });
       recommendations.push(`Scor ISTH: PLT=${isthScore.platelets} + D-dim=${isthScore.dDimers} + PT=${isthScore.pt} + Fib=${isthScore.fibrinogen} = ${isthScore.total}`);
-    } else if (fibLow) {
+    } else if (!anticoagActive && fibLow) {
       // Diferențiere pe baza severității fibrinogenului
       if (lab.fibrinogen < 50) {
         // Afibrinogenemie (< 50 mg/dL sau nedetectabil)
@@ -563,7 +618,7 @@ export function interpretLabValues(
           suggestedTests: ['Teste hepatice', 'Albumină', 'INR'],
         });
       }
-    } else {
+    } else if (!anticoagActive) {
       diagnoses.push({
         id: 'liver_failure',
         name: 'Insuficiență Hepatică',
@@ -589,7 +644,9 @@ export function interpretLabValues(
         suggestedTests: ['Dozare individuală F.X, V, II'],
       });
     }
-    recommendations.push('Diferențiază hepatic vs Vit.K: dozează Factor V (normal în deficit Vit.K)');
+    if (!anticoagActive) {
+      recommendations.push('Diferențiază hepatic vs Vit.K: dozează Factor V (normal în deficit Vit.K)');
+    }
   }
   // Platelet issues
   else if (pltLow || btHigh) {
@@ -819,8 +876,8 @@ export function interpretLabValues(
         id: 'heparin_tt',
         name: 'Efect Heparină (TT)',
         probability: 'high',
-        description: 'TT foarte sensibil la heparină.',
-        affectedFactors: ['F2'],
+        description: 'TT foarte sensibil la heparină (potențează AT împotriva trombinei).',
+        affectedFactors: ['IIa'],
         suggestedTests: ['Timp reptilază (normal în prezența heparinei)'],
       });
     }
@@ -832,6 +889,32 @@ export function interpretLabValues(
         description: 'Dabigatran prelungește marcat TT (inhibitor direct al trombinei).',
         affectedFactors: ['IIa'],
         suggestedTests: ['dTT (diluted TT) pentru cuantificare', 'Ecarin time'],
+      });
+    }
+  }
+
+  // Fibrinogen scăzut izolat (PT/aPTT normale) - nu mai e raportat drept "profil normal"
+  if (fibLow && !ptHigh && !apttHigh && !pltLow) {
+    pattern = pattern && pattern !== 'Profil de coagulare normal' ? pattern : 'Hipofibrinogenemie izolată';
+    if (affectedPathway === 'none') affectedPathway = 'common';
+    if (lab.fibrinogen < 50) {
+      diagnoses.push({
+        id: 'afibrinogenemia',
+        name: 'Afibrinogenemie',
+        probability: 'high',
+        description: 'Fibrinogen < 50 mg/dL - deficit sever (congenital AR sau consum masiv).',
+        affectedFactors: ['FBG'],
+        suggestedTests: ['Fibrinogen antigenic', 'TT', 'Timp reptilază'],
+      });
+      warnings.push('Fibrinogen < 50 mg/dL: risc hemoragic sever!');
+    } else {
+      diagnoses.push({
+        id: 'hypofibrinogenemia',
+        name: 'Hipofibrinogenemie',
+        probability: 'high',
+        description: 'Fibrinogen scăzut cu PT/aPTT normale - cantitativ sau calitativ (verifică TT).',
+        affectedFactors: ['FBG'],
+        suggestedTests: ['Fibrinogen funcțional vs antigenic', 'TT', 'Timp reptilază'],
       });
     }
   }

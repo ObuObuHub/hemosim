@@ -121,7 +121,9 @@ export function interpretRosnerIndex(apttPatient: number, apttMix: number): Rosn
 export const LAB_FACTOR_MAPPING: Record<string, string[]> = {
   pt: ['F7', 'F10', 'F5', 'F2', 'FBG'],
   aptt: ['F12', 'F11', 'F9', 'F8', 'F10', 'F5', 'F2', 'FBG'],
-  tt: ['F2', 'FBG'],
+  // TT adaugă trombină exogenă și măsoară DOAR conversia fibrinogen→fibrină.
+  // NU depinde de protrombină (F2) - testul ocolește generarea de trombină.
+  tt: ['FBG'],
   fibrinogen: ['FBG'],
   platelets: ['PLT'],
   dDimers: [],
