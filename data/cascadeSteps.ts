@@ -75,7 +75,7 @@ export const cascadeSteps: CascadeStep[] = [
   // ============ AMPLIFICATION PHASE - ExplosionFrame (10 steps) ============
   {
     id: 'thrombin-arrives',
-    instruction: 'Cantități infime de trombină (FIIa) ajung la trombocit și declanșează faza de amplificare, activând receptorii PAR (receptori activați de protează) prin clivaj proteolitic.',
+    instruction: 'Cantitatea mică de trombină (FIIa) generată în inițiere difuzează spre trombocitul din vecinătate și declanșează faza de amplificare.',
     actionKey: 'THROMBIN_ARRIVES',
     isAutomatic: true,
     delayMs: 5000,
@@ -83,7 +83,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'par-bind',
-    instruction: 'Cantități infime de trombină (FIIa) ajung la trombocit și declanșează faza de amplificare, activând receptorii PAR (receptori activați de protează) prin clivaj proteolitic.',
+    instruction: 'Trombina se leagă de receptorul PAR1 (receptor activat de protează) de pe membrana trombocitului — recunoaștere specifică, înainte de clivaj.',
     actionKey: 'PAR_BIND',
     isAutomatic: true,
     delayMs: 4000,
@@ -91,7 +91,7 @@ export const cascadeSteps: CascadeStep[] = [
   },
   {
     id: 'par-cleave',
-    instruction: 'Trombina se leagă de receptorul PAR1 și îl clivează proteolitic, expunând domeniul de activare.',
+    instruction: 'Trombina clivează proteolitic capătul extracelular al PAR1, expunând un nou capăt N-terminal („ligand atașat") care activează receptorul.',
     actionKey: 'PAR_CLEAVE',
     isAutomatic: false,
     delayMs: 3000,
