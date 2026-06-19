@@ -46,6 +46,7 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
 
   const lastFrameTimeRef = useRef<number>(0);
   const animationFrameRef = useRef<number>(0);
+  const kineticFrameRef = useRef<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Refs for game loop to avoid dependency array issues
@@ -144,15 +145,12 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
 
   // Check for scene transition (objectives-based)
   useEffect(() => {
-    if (areAllObjectivesComplete()) {
-      if (state.currentScene === 'initiation') {
-        setTimeout(() => setScene('amplification'), 500);
-      } else if (state.currentScene === 'amplification') {
-        setTimeout(() => setScene('propagation'), 500);
-      } else if (state.currentScene === 'propagation') {
-        setTimeout(() => setScene('victory'), 500);
-      }
-    }
+    if (!areAllObjectivesComplete()) return;
+    let t: ReturnType<typeof setTimeout> | undefined;
+    if (state.currentScene === 'initiation') t = setTimeout(() => setScene('amplification'), 500);
+    else if (state.currentScene === 'amplification') t = setTimeout(() => setScene('propagation'), 500);
+    else if (state.currentScene === 'propagation') t = setTimeout(() => setScene('victory'), 500);
+    return () => { if (t) clearTimeout(t); };
   }, [state.currentScene, areAllObjectivesComplete, setScene]);
 
   // Track docking state for single TF complex (simplified for mobile)
@@ -176,6 +174,14 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
     0: false,
   });
 
+  // Mirror docking states into a ref so the kinetic rAF loop can read the latest
+  // values WITHOUT listing them as effect deps (which used to re-run the effect on
+  // every dock and spawn concurrent, leaking animation loops).
+  const dockingRef = useRef({ tf: tfDockingState, fx: fxDockingState, fv: fvDockingState, fii: fiiDockedState });
+  useEffect(() => {
+    dockingRef.current = { tf: tfDockingState, fx: fxDockingState, fv: fvDockingState, fii: fiiDockedState };
+  }, [tfDockingState, fxDockingState, fvDockingState, fiiDockedState]);
+
   // draggedThrombin removed - thrombin now auto-floats to platelet
 
   // AMPLIFICATION PHASE STATE
@@ -196,8 +202,9 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
   useEffect(() => {
     if (state.currentScene === 'amplification' &&
         ampVwfSplit && ampFvActivated && ampFviiiActivated && ampFxiActivated) {
-      setTimeout(() => setDebugLog(prev => [...prev.slice(-4), 'All activated! → Propagation']), 0);
-      setTimeout(() => setScene('propagation'), 1000);
+      const t1 = setTimeout(() => setDebugLog(prev => [...prev.slice(-4), 'All activated! → Propagation']), 0);
+      const t2 = setTimeout(() => setScene('propagation'), 1000);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
     }
   }, [state.currentScene, ampVwfSplit, ampFvActivated, ampFviiiActivated, ampFxiActivated, setScene]);
 
@@ -239,8 +246,9 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
   // Check for propagation phase completion
   useEffect(() => {
     if (state.currentScene === 'propagation' && propThrombinBurst) {
-      setTimeout(() => setDebugLog(prev => [...prev.slice(-4), 'EXPLOZIE DE TROMBINĂ! → Stabilizare']), 0);
-      setTimeout(() => setScene('stabilization'), 2000);
+      const t1 = setTimeout(() => setDebugLog(prev => [...prev.slice(-4), 'EXPLOZIE DE TROMBINĂ! → Stabilizare']), 0);
+      const t2 = setTimeout(() => setScene('stabilization'), 2000);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
     }
   }, [state.currentScene, propThrombinBurst, setScene]);
 
@@ -269,8 +277,9 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
   // Check for stabilization phase completion
   useEffect(() => {
     if (state.currentScene === 'stabilization' && stabMeshCrosslinked) {
-      setTimeout(() => setDebugLog(prev => [...prev.slice(-4), 'CHEAG STABIL! → Victorie']), 0);
-      setTimeout(() => setScene('victory'), 2000);
+      const t1 = setTimeout(() => setDebugLog(prev => [...prev.slice(-4), 'CHEAG STABIL! → Victorie']), 0);
+      const t2 = setTimeout(() => setScene('victory'), 2000);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
     }
   }, [state.currentScene, stabMeshCrosslinked, setScene]);
 
@@ -440,15 +449,16 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
       // Only update if TF is exposed
       const currentKinetic = kineticStateRef.current;
       if (!currentKinetic.isTFExposed) {
-        requestAnimationFrame(kineticLoop);
+        kineticFrameRef.current = requestAnimationFrame(kineticLoop);
         return;
       }
 
-      // Check docking states to determine what's available
-      const hasFVIIDocked = Object.values(tfDockingState).some((v) => v);
-      const hasFXDocked = Object.values(fxDockingState).some((v) => v);
-      const hasFVDocked = Object.values(fvDockingState).some((v) => v);
-      const hasFIIDocked = Object.values(fiiDockedState).some((v) => v);
+      // Check docking states (read from ref so this effect need not depend on them)
+      const docking = dockingRef.current;
+      const hasFVIIDocked = Object.values(docking.tf).some((v) => v);
+      const hasFXDocked = Object.values(docking.fx).some((v) => v);
+      const hasFVDocked = Object.values(docking.fv).some((v) => v);
+      const hasFIIDocked = Object.values(docking.fii).some((v) => v);
 
       // Run kinetic simulation
       const { state: newKineticState } = updateKinetics(
@@ -472,12 +482,13 @@ export function InteractiveGame({ className }: InteractiveGameProps): ReactEleme
         updateKineticStateRef.current(newKineticState);
       }
 
-      requestAnimationFrame(kineticLoop);
+      kineticFrameRef.current = requestAnimationFrame(kineticLoop);
     };
 
-    const animationId = requestAnimationFrame(kineticLoop);
-    return () => cancelAnimationFrame(animationId);
-  }, [state.currentScene, tfDockingState, fxDockingState, fvDockingState, fiiDockedState]);
+    lastKineticUpdateRef.current = 0;
+    kineticFrameRef.current = requestAnimationFrame(kineticLoop);
+    return () => cancelAnimationFrame(kineticFrameRef.current);
+  }, [state.currentScene]);
 
   // Spawn FIXa diffusing particle immediately when FIX is docked
   useEffect(() => {

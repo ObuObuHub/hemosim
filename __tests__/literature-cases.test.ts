@@ -91,12 +91,12 @@ describe('Literature coagulogram validation', () => {
   });
 
   afterAll(() => {
-    // eslint-disable-next-line no-console
+     
     console.log('\n================ TABEL VALIDARE LITERATURĂ ================\n' + header + '\n' + '-'.repeat(header.length) + '\n' + rows.join('\n') + '\n');
 
     // Demonstrație inverse-mapping: estimarea FVIII pentru hemofilie A severă (aPTT 90)
     const hemoA = calculateFactorConcentrations({ ...N, aptt: 90, mixingTest: 'corrects' }, noMeds);
-    // eslint-disable-next-line no-console
+     
     console.log('Inverse-map hemofilie A severă (aPTT 90s): FVIII estimat = ' +
       hemoA.concentrations['F8'].activityPercent.toFixed(0) + '% (literatura: <1% în forma severă)\n');
   });

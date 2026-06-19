@@ -32,6 +32,24 @@ interface CellularModelExplorerProps {
  * - Guided (Manual): Learner controls each step with instructional prompts
  * - Demonstration (Auto): System executes cascade for observation
  */
+/**
+ * ENZYMATIC ACTIVATION TIMING CONFIG (ms) — biochemical E + S → ES → E + P mechanism.
+ * Module-scope constant (stable reference) so timing-driven effects don't need it as a dep.
+ */
+const ACTIVATION_TIMING = {
+  approaching: 800,   // Substrate glides to enzyme (ms)
+  es_complex: 400,    // Brief pause showing complex
+  cleaving: 500,      // Cleavage effect
+  releasing: 1200,    // Product emerges and moves smoothly
+} as const;
+
+/** Thrombin-burst phase timing (ms) — module-scope constant. */
+const BURST_PHASE_TIMING = {
+  converging: 2000,   // 2s for particles to reach center
+  explosion: 1500,    // 1.5s for explosion effect
+  cleaving: 10000,    // 10s for cleavage visualization (very slow, cinematic)
+} as const;
+
 export function CellularModelExplorer({ className = '' }: CellularModelExplorerProps): React.ReactElement {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -93,17 +111,6 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
     setMode,
     advanceStep,
   } = useCascadeState();
-
-  /**
-   * ENZYMATIC ACTIVATION TIMING CONFIG
-   * Based on biochemical E + S → ES → E + P mechanism
-   */
-  const ACTIVATION_TIMING = {
-    approaching: 800,   // Substrate glides to enzyme (ms)
-    es_complex: 400,    // Brief pause showing complex
-    cleaving: 500,      // Cleavage effect
-    releasing: 1200,    // Product emerges and moves smoothly
-  };
 
   // Measure container dimensions for responsive layout
   useEffect(() => {
@@ -313,12 +320,6 @@ export function CellularModelExplorer({ className = '' }: CellularModelExplorerP
    * - cleaving: 3.0s - FIIa cleaving fibrinogen visualization
    * - polymerizing: triggers fibrinogenCleaved and transition to FibrinMesh
    */
-  const BURST_PHASE_TIMING = {
-    converging: 2000,   // 2s for particles to reach center
-    explosion: 1500,    // 1.5s for explosion effect
-    cleaving: 10000,    // 10s for cleavage visualization (very slow, cinematic)
-  };
-
   useEffect(() => {
     const phase = platelet.burstPhase;
     if (phase === 'inactive' || phase === 'polymerizing') return;
