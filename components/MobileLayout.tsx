@@ -5,7 +5,7 @@ import { AppState, LabInput, MedicationContext, Hit4TCriteria, ISTHManualCriteri
 import { MobileLabInput } from './MobileLabInput';
 import { MobileInterpretation } from './MobileInterpretation';
 import { MobileTabBar } from './MobileTabBar';
-import { CascadeCanvas } from './CascadeCanvas';
+import { MobileCascade } from './MobileCascade';
 import { SCENARIO_AFFECTED_FACTORS, formatFactorsForDisplay } from '@/engine/interpreter';
 
 type TabId = 'labs' | 'cascade' | 'results';
@@ -30,7 +30,6 @@ export function MobileLayout({
   updateIsthManualCriteria,
   isthManualCriteria,
   reset,
-  setHoveredFactor,
   setCurrentScenario,
 }: MobileLayoutProps): React.ReactElement {
   const [activeTab, setActiveTab] = useState<TabId>('cascade');
@@ -143,20 +142,9 @@ export function MobileLayout({
               </div>
             )}
 
-            {/* Canvas takes all remaining space */}
-            <div className="flex-1 min-h-0 bg-white">
-              <CascadeCanvas
-                factors={state.factors}
-                mode="clinical"
-                hoveredFactor={state.hoveredFactor}
-                hoveredLabValue={null}
-                dDimers={state.labInput.dDimers}
-                dicPhase={null}
-                onFactorHover={setHoveredFactor}
-                showFeedback={state.showFeedback}
-                showInhibition={state.showInhibition}
-                currentScenario={state.currentScenario}
-              />
+            {/* Dedicated portrait cascade for mobile (fits one screen) */}
+            <div className="flex-1 min-h-0 bg-slate-50 p-2">
+              <MobileCascade factors={state.factors} />
             </div>
           </div>
         )}
