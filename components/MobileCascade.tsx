@@ -111,12 +111,55 @@ const FIBRINO: Diagram = {
   ],
 };
 
+// ---- Node info (curated, medically accurate; one line each) -----------------
+type Info = { name: string; role: string };
+const INFO: Record<string, Info> = {
+  // cascade
+  F12: { name: 'Factor XII (Hageman)', role: 'Inițiază calea intrinsecă in vitro (faza de contact). Deficitul NU dă sângerare.' },
+  F11: { name: 'Factor XI', role: 'Activat de XIIa și de trombină. Deficitul = hemofilia C (sângerare ușoară, variabilă).' },
+  F9: { name: 'Factor IX (Christmas)', role: 'Vitamina K-dependent. Cu VIIIa formează tenaza. Deficitul = hemofilia B.' },
+  F8: { name: 'Factor VIII', role: 'Cofactor al IXa (tenaza). Circulă legat de vWF. Deficitul = hemofilia A.' },
+  vWF: { name: 'Factor von Willebrand', role: 'Transportă și stabilizează FVIII; mediază aderarea trombocitelor. Deficit = boala von Willebrand.' },
+  TF: { name: 'Factor tisular (III)', role: 'Receptor expus la leziune; cofactor al VIIa. Declanșează inițierea in vivo (calea extrinsecă).' },
+  F7: { name: 'Factor VII (proconvertină)', role: 'Vitamina K-dependent. Cu TF activează X și IX. Timp de înjumătățire scurt → PT sensibil.' },
+  F10: { name: 'Factor X (Stuart-Prower)', role: 'Vitamina K-dependent. Punctul de convergență; cu Va formează protrombinaza.' },
+  F5: { name: 'Factor V (proaccelerină)', role: 'Cofactor al Xa (protrombinaza). Inactivat de APC (Leiden = rezistență la APC).' },
+  F2: { name: 'Protrombină → Trombină', role: 'Vitamina K-dependent. Trombina clivează fibrinogenul și activează V, VIII, XI, XIII și trombocitele.' },
+  FBG: { name: 'Fibrinogen (factor I)', role: 'Substratul final. Trombina îl clivează în monomeri de fibrină. Reactant de fază acută.' },
+  FBN: { name: 'Fibrină', role: 'Polimerizează într-o rețea instabilă, stabilizată prin legături încrucișate de FXIIIa.' },
+  F13: { name: 'Factor XIII (stabilizator)', role: 'Activat de trombină. Leagă încrucișat fibrina → cheag stabil. Deficit: sângerare tardivă, PT/aPTT normale.' },
+  FIBRIN_NET: { name: 'Cheag de fibrină stabilizat', role: 'Rețea reticulată insolubilă care prinde trombocite și eritrocite.' },
+  // anticoagulant
+  tfviia: { name: 'Complex factor tisular–VIIa', role: 'Inițiatorul extrinsec; ținta primară a TFPI.' },
+  F10a: { name: 'Factor Xa', role: 'Enzima protrombinazei; inhibat de TFPI și de antitrombină (potențată de heparină).' },
+  IIa: { name: 'Trombină', role: 'Procoagulantă liberă, dar legată de trombomodulină devine anticoagulantă (activează proteina C).' },
+  TFPI: { name: 'Inhibitorul căii factorului tisular', role: 'Blochează Xa, apoi complexul Xa–TFPI inhibă TF·VIIa.' },
+  AT: { name: 'Antitrombină', role: 'Inhibă trombina și Xa (și IXa, XIa). Accelerată de mii de ori de heparină.' },
+  HEP: { name: 'Heparină', role: 'Cofactor: accelerează antitrombina. Nu inhibă singură.' },
+  TM: { name: 'Trombomodulină', role: 'Pe endoteliu; leagă trombina și comută activarea spre proteina C.' },
+  PC: { name: 'Proteina C', role: 'Vitamina K-dependentă; activată de complexul trombină–trombomodulină.' },
+  APC: { name: 'Proteina C activată', role: 'Cu proteina S inactivează Va și VIIIa (oprește amplificarea).' },
+  PS: { name: 'Proteina S', role: 'Vitamina K-dependentă; cofactor al APC.' },
+  F5a: { name: 'Factor Va', role: 'Cofactor procoagulant; ținta APC (Leiden = rezistent la clivare).' },
+  F8a: { name: 'Factor VIIIa', role: 'Cofactor procoagulant (tenaza); inactivat de APC.' },
+  // fibrinolytic
+  tPA: { name: 'Activator tisular al plasminogenului', role: 'Eliberat de endoteliu; convertește plasminogenul în plasmină pe fibrină.' },
+  PAI1: { name: 'Inhibitorul activatorului plasminogenului-1', role: 'Principalul inhibitor al tPA; limitează fibrinoliza.' },
+  PLG: { name: 'Plasminogen', role: 'Zimogen; legat de fibrină, este activat de tPA.' },
+  PLASMIN: { name: 'Plasmină', role: 'Protează care degradează fibrina și fibrinogenul. Inhibată de α₂-antiplasmină.' },
+  A2AP: { name: 'α₂-antiplasmină', role: 'Inhibitorul rapid al plasminei libere.' },
+  DDIMER: { name: 'D-dimeri', role: 'Produși de degradare ai fibrinei reticulate; markeri de fibrinoliză / tromboză.' },
+};
+
 type View = 'coag' | 'anticoag' | 'fibrino';
 
 export function MobileCascade({ factors, className = '' }: MobileCascadeProps): React.ReactElement {
   const [view, setView] = useState<View>('coag');
+  const [selected, setSelected] = useState<string | null>(null);
   const diagram = view === 'coag' ? COAG : view === 'anticoag' ? ANTICOAG : FIBRINO;
   const vbH = view === 'coag' ? 570 : view === 'anticoag' ? 500 : 440;
+
+  const goto = (v: View): void => { setSelected(null); setView(v); };
 
   const deficient = (id: string): boolean => {
     const f = factors[id];
@@ -129,14 +172,18 @@ export function MobileCascade({ factors, className = '' }: MobileCascadeProps): 
     const def = deficient(n.id);
     const r = n.r ?? 22;
     const isDark = n.id === 'FIBRIN_NET';
+    const sel = selected === n.id;
     const stroke = def ? C.inhibit : n.color;
     return (
-      <g key={n.id}>
-        <circle cx={n.x} cy={n.y} r={r} fill={isDark ? C.clot : def ? '#fef2f2' : '#ffffff'} stroke={stroke} strokeWidth={def ? 3 : 2} />
+      <g key={n.id} onClick={() => setSelected(n.id)} style={{ cursor: 'pointer' }}>
+        {/* generous transparent touch target */}
+        <circle cx={n.x} cy={n.y} r={Math.max(r + 10, 24)} fill="transparent" />
+        {sel && <circle cx={n.x} cy={n.y} r={r + 5} fill="none" stroke={n.color} strokeWidth={1.5} opacity={0.45} />}
+        <circle cx={n.x} cy={n.y} r={r} fill={isDark ? C.clot : def ? '#fef2f2' : '#ffffff'} stroke={stroke} strokeWidth={def || sel ? 3 : 2} pointerEvents="none" />
         <text x={n.x} y={n.y} textAnchor="middle" dominantBaseline="central"
           fontSize={n.label.length > 8 ? 8.5 : r >= 26 ? 13 : r <= 16 ? 8.5 : 11} fontWeight={700}
-          fill={isDark ? '#ffffff' : def ? C.inhibit : n.color}>{n.label}</text>
-        {n.sub && <text x={n.x} y={n.y + r + 11} textAnchor="middle" fontSize={8.5} fontWeight={600} fill={def ? C.inhibit : n.color}>{n.sub}</text>}
+          fill={isDark ? '#ffffff' : def ? C.inhibit : n.color} pointerEvents="none">{n.label}</text>
+        {n.sub && <text x={n.x} y={n.y + r + 11} textAnchor="middle" fontSize={8.5} fontWeight={600} fill={def ? C.inhibit : n.color} pointerEvents="none">{n.sub}</text>}
       </g>
     );
   };
@@ -152,19 +199,49 @@ export function MobileCascade({ factors, className = '' }: MobileCascadeProps): 
     return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#94a3b8" strokeWidth={1.6} opacity={0.7} markerEnd="url(#mc-arrow)" />;
   };
 
+  const renderCard = (): React.ReactElement | null => {
+    if (!selected) return null;
+    const n = pos.get(selected);
+    const info = INFO[selected];
+    if (!n || !info) return null;
+    const f = factors[selected];
+    const def = deficient(selected);
+    const pct = f ? Math.round(f.activity * 100) : null;
+    return (
+      <div className="absolute inset-x-1.5 bottom-1.5 rounded-xl border bg-white/95 p-3 shadow-lg backdrop-blur"
+        style={{ borderColor: def ? C.inhibit : n.color }}>
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="inline-block h-3 w-3 flex-shrink-0 rounded-full" style={{ backgroundColor: def ? C.inhibit : n.color }} />
+            <span className="text-sm font-bold" style={{ color: def ? C.inhibit : n.color }}>{n.label}{n.sub ? ` · ${n.sub}` : ''}</span>
+          </div>
+          <button type="button" aria-label="Închide" onClick={() => setSelected(null)}
+            className="-mr-1 -mt-1 rounded px-2 py-0.5 text-base leading-none text-slate-400 active:text-slate-700">×</button>
+        </div>
+        <p className="mt-1 text-[13px] font-semibold text-slate-800">{info.name}</p>
+        <p className="mt-0.5 text-xs leading-snug text-slate-600">{info.role}</p>
+        {pct !== null && (
+          <p className="mt-1.5 text-xs font-semibold" style={{ color: def ? C.inhibit : C.extrinsic }}>
+            Activitate în acest caz: {pct}%{def ? ' — deficitar' : ''}
+          </p>
+        )}
+      </div>
+    );
+  };
+
   const title = view === 'anticoag' ? 'Sistemul anticoagulant' : view === 'fibrino' ? 'Sistemul fibrinolitic' : '';
 
   return (
     <div className={`flex h-full w-full flex-col ${className}`}>
       {view !== 'coag' && (
         <div className="flex flex-shrink-0 items-center gap-2 px-1 pb-1">
-          <button type="button" onClick={() => setView('coag')}
+          <button type="button" onClick={() => goto('coag')}
             className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 active:bg-slate-200">‹ Cascadă</button>
           <span className="text-sm font-bold text-slate-800">{title}</span>
         </div>
       )}
 
-      <div className="min-h-0 flex-1">
+      <div className="relative min-h-0 flex-1">
         <svg viewBox={`0 0 340 ${vbH}`} className="h-full w-full" preserveAspectRatio="xMidYMid meet">
           <defs>
             <marker id="mc-arrow" viewBox="0 0 10 10" refX={8} refY={5} markerWidth={5} markerHeight={5} orient="auto-start-reverse">
@@ -175,12 +252,19 @@ export function MobileCascade({ factors, className = '' }: MobileCascadeProps): 
             </marker>
           </defs>
 
+          {/* tap empty space to dismiss the detail card */}
+          <rect x={0} y={0} width={340} height={vbH} fill="transparent" onClick={() => setSelected(null)} />
+
           {view === 'coag' && (
             <>
               <text x={46} y={18} fontSize={9} fontWeight={700} fill={C.intrinsic} opacity={0.5}>CALEA INTRINSECĂ</text>
               <text x={300} y={18} fontSize={9} fontWeight={700} fill={C.extrinsic} opacity={0.5} textAnchor="end">EXTRINSECĂ</text>
               <text x={252} y={244} fontSize={9} fontWeight={700} fill={C.common} opacity={0.5} textAnchor="end">CALEA COMUNĂ</text>
             </>
+          )}
+
+          {!selected && (
+            <text x={170} y={11} textAnchor="middle" fontSize={8} fill="#94a3b8">atinge un nod pentru detalii</text>
           )}
 
           {diagram.edges.filter((e) => e.kind === 'cof').map(renderEdge)}
@@ -197,14 +281,15 @@ export function MobileCascade({ factors, className = '' }: MobileCascadeProps): 
             <text x={178} y={3} fontSize={8} fill="#64748b">cofactor</text>
           </g>
         </svg>
+        {renderCard()}
       </div>
 
       {view === 'coag' && (
         <div className="flex flex-shrink-0 gap-2 px-1 pt-1">
-          <button type="button" onClick={() => setView('anticoag')}
+          <button type="button" onClick={() => goto('anticoag')}
             className="flex-1 rounded-lg border-2 px-2 py-2 text-xs font-bold active:scale-[0.98]"
             style={{ color: C.anticoag, borderColor: C.anticoag }}>Sistemul anticoagulant ›</button>
-          <button type="button" onClick={() => setView('fibrino')}
+          <button type="button" onClick={() => goto('fibrino')}
             className="flex-1 rounded-lg border-2 px-2 py-2 text-xs font-bold active:scale-[0.98]"
             style={{ color: C.fibrino, borderColor: C.fibrino }}>Sistemul fibrinolitic ›</button>
         </div>
