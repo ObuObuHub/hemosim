@@ -103,7 +103,7 @@ export default function Home(): React.ReactElement {
                   : 'text-slate-600 hover:text-slate-800'
               }`}
             >
-              Învățare Interactivă
+              Model Celular
             </button>
           </nav>
 
